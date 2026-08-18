@@ -105,11 +105,16 @@ PNG 가 정확히 같습니다.
 
 ```
 data/endgame.json     끝장전 정본 기록
-data/asl.json         ASL 정본 기록
+data/asl.json         ASL 정본 기록 (구글시트에서 받아옵니다)
+data/asl-source.json  ASL 구글시트 주소
 data/videos.json      경기 → 유튜브 다시보기 매핑
+data/site.json        사이트 주소
+data/deploy.json      FTP 접속 정보 (저장소에 없음)
 
+tools/update.py       구글시트 → 데이터 → 사이트 → 업로드 한 번에
 tools/build.py        사이트 전체를 다시 만드는 빌드 스크립트
-tools/asl_import.py   ASL 엑셀 → data/asl.json 변환 (한 번만, 시트가 바뀔 때 다시)
+tools/deploy.py       FTP 업로드 (바뀐 파일만)
+tools/asl_import.py   ASL 구글시트/엑셀 → data/asl.json
 tools/stats.py        끝장전 파생 통계 (연도별·연승·상성·기록)
 tools/render.py       HTML 조립 (선수 페이지, ASL 페이지, 시트 안내, CG 툴)
 tools/site.css        공통 스타일
@@ -142,13 +147,51 @@ python3 tools/build.py
 
 ## ASL 데이터 갱신하기
 
-시즌이 진행되면 시트에 경기가 쌓입니다. 반영 순서는 이렇습니다.
+ASL 기록은 구글시트에서 계속 올라옵니다. 시트 주소는 `data/asl-source.json`
+에 적혀 있고, **엑셀 파일을 받을 필요 없이** 거기서 바로 읽어 옵니다.
 
 ```bash
-python3 tools/asl_import.py <새 ASL.xlsx> --diff   # 1) 뭐가 달라지는지 먼저 보기
-python3 tools/asl_import.py <새 ASL.xlsx>          # 2) 괜찮으면 반영
-python3 tools/build.py                             # 3) 사이트 다시 만들기
-python3 tools/deploy.py                            # 4) 올리기
+python3 tools/update.py            # 시트 → 데이터 → 사이트 → 업로드까지 한 번에
+```
+
+먼저 무엇이 달라지는지만 보고 싶으면:
+
+```bash
+python3 tools/update.py --dry-run
+```
+
+```
+── 1. 구글시트 받아오기 ─────────────────
+구글시트에서 받아오는 중 — ASL (gid 1039671676)
+
+── 2. 지금 데이터와 견주기 ───────────────
+  세트 2177 → 2181 (+4) · 매치 1299 → 1302 (+3)
+  + ASL Season 22 — 24강 경기 추가 (5 → 7세트)
+  + ASL Season 22 — 16강 새 라운드 (0 → 2세트)
+```
+
+| 옵션 | 하는 일 |
+| --- | --- |
+| `--dry-run` | 아무것도 바꾸지 않고 차이만 보기 |
+| `--no-deploy` | 만들기까지만 하고 올리지 않기 |
+| `--force` | 기록이 줄어든 경우에도 진행 |
+
+**기록이 줄면 멈춥니다.** 시트에서 줄이 실수로 지워지면 그 사고가 사이트에
+그대로 반영되지 않도록 막습니다. 특히 '구분' 칸은 병합돼 있어서 그 값을
+지닌 줄이 지워지면 뒤따르는 경기들이 통째로 엉뚱한 라운드로 붙는데,
+이것도 잡힙니다.
+
+```
+! ASL Season 21 — 8강 라운드 사라짐 (16 → 0세트)
+기록이 줄었습니다. 시트에서 줄이 지워졌을 수 있어 멈춥니다.
+```
+
+시트 대신 엑셀 파일로 넣는 예전 방식도 그대로 됩니다.
+
+```bash
+python3 tools/asl_import.py <ASL.xlsx> --diff
+python3 tools/asl_import.py <ASL.xlsx>
+python3 tools/build.py && python3 tools/deploy.py
 ```
 
 `--diff` 는 **저장하지 않고** 지금 데이터와 무엇이 다른지만 보여 줍니다.
@@ -175,12 +218,12 @@ python3 tools/deploy.py                            # 4) 올리기
 
 | 방법 | 정확도 | 드는 손 | 지금 |
 | --- | --- | --- | --- |
-| **지금처럼 시트에 직접 기록** | 가장 높음 | 매주 입력 | 동작 중 |
+| **구글시트에 기록 → `update.py`** | 가장 높음 | 시트 입력만 | **동작 중** |
 | Liquipedia 에서 자동 수집 | 높지만 검수 필요 | 초기 개발 + 표기 맞추기 | 미구현 |
 | 사이트에서 바로 입력 (admin) | 가장 높음 | 입력이 편해짐 | 미구현 |
 
-**당분간은 시트를 그대로 쓰는 편이 낫습니다.** 22시즌치가 이미 한 형식으로
-쌓여 있고, 위 `--diff` 로 안전하게 반영되기 때문입니다.
+**시트에 적고 `update.py` 한 번**이 지금 방식입니다. 시트만 채우면 나머지는
+자동이라 손이 거의 안 갑니다.
 
 Liquipedia 는 ASL 결과가 방송 당일 정리되고 pubg-meta 도 이미 출처로 쓰고
 있어 후보로 좋습니다. 다만 위키라 **표기가 흔들립니다** — 선수명이 한글/영문

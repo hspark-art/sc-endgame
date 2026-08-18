@@ -95,16 +95,18 @@ def add_mu(mu, race_win, race_lose):
         mu[k]['l'] += 1
 
 
-def read_sets(path):
-    from openpyxl import load_workbook
-    wb = load_workbook(path, data_only=True)
-    ws = wb[wb.sheetnames[0]]
+def rows_to_sets(rows):
+    """시트 3행부터의 줄들을 세트 목록으로. 엑셀과 CSV 가 함께 씁니다.
 
+    한 줄 = (경기번호, 구분, 선수명A, 종족A, 승/패A, MAP, 승/패B, 종족B, 선수명B)
+    '구분' 은 병합된 칸이라 첫 줄에만 값이 있어 아래로 채워 씁니다.
+    """
     out, group = [], None
-    for row in ws.iter_rows(min_row=3, values_only=True):
-        num, grp, a, ra, wa, mp, wbb, rb, b = row[:9]
-        if grp:
-            group = grp                      # 병합 칸 — 아래로 이어집니다
+    for row in rows:
+        cells = list(row[:9]) + [None] * max(0, 9 - len(row))
+        num, grp, a, ra, wa, mp, wbb, rb, b = cells[:9]
+        if grp not in (None, ''):
+            group = grp
         if not (a and b and group):
             continue
         a, b = norm(a), norm(b)
@@ -125,12 +127,62 @@ def read_sets(path):
     return out
 
 
+def read_sets(path):
+    """엑셀 파일에서 읽습니다."""
+    from openpyxl import load_workbook
+    wb = load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+    return rows_to_sets(ws.iter_rows(min_row=3, values_only=True))
+
+
+def read_sets_csv(text):
+    """구글시트 CSV 내보내기에서 읽습니다. 병합 칸은 빈칸으로 나옵니다."""
+    import csv as _csv
+    rows = list(_csv.reader(io.StringIO(text)))
+    return rows_to_sets(rows[2:])          # 1행 제목, 2행 머리글
+
+
+def fetch_sheet_csv(source=None):
+    """구글시트를 CSV 로 받아옵니다. 시트가 링크 공개면 인증이 필요 없습니다."""
+    import urllib.error
+    import urllib.request
+    src = source or {}
+    if not src:
+        path = os.path.join(ROOT, 'data', 'asl-source.json')
+        if not os.path.exists(path):
+            raise SystemExit('data/asl-source.json 이 없습니다. sheetId 와 gid 를 넣어 주세요.')
+        src = json.load(io.open(path, encoding='utf-8'))
+    sid, gid = src.get('sheetId'), str(src.get('gid', '0'))
+    if not sid:
+        raise SystemExit('data/asl-source.json 에 sheetId 가 없습니다.')
+    url = ('https://docs.google.com/spreadsheets/d/%s/export?format=csv&gid=%s'
+           % (sid, gid))
+    print('구글시트에서 받아오는 중 — %s (gid %s)' % (src.get('title') or sid, gid))
+    req = urllib.request.Request(url, headers={'User-Agent': 'sc-endgame/1.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            raw = r.read()
+    except urllib.error.HTTPError as e:
+        raise SystemExit(
+            '시트를 받지 못했습니다 (HTTP %s).\n'
+            "  시트 공유 설정이 '링크가 있는 모든 사용자 — 뷰어' 인지 확인해 주세요.\n"
+            '  주소: %s' % (e.code, url))
+    except urllib.error.URLError as e:
+        raise SystemExit('시트에 접속하지 못했습니다: %s' % e.reason)
+    text = raw.decode('utf-8-sig')
+    if text.lstrip().startswith('<'):
+        raise SystemExit(
+            'CSV 대신 로그인 화면이 왔습니다.\n'
+            "  시트를 '링크가 있는 모든 사용자 — 뷰어' 로 열어 주세요.")
+    return text
+
+
 def fix_races(sets):
     """한 선수의 종족은 하나입니다.
 
     시트에는 드물게 오타로 같은 선수가 다른 종족으로 적힌 줄이 있습니다.
     그대로 두면 상성·동족전 집계가 틀어지므로, 가장 많이 적힌 종족으로 맞추고
-    무엇을 바꿨는지 돌려줍니다 (원본 파일은 건드리지 않습니다).
+    무엇을 바꿨는지 돌려줍니다 (원본 시트는 건드리지 않습니다).
     """
     tally = defaultdict(Counter)
     for s in sets:
@@ -149,6 +201,16 @@ def fix_races(sets):
         s['winRace'] = canon[s['winner']]
         s['loseRace'] = canon[s['loser']]
     return notes
+
+
+def load_sets(xlsx=None):
+    """엑셀이나 구글시트에서 읽고 종족까지 맞춰서 돌려줍니다.
+
+    어느 경로로 들어와도 같은 결과가 나오도록 여기 한 군데로 모읍니다.
+    돌려주는 값은 (세트 목록, 종족을 고친 내역) 입니다.
+    """
+    sets = read_sets(xlsx) if xlsx else read_sets_csv(fetch_sheet_csv())
+    return sets, fix_races(sets)
 
 
 def group_matches(sets):
@@ -413,14 +475,19 @@ def show_diff(old, new):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='ASL 엑셀을 data/asl.json 으로 옮깁니다.')
-    ap.add_argument('xlsx', help='ASL 엑셀 파일')
+    ap = argparse.ArgumentParser(
+        description='ASL 기록을 구글시트나 엑셀에서 읽어 data/asl.json 으로 옮깁니다.')
+    ap.add_argument('xlsx', nargs='?',
+                    help='ASL 엑셀 파일 (생략하고 --sheet 를 쓰면 구글시트에서 받습니다)')
+    ap.add_argument('--sheet', action='store_true',
+                    help='data/asl-source.json 의 구글시트에서 바로 받아옵니다')
     ap.add_argument('--diff', action='store_true',
                     help='저장하지 않고 지금 데이터와 무엇이 다른지만 봅니다')
     args = ap.parse_args()
 
-    sets = read_sets(args.xlsx)
-    fixes = fix_races(sets)
+    if not args.sheet and not args.xlsx:
+        print('(엑셀 파일을 주지 않아 구글시트에서 받아옵니다)')
+    sets, fixes = load_sets(None if args.sheet else args.xlsx)
     matches = group_matches(sets)
     data = build(sets, matches)
 
