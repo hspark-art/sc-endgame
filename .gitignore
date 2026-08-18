@@ -1,0 +1,4 @@
+# 유튜브 영상 목록 캐시 — 할당량 아끼려고 로컬에만 둡니다
+tools/.yt-cache.json
+__pycache__/
+*.pyc

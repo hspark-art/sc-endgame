@@ -1,0 +1,51 @@
+{
+  "updatedAt": "2026-08-18T07:03:53.193Z",
+  "updatedAtKo": "2026년 08월 18일 16:03 (KST)",
+  "base": "https://hspark-art.github.io/sc-endgame",
+  "xlsx": "https://hspark-art.github.io/sc-endgame/xlsx/sc-endgame.xlsx",
+  "json": "https://hspark-art.github.io/sc-endgame/data/endgame.json",
+  "files": [
+    {
+      "label": "선수",
+      "desc": "선수별 통산 전적과 종족별 세트 전적",
+      "file": "players.csv",
+      "rows": 35,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/players.csv"
+    },
+    {
+      "label": "경기",
+      "desc": "매치 한 줄씩 — 날짜·대진·스코어·맵·다시보기",
+      "file": "matches.csv",
+      "rows": 296,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/matches.csv"
+    },
+    {
+      "label": "세트별 맵",
+      "desc": "매치 안의 세트마다 어떤 맵을 썼는지",
+      "file": "sets.csv",
+      "rows": 2656,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/sets.csv"
+    },
+    {
+      "label": "맵",
+      "desc": "맵별 사용 세트 수와 종족 상성",
+      "file": "maps.csv",
+      "rows": 82,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/maps.csv"
+    },
+    {
+      "label": "상대전적",
+      "desc": "선수 대 선수 맞대결 기록",
+      "file": "headtohead.csv",
+      "rows": 115,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/headtohead.csv"
+    },
+    {
+      "label": "연도별",
+      "desc": "연도별 매치·세트 수와 종족 상성",
+      "file": "yearly.csv",
+      "rows": 8,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/yearly.csv"
+    }
+  ]
+}

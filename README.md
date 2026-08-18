@@ -1,0 +1,97 @@
+# 스타크래프트 끝장전 기록실
+
+방송팀이 직접 기록한 끝장전 데이터를 정리해 보여주는 정적 사이트입니다.
+서버 없이 GitHub Pages 로만 돌아갑니다.
+
+- 사이트: https://hspark-art.github.io/sc-endgame/
+- 데이터: 2019-05-14 ~ 2026-08-12 · 296매치 · 2,656세트 · 선수 35명 · 맵 82개
+
+## 무엇이 들어 있나
+
+| 화면 | 내용 |
+| --- | --- |
+| 선수 랭킹 | 연도·종족으로 걸러 보는 순위표. 표 머리글로 정렬 |
+| 선수 명단 | 종족별 전체 명단 |
+| 맵 통계 | 맵별 사용 세트·종족 상성·연도별 사용 추이 |
+| 경기 기록 | 296경기 전부. 스코어는 눌러야 보입니다 (스포일러 방지) |
+| 기록실 | 최다 출전·승률·연승·접전·완승 등 |
+| 시즌 | 연도별 요약과 종족 상성 |
+| 선수 상세 | `p/<슬러그>.html` — 선수마다 별도 페이지 |
+
+라이브 배너는 SOOP 공개 API 로 방송 중인지 매분 확인해 자동으로 켜집니다.
+
+## 구조
+
+```
+data/endgame.json     정본 기록 — 모든 화면과 파일이 여기서 나옵니다
+data/videos.json      경기 → 유튜브 다시보기 매핑
+tools/build.py        사이트 전체를 다시 만드는 빌드 스크립트
+tools/stats.py        파생 통계 계산 (연도별·연승·상성·기록)
+tools/render.py       HTML 조립 (선수 페이지, 시트 안내)
+tools/site.css        공통 스타일
+tools/app.js          허브 페이지 앱
+tools/slug.py         한글 이름 → URL 슬러그
+tools/fetch_videos.py 유튜브에서 다시보기 영상 찾아 붙이기
+
+index.html            ← 빌드 결과물. 직접 고치지 마세요
+p/*.html              ←
+csv/*.csv             ←
+xlsx/sc-endgame.xlsx  ←
+sheets.html           ←
+```
+
+## 다시 빌드하기
+
+```bash
+pip install openpyxl        # 엑셀 파일을 만들 때만 필요합니다
+python3 tools/build.py
+```
+
+원본(`data/endgame.json`)은 건드리지 않고, 나머지는 전부 다시 계산합니다.
+같은 입력이면 언제 돌려도 같은 결과가 나옵니다.
+
+## 다시보기 영상 붙이기
+
+경기별 영상은 `data/videos.json` 의 `matches` 에 적습니다. 키는
+`"경기날짜|선수A|선수B"` 이고 선수 이름은 가나다순입니다.
+
+```json
+"matches": {
+  "2026-08-12|김지성|김택용": "https://www.youtube.com/watch?v=XXXXXXXXXXX"
+}
+```
+
+유튜브에서 자동으로 찾아 채우려면 YouTube Data API v3 키가 필요합니다.
+
+```bash
+export YOUTUBE_API_KEY=...
+python3 tools/fetch_videos.py            # 어떻게 매칭되는지 먼저 확인
+python3 tools/fetch_videos.py --write    # data/videos.json 에 기록
+python3 tools/build.py                   # 사이트에 반영
+```
+
+두 선수 이름과 경기 날짜가 제목에 함께 있으면 점수를 높게 매기고, 경기일보다
+앞서 올라온 영상은 아예 후보에서 뺍니다. 손으로 적어 넣은 항목은 덮어쓰지
+않습니다. 영상이 없는 경기는 사이트에서 두 선수 이름으로 채널을 검색하는
+링크로 대신 안내합니다.
+
+## 데이터 내려받기
+
+사이트 아래쪽 "데이터 내려받기" 에서 CSV 여섯 종과 엑셀 한 파일을 받을 수
+있습니다. 구글 시트에서는 파일을 받지 않고 수식 하나로 바로 붙일 수 있습니다.
+
+```
+=IMPORTDATA("https://hspark-art.github.io/sc-endgame/csv/players.csv")
+```
+
+자세한 방법은 [sheets.html](https://hspark-art.github.io/sc-endgame/sheets.html) 에 있습니다.
+
+## 알아 둘 점
+
+- 끝장전은 사실상 9세트 고정입니다 (296경기 중 294경기가 9세트).
+- 세트마다 누가 이겼는지는 원본에 남아 있지 않고 합계만 있습니다. 그래서
+  종족 상성은 "매치 스코어 + 두 선수의 종족" 으로 세트 단위까지 되살렸지만,
+  맵별 승패를 연도별로 쪼개는 것은 불가능합니다.
+- 전체 2,656세트 가운데 36세트는 맵 이름이 비어 있어 맵 통계에서 빠집니다
+  (그래서 맵 표의 합은 2,620세트입니다).
+- 동족전은 한 경기도 없습니다.
