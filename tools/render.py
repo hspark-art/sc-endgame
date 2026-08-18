@@ -69,7 +69,7 @@ def footer(built, extra=''):
 SITES = [
     ('endgame', '끝장전', '', 'index.html'),
     ('asl', 'ASL', 'asl/', 'asl/index.html'),
-    ('cg', 'CG 제작', 'admin/', 'admin/cg.html'),
+    ('cg', 'CG 제작', 'admin/', 'admin/'),
 ]
 
 
@@ -592,14 +592,25 @@ def _box_block(i, label, hint):
 def cg_page(css, app_js, players):
     title = 'CG 제작 툴 — ' + SITE_NAME
     desc = '끝장전 대진표 CG(1920×1080)를 만들어 PNG 로 내려받는 방송용 도구.'
-    out = [head(title, desc, css, BASE_URL + '/admin/cg.html', nav('cg', depth=1))
-           .replace('<div class="wrap">', '<div class="wrap cgwrap">')]
+    # 로그인한 관리자에게만 내보냅니다. 서버(PHP)가 판단하므로 소스를 봐도 못 뚫습니다.
+    out = ["<?php require __DIR__ . '/auth.php'; admin_require_login(); ?>\n"]
+    out.append(head(title, desc, css, BASE_URL + '/admin/', nav('cg', depth=1))
+               .replace('<div class="wrap">', '<div class="wrap cgwrap">')
+               .replace('<meta name="twitter:card" content="summary">',
+                        '<meta name="twitter:card" content="summary">\n'
+                        '<meta name="robots" content="noindex, nofollow">'))
 
     out.append(
         '<header style="border-bottom:none;padding-bottom:6px">'
         '<div class="headrow"><div><h1>CG 제작 툴</h1>'
         '<div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. '
-        '입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div></div></header>\n')
+        '입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div>'
+        '<div style="margin-left:auto;text-align:right">'
+        '<div class="helptxt" style="margin:0">'
+        '<?= htmlspecialchars(admin_user(), ENT_QUOTES) ?> 님</div>'
+        '<a class="dlbtn" href="logout.php" style="margin-top:6px;display:inline-block">'
+        '로그아웃</a></div>'
+        '</div></header>\n')
 
     out.append('<div class="cglayout">\n<div class="cgpanel">\n')
 

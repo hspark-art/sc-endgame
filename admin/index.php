@@ -1,20 +1,64 @@
+<?php
+require __DIR__ . '/auth.php';
+admin_boot();
+
+$cfg      = admin_config();
+$setup    = ($cfg === null);          // 아직 계정이 없으면 최초 설정
+$error    = '';
+$notice   = '';
+$next     = preg_replace('/[^A-Za-z0-9._-]/', '', $_GET['next'] ?? '');
+$nextUrl  = $next !== '' ? $next : 'cg.php';
+
+if (admin_logged_in() && !$setup) {
+    header('Location: ' . $nextUrl);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!admin_csrf_ok($_POST['csrf'] ?? null)) {
+        $error = '입력 시간이 너무 오래되었습니다. 다시 시도해 주세요.';
+    } elseif ($setup) {
+        $u  = trim((string)($_POST['user'] ?? ''));
+        $p1 = (string)($_POST['pw'] ?? '');
+        $p2 = (string)($_POST['pw2'] ?? '');
+        if ($u === '' || !preg_match('/^[A-Za-z0-9._-]{3,32}$/', $u)) {
+            $error = '아이디는 영문·숫자·. _ - 로 3~32자로 지어 주세요.';
+        } elseif (mb_strlen($p1) < 8) {
+            $error = '비밀번호는 8자 이상으로 정해 주세요.';
+        } elseif ($p1 !== $p2) {
+            $error = '두 비밀번호가 서로 다릅니다.';
+        } elseif (!admin_save_config($u, $p1)) {
+            $error = 'admin 폴더에 쓸 수 없습니다. FTP 에서 admin 폴더 권한을 707 로 바꾼 뒤 다시 해 주세요.';
+        } else {
+            admin_login($u, $p1);
+            header('Location: ' . $nextUrl);
+            exit;
+        }
+    } else {
+        if (admin_tries_left() <= 0) {
+            $error = '로그인을 여러 번 실패했습니다. 10분 뒤에 다시 시도해 주세요.';
+        } elseif (admin_login((string)($_POST['user'] ?? ''), (string)($_POST['pw'] ?? ''))) {
+            header('Location: ' . $nextUrl);
+            exit;
+        } else {
+            $left  = admin_tries_left();
+            $error = '아이디 또는 비밀번호가 맞지 않습니다.'
+                   . ($left > 0 && $left <= 3 ? ' (남은 시도 ' . $left . '번)' : '');
+            usleep(400000);          // 무차별 대입을 조금이라도 늦춥니다
+        }
+    }
+}
+$csrf = admin_csrf();
+?>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>심대성 (저그) — ASL 기록실</title>
-<meta name="description" content="심대성 저그 · ASL 우승 0회 · 매치 0승 2패(0.0%) · 세트 0승 2패(0.0%) · 1개 대회 출전">
-<link rel="canonical" href="https://pubgin.com/endgame/asl/p/shim-daeseong.html">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="스타크래프트 끝장전 기록실">
-<meta property="og:title" content="심대성 (저그) — ASL 기록실">
-<meta property="og:description" content="심대성 저그 · ASL 우승 0회 · 매치 0승 2패(0.0%) · 세트 0승 2패(0.0%) · 1개 대회 출전">
-<meta property="og:url" content="https://pubgin.com/endgame/asl/p/shim-daeseong.html">
-<meta property="og:image" content="https://stimg.sooplive.com/LOGO/ta/talent/m/talent.webp">
-<meta name="twitter:card" content="summary">
-<link rel="icon" href="https://stimg.sooplive.com/LOGO/ta/talent/m/talent.webp">
-<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<meta name="robots" content="noindex, nofollow">
+<title>관리자 로그인 — 스타크래프트 끝장전 기록실</title>
+<link rel="stylesheet" as="style"
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
 :root{
   --bg:#0a0d13; --panel:#141821; --panel2:#1b202b; --line:#232a38; --line2:#171c25;
@@ -303,31 +347,53 @@ ol.steps li{margin-bottom:4px}
   .cglayout{grid-template-columns:1fr}
   .cgpanel{position:static;max-height:none}
 }
+
+.loginwrap{max-width:400px;margin:0 auto;padding:70px 20px 60px}
+.loginwrap h1{font-size:22px;margin-bottom:6px}
+.loginwrap .sub{margin-bottom:22px}
+.loginwrap .fld{margin-bottom:13px}
+.loginwrap input[type=text],.loginwrap input[type=password]{width:100%;padding:11px 12px;
+  border-radius:9px;background:var(--panel2);border:1px solid var(--line);
+  color:var(--txt);font-size:14px;font-family:inherit}
+.loginwrap input:focus{outline:none;border-color:var(--accent)}
+.loginwrap .btn{width:100%;padding:12px;margin-top:6px;font-size:14px}
+.msg{padding:10px 12px;border-radius:9px;font-size:12.5px;margin-bottom:14px;line-height:1.6}
+.msg.err{background:rgba(248,113,113,.10);border:1px solid var(--lose);color:var(--lose)}
+.msg.info{background:rgba(28,140,255,.10);border:1px solid var(--accent);color:#cfe6ff}
 </style>
 </head>
 <body>
 <div class="brandbar"></div>
-<div class="wrap">
-<nav class="sitenav"><a class="navlink" href="../../index.html">끝장전</a><a class="navlink on" href="../../asl/index.html">ASL</a><a class="navlink" href="../../admin/">CG 제작</a></nav>
-<a class="backlink" href="../index.html">← ASL 기록실로</a>
-<header style="border-bottom:none;padding-bottom:0"><div class="phead"><span class="race Z">Z</span><span class="pname">심대성</span><span class="ptag">저그</span></div><div class="stats-strip"><div class="item">매치 전적<b>0승 2패 · 0.0%</b></div><div class="item">세트 전적<b>0승 2패 · 0.0%</b></div><div class="item">출전 대회<b>1개</b></div><div class="item">최고 성적<b>32강</b></div></div></header>
-<div class="card" style="margin-top:16px"><div class="cardtitle">종족별 세트 전적</div><div class="murow"><div class="mulabel"><span><span class="race Z">Z</span>저그 <b>0</b></span><span><b>1</b> 테란<span class="race T">T</span></span></div><div class="mubar"><span style="width:0.0000%;background:var(--z)"></span><span style="width:100.0000%;background:var(--t)">100.0%</span></div></div><div class="murow"><div class="mulabel"><span><span class="race Z">Z</span>저그 <b>0</b></span><span><b>1</b> 저그<span class="race Z">Z</span></span></div><div class="mubar"><span style="width:0.0000%;background:var(--z)"></span><span style="width:100.0000%;background:var(--z)">100.0%</span></div></div></div>
-<div class="card"><div class="cardtitle">대회별 성적<span class="note">1개 대회</span></div><div class="tblwrap"><table><thead><tr><th class="static">대회</th><th class="static num">매치</th><th class="static num">매치 승률</th><th class="static num">세트</th><th class="static num">세트 승률</th><th class="static hide-mobile">최고 라운드</th></tr></thead><tbody><tr><td class="nm">대국민 스타리그</td><td class="num">0-2</td><td class="num">0.0%</td><td class="num">0-2</td><td class="num">0.0%</td><td class="hide-mobile dim">32강</td></tr></tbody></table></div></div>
-<div class="card"><div class="cardtitle">상대 전적<span class="note">2명</span></div><div class="tblwrap"><table><thead><tr><th class="static">상대</th><th class="static num">매치</th><th class="static num">세트</th><th class="static num">세트 승률</th></tr></thead><tbody><tr><td><a href="kim-jaehyeon.html"><span class="race T">T</span><span class="nm-link">김재현</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr><tr><td><a href="park-seongjun.html"><span class="race Z">Z</span><span class="nm-link">박성준</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr></tbody></table></div></div>
-<div class="card"><div class="cardtitle">전체 경기<span class="note">2매치 · 최신 대회순</span></div><div class="tblwrap"><table><thead><tr><th class="static hide-mobile">대회</th><th class="static">라운드</th><th class="static">상대</th><th class="static num">스코어</th><th class="static hide-mobile">맵</th></tr></thead><tbody><tr><td class="muted hide-mobile">대국민 스타리그</td><td class="muted">32강</td><td><a href="park-seongjun.html"><span class="race Z">Z</span><span class="nm-link">박성준</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">서킷브레이커</td></tr><tr><td class="muted hide-mobile">대국민 스타리그</td><td class="muted">32강</td><td><a href="kim-jaehyeon.html"><span class="race T">T</span><span class="nm-link">김재현</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">투혼</td></tr></tbody></table></div></div>
-<div class="dlbox">
-<span class="t">ASL 데이터 내려받기</span>
-<a class="dlbtn on" href="../../xlsx/asl.xlsx" download>엑셀 (.xlsx)</a>
-<a class="dlbtn" href="../../csv/asl-players.csv" download>선수 CSV</a><a class="dlbtn" href="../../csv/asl-matches.csv" download>매치 CSV</a><a class="dlbtn" href="../../csv/asl-sets.csv" download>세트 CSV</a><a class="dlbtn" href="../../csv/asl-maps.csv" download>맵 CSV</a><a class="dlbtn" href="../../csv/asl-headtohead.csv" download>상대전적 CSV</a><a class="dlbtn" href="../../csv/asl-tournaments.csv" download>대회 CSV</a>
-<a class="dlbtn" href="../../sheets.html">구글 시트 연동 →</a>
-</div>
-<footer>
-ASL(스타크래프트 리그) 대회 기록입니다. 방송팀이 정리한 세트 단위 원본을 그대로 다시 계산했습니다.<br>
-이 기록에는 경기 날짜가 없어 대회와 라운드 순서로만 정리했습니다. 매치(시리즈)는 같은 라운드에서 같은 두 선수가 연달아 치른 세트를 하나로 묶은 것입니다.<br>
-<a href="../../index.html">끝장전 기록실</a>은 별개 대회라 따로 있습니다.<br>
-마지막 갱신: 2026년 08월 18일 18:29 (KST)
-<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. 이 사이트는 SOOP·아프리카TV 및 각 선수와 공식적인 관계가 없습니다.</div>
-</footer>
+<div class="loginwrap">
+  <h1><?= $setup ? '관리자 계정 만들기' : '관리자 로그인' ?></h1>
+  <div class="sub">CG 제작 툴은 관리자만 쓸 수 있습니다.</div>
+
+<?php if ($error !== ''): ?>
+  <div class="msg err"><?= htmlspecialchars($error, ENT_QUOTES) ?></div>
+<?php endif; ?>
+<?php if ($setup): ?>
+  <div class="msg info">아직 계정이 없습니다. 지금 바로 아이디와 비밀번호를 정해 주세요.
+  이 화면은 계정을 만들면 다시 나오지 않습니다.</div>
+<?php endif; ?>
+
+  <form method="post" autocomplete="off">
+    <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
+    <div class="fld"><label>아이디</label>
+      <input type="text" name="user" autofocus required
+             autocomplete="<?= $setup ? 'off' : 'username' ?>"></div>
+    <div class="fld"><label>비밀번호</label>
+      <input type="password" name="pw" required
+             autocomplete="<?= $setup ? 'new-password' : 'current-password' ?>"></div>
+<?php if ($setup): ?>
+    <div class="fld"><label>비밀번호 확인</label>
+      <input type="password" name="pw2" required autocomplete="new-password"></div>
+<?php endif; ?>
+    <button class="btn primary" type="submit"><?= $setup ? '계정 만들고 시작하기' : '로그인' ?></button>
+  </form>
+
+  <div class="helptxt" style="margin-top:18px">
+    <a href="../index.html" style="color:var(--accent)">← 기록실로 돌아가기</a>
+  </div>
 </div>
 </body>
 </html>

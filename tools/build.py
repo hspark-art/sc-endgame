@@ -24,6 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+import admin_php                                 # noqa: E402
 import audit                                     # noqa: E402
 import render                                    # noqa: E402
 import stats                                     # noqa: E402
@@ -436,8 +437,18 @@ def main():
             roster.append({'name': p['name'], 'race': p['race'], 'from': tag})
     roster.sort(key=lambda x: x['name'])
     cg_js = io.open(os.path.join(HERE, 'cg_app.js'), encoding='utf-8').read()
-    n = write('admin/cg.html', render.cg_page(css, cg_js, roster))
-    print('  admin/cg.html         %.0fKB · 선수 %d명 자동완성' % (n / 1024, len(roster)))
+    n = write('admin/cg.php', render.cg_page(css, cg_js, roster))
+    write('admin/auth.php', admin_php.AUTH_PHP)
+    write('admin/logout.php', admin_php.LOGOUT_PHP)
+    write('admin/.htaccess', admin_php.HTACCESS)
+    write('admin/config.sample.php', admin_php.CONFIG_SAMPLE)
+    write('admin/index.php', admin_php.index_php(css, render.SITE_NAME))
+    # 예전 빌드가 남긴 무방비 파일이 있으면 치웁니다.
+    old = os.path.join(ROOT, 'admin', 'cg.html')
+    if os.path.exists(old):
+        os.remove(old)
+    print('  admin/*.php           %.0fKB · 선수 %d명 자동완성 · 로그인 보호'
+          % (n / 1024, len(roster)))
 
     if asl:
         asl_js = io.open(os.path.join(HERE, 'asl_app.js'), encoding='utf-8').read()

@@ -2,3 +2,6 @@
 tools/.yt-cache.json
 __pycache__/
 *.pyc
+
+# 관리자 계정 (해시). 서버에만 두고 저장소에는 올리지 않습니다
+admin/config.php
