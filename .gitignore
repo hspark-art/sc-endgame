@@ -5,3 +5,6 @@ __pycache__/
 
 # 관리자 계정 (해시). 서버에만 두고 저장소에는 올리지 않습니다
 admin/config.php
+# FTP 접속 정보와 배포 기록 — 서버에만 두고 저장소에는 올리지 않습니다
+data/deploy.json
+data/.deploy-state.json

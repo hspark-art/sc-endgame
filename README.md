@@ -138,6 +138,47 @@ python3 tools/asl_import.py <ASL.xlsx>
 python3 tools/build.py
 ```
 
+## 사이트에 올리기 (자동 배포)
+
+실제 사이트는 **카페24의 pubgin.com/endgame** 입니다. GitHub 은 백업이라
+거기 올린다고 사이트가 바뀌지 않습니다.
+
+```bash
+python3 tools/build.py     # 만들고
+python3 tools/deploy.py    # 올리고
+```
+
+`deploy.py` 는 **바뀐 파일만** 올립니다. 처음 한 번은 159개가 다 올라가고,
+그다음부터는 실제로 달라진 것만 올라가서 몇 초면 끝납니다.
+
+접속 정보는 둘 중 편한 쪽으로 넣습니다. **저장소에는 들어가지 않습니다.**
+
+```bash
+cp data/deploy.sample.json data/deploy.json   # 파일을 열어 비밀번호를 채우세요
+```
+
+또는 환경변수로:
+
+```bash
+export SC_FTP_HOST=pubgin.com
+export SC_FTP_USER=pubgin
+export SC_FTP_PASS=비밀번호
+export SC_FTP_DIR=/www/endgame
+```
+
+옵션
+
+| | |
+| --- | --- |
+| `--dry-run` | 올리지 않고 무엇이 올라갈지만 봅니다 |
+| `--all` | 바뀐 것만이 아니라 전부 다시 올립니다 |
+| `--no-tls` | 서버가 FTPS 를 못 받을 때 평문 FTP 로 |
+
+**지우는 일은 하지 않습니다.** 올리고 덮어쓰기만 합니다. 서버에만 있는
+파일(관리자 계정 `admin/config.php`, 로그 등)은 건드리지 않습니다.
+
+FTPS(암호화)로 먼저 붙어 보고, 서버가 못 받으면 평문 FTP 로 내려갑니다.
+
 ## 다른 주소로 옮기기
 
 이 사이트는 **어디에 올려도 그대로 동작합니다.** 지금처럼 하위 폴더

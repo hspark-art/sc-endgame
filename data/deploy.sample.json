@@ -1,0 +1,13 @@
+{
+ "_note": [
+  "이 파일을 data/deploy.json 으로 복사하고 값을 채우세요.",
+  "deploy.json 은 저장소에 올라가지 않습니다 (.gitignore).",
+  "tls 는 기본 true 입니다. 서버가 FTPS 를 못 받으면 자동으로 평문 FTP 로 내려갑니다.",
+  "환경변수 SC_FTP_HOST / SC_FTP_USER / SC_FTP_PASS / SC_FTP_DIR 로 넣어도 됩니다."
+ ],
+ "host": "pubgin.com",
+ "user": "pubgin",
+ "password": "여기에 FTP 비밀번호",
+ "remoteDir": "/www/endgame",
+ "tls": true
+}
