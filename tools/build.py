@@ -24,6 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+import audit                                     # noqa: E402
 import render                                    # noqa: E402
 import stats                                     # noqa: E402
 from slug import unique_slugs                    # noqa: E402
@@ -343,7 +344,28 @@ def _disp_len(s):
 
 
 # ── 메인 ───────────────────────────────────────────────────────
+def apply_site_config():
+    """사이트 주소를 설정 파일(또는 --base-url)에서 읽어 반영합니다."""
+    cfg = read_json(os.path.join(ROOT, 'data', 'site.json'), {}) or {}
+    base = cfg.get('baseUrl') or render.BASE_URL
+    for i, a in enumerate(sys.argv):
+        if a == '--base-url' and i + 1 < len(sys.argv):
+            base = sys.argv[i + 1]
+        elif a.startswith('--base-url='):
+            base = a.split('=', 1)[1]
+    render.BASE_URL = base.rstrip('/')
+
+    cname = cfg.get('cname')
+    path = os.path.join(ROOT, 'CNAME')
+    if cname:
+        write('CNAME', cname.strip() + '\n')
+    elif os.path.exists(path):
+        os.remove(path)          # 커스텀 도메인을 껐으면 파일도 치웁니다
+    return render.BASE_URL, cname
+
+
 def main():
+    base_url, cname = apply_site_config()
     data, video_matched = load()
     ctx = enrich(data)
 
@@ -356,6 +378,7 @@ def main():
     app_js = io.open(os.path.join(HERE, 'app.js'), encoding='utf-8').read()
 
     print('끝장전 기록실 빌드')
+    print('  사이트 주소 %s%s' % (base_url, ('  · CNAME %s' % cname) if cname else ''))
     print('  매치 %d · 세트 %s · 선수 %d · 맵 %d · 연도 %s'
           % (data['global']['totalMatches'], format(data['global']['totalSets'], ','),
              len(data['players']), len(data['maps']),
@@ -439,6 +462,9 @@ def main():
     else:
         print('  data/asl.json 이 없어 ASL 섹션은 건너뜁니다'
               ' (tools/asl_import.py 로 만드세요)')
+
+    ok, msg = audit.report(ROOT, base_url)
+    print('  ' + msg.replace('\n', '\n  '))
 
     if video_matched:
         print('  다시보기 영상 %d/%d 경기 연결' % (video_matched, len(data['matches'])))

@@ -102,6 +102,55 @@ python3 tools/asl_import.py <ASL.xlsx>
 python3 tools/build.py
 ```
 
+## 다른 주소로 옮기기
+
+이 사이트는 **어디에 올려도 그대로 동작합니다.** 지금처럼 하위 폴더
+(`.../sc-endgame/`)에 두든, 새 도메인 루트에 통째로 올리든 같습니다.
+내부 링크가 전부 자기 파일 기준 상대경로라서 그렇습니다 —
+루트 절대경로(`/...`)도, `<base href>` 태그도, 하드코딩된 `sc-endgame/`
+경로도 쓰지 않습니다. 빌드할 때마다 `tools/audit.py` 가 이걸 확인합니다.
+
+주소를 바꿀 때 손볼 곳은 딱 하나, **`data/site.json` 의 `baseUrl`** 입니다.
+
+```json
+{
+  "baseUrl": "https://새도메인.com",
+  "cname": null
+}
+```
+
+고치고 다시 빌드하면 끝입니다.
+
+```bash
+python3 tools/build.py
+```
+
+한 번만 시험해 보고 싶으면 설정을 건드리지 않고 인자로 넘겨도 됩니다.
+
+```bash
+python3 tools/build.py --base-url https://새도메인.com
+```
+
+`baseUrl` 이 들어가는 곳은 세 군데입니다 (전부 자동으로 따라 바뀝니다).
+
+| 곳 | 왜 절대 주소가 필요한가 |
+| --- | --- |
+| `<link rel="canonical">` · `og:url` — 133개 페이지 | 검색엔진과 카톡 미리보기가 절대 주소를 요구합니다 |
+| `sheets.html` 의 IMPORTDATA 수식 | 구글 시트가 바깥에서 가져오는 주소입니다 |
+| `csv/index.json` 매니페스트 | 프로그램이 CSV 를 가져갈 때 쓰는 주소입니다 |
+
+GitHub Pages 에 커스텀 도메인을 붙이는 거라면 `cname` 에 도메인을 적으세요.
+`CNAME` 파일을 만들어 줍니다 (null 로 되돌리면 파일도 지웁니다).
+
+```json
+{ "baseUrl": "https://sc.example.com", "cname": "sc.example.com" }
+```
+
+옮긴 뒤에는 브라우저 개발자도구 콘솔에 404 가 없는지만 보면 됩니다.
+CSS·JS 는 페이지마다 안에 박혀 있어서 따로 불러오지 않고, 바깥에서
+가져오는 것은 폰트(jsDelivr)·중계진 로고·SOOP 방송 API·유튜브 iframe
+뿐입니다. 캐시 때문에 옛날 화면이 보이면 주소 뒤에 `?v=숫자` 를 붙이세요.
+
 ## 다시보기 영상 붙이기
 
 경기별 영상은 `data/videos.json` 의 `matches` 에 적습니다. 키는
