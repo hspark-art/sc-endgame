@@ -477,15 +477,17 @@ function muBar(key, o) {
   var front = key[0], back = key[2];
   var total = o.w + o.l;
   var wp = total ? o.w / total * 100 : 50;
+  // 한쪽이 0이면 칸 너비가 0이라 글자가 밖으로 삐져나옵니다 — 좁으면 숨깁니다.
+  var showL = total && wp >= 13, showR = total && (100 - wp) >= 13;
   return '<div class="murow">' +
     '<div class="mulabel"><span>' + raceBadge(front) + RACE_LABEL[front] +
     ' <b>' + o.w + '</b></span>' +
     '<span><b>' + o.l + '</b> ' + RACE_LABEL[back] + raceBadge(back) + '</span></div>' +
     '<div class="mubar">' +
     '<span style="width:' + wp + '%;background:' + RACE_COLOR[front] + '">' +
-    (total ? pct(o.w, o.l) : '') + '</span>' +
+    (showL ? pct(o.w, o.l) : '') + '</span>' +
     '<span style="width:' + (100 - wp) + '%;background:' + RACE_COLOR[back] + '">' +
-    (total ? pct(o.l, o.w) : '') + '</span></div></div>';
+    (showR ? pct(o.l, o.w) : '') + '</span></div></div>';
 }
 
 function renderRecords() {

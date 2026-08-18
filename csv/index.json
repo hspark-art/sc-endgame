@@ -1,14 +1,17 @@
 {
-  "updatedAt": "2026-08-18T07:03:53.193Z",
-  "updatedAtKo": "2026년 08월 18일 16:03 (KST)",
+  "updatedAt": "2026-08-18T07:35:11.300Z",
+  "updatedAtKo": "2026년 08월 18일 16:35 (KST)",
   "base": "https://hspark-art.github.io/sc-endgame",
   "xlsx": "https://hspark-art.github.io/sc-endgame/xlsx/sc-endgame.xlsx",
+  "aslXlsx": "https://hspark-art.github.io/sc-endgame/xlsx/asl.xlsx",
   "json": "https://hspark-art.github.io/sc-endgame/data/endgame.json",
+  "aslJson": "https://hspark-art.github.io/sc-endgame/data/asl.json",
   "files": [
     {
       "label": "선수",
       "desc": "선수별 통산 전적과 종족별 세트 전적",
       "file": "players.csv",
+      "group": "끝장전",
       "rows": 35,
       "url": "https://hspark-art.github.io/sc-endgame/csv/players.csv"
     },
@@ -16,6 +19,7 @@
       "label": "경기",
       "desc": "매치 한 줄씩 — 날짜·대진·스코어·맵·다시보기",
       "file": "matches.csv",
+      "group": "끝장전",
       "rows": 296,
       "url": "https://hspark-art.github.io/sc-endgame/csv/matches.csv"
     },
@@ -23,6 +27,7 @@
       "label": "세트별 맵",
       "desc": "매치 안의 세트마다 어떤 맵을 썼는지",
       "file": "sets.csv",
+      "group": "끝장전",
       "rows": 2656,
       "url": "https://hspark-art.github.io/sc-endgame/csv/sets.csv"
     },
@@ -30,6 +35,7 @@
       "label": "맵",
       "desc": "맵별 사용 세트 수와 종족 상성",
       "file": "maps.csv",
+      "group": "끝장전",
       "rows": 82,
       "url": "https://hspark-art.github.io/sc-endgame/csv/maps.csv"
     },
@@ -37,6 +43,7 @@
       "label": "상대전적",
       "desc": "선수 대 선수 맞대결 기록",
       "file": "headtohead.csv",
+      "group": "끝장전",
       "rows": 115,
       "url": "https://hspark-art.github.io/sc-endgame/csv/headtohead.csv"
     },
@@ -44,8 +51,57 @@
       "label": "연도별",
       "desc": "연도별 매치·세트 수와 종족 상성",
       "file": "yearly.csv",
+      "group": "끝장전",
       "rows": 8,
       "url": "https://hspark-art.github.io/sc-endgame/csv/yearly.csv"
+    },
+    {
+      "label": "ASL 선수",
+      "desc": "ASL 선수별 통산 성적과 우승 횟수",
+      "file": "asl-players.csv",
+      "group": "ASL",
+      "rows": 95,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-players.csv"
+    },
+    {
+      "label": "ASL 대회",
+      "desc": "대회별 규모와 우승·준우승",
+      "file": "asl-tournaments.csv",
+      "group": "ASL",
+      "rows": 23,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-tournaments.csv"
+    },
+    {
+      "label": "ASL 매치",
+      "desc": "매치(시리즈) 한 줄씩 — 대회·라운드·대진·스코어",
+      "file": "asl-matches.csv",
+      "group": "ASL",
+      "rows": 1299,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-matches.csv"
+    },
+    {
+      "label": "ASL 세트",
+      "desc": "세트 한 줄씩 — 어떤 맵에서 누가 이겼는지",
+      "file": "asl-sets.csv",
+      "group": "ASL",
+      "rows": 2177,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-sets.csv"
+    },
+    {
+      "label": "ASL 맵",
+      "desc": "맵별 사용 세트 수와 종족 상성",
+      "file": "asl-maps.csv",
+      "group": "ASL",
+      "rows": 94,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-maps.csv"
+    },
+    {
+      "label": "ASL 상대전적",
+      "desc": "선수 대 선수 맞대결 기록",
+      "file": "asl-headtohead.csv",
+      "group": "ASL",
+      "rows": 720,
+      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-headtohead.csv"
     }
   ]
 }

@@ -26,8 +26,8 @@ def pct(w, l):
     return '%.1f%%' % (w / t * 100) if t else '-'
 
 
-def head(title, desc, css, canonical):
-    """<head> 부터 <body> 열기까지."""
+def head(title, desc, css, canonical, navbar=''):
+    """<head> 부터 <body> 열기까지. navbar 는 사이트 전환 바 HTML 입니다."""
     return (
         '<!DOCTYPE html>\n<html lang="ko">\n<head>\n'
         '<meta charset="UTF-8">\n'
@@ -49,7 +49,7 @@ def head(title, desc, css, canonical):
         '<div class="brandbar"></div>\n<div class="wrap">\n'
         % (e(title), e(desc), e(canonical), e(SITE_NAME), e(title), e(desc),
            e(canonical), e(LOGO), e(LOGO), css)
-    )
+    ) + navbar
 
 
 def footer(built, extra=''):
@@ -64,6 +64,23 @@ def footer(built, extra=''):
         '이 사이트는 SOOP·유튜브 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
         '</footer>\n</div>\n'
     )
+
+
+SITES = [
+    ('endgame', '끝장전', '', 'index.html'),
+    ('asl', 'ASL', 'asl/', 'asl/index.html'),
+    ('cg', 'CG 제작', 'admin/', 'admin/cg.html'),
+]
+
+
+def nav(active, depth=0):
+    """모든 페이지 맨 위에 붙는 사이트 전환 바."""
+    up = '../' * depth
+    items = ''.join(
+        '<a class="navlink%s" href="%s%s">%s</a>'
+        % (' on' if key == active else '', up, href, label)
+        for key, label, _dir, href in SITES)
+    return '<nav class="sitenav">%s</nav>\n' % items
 
 
 def link_banner():
@@ -108,8 +125,8 @@ def race_bar(w, l, front, back):
         '<span style="width:%.4f%%;background:%s">%s</span>'
         '</div></div>'
         % (front, front, RACE_LABEL[front], w, l, RACE_LABEL[back], back, back,
-           wp, RACE_VAR[front], pct(w, l) if total else '',
-           100 - wp, RACE_VAR[back], pct(l, w) if total else '')
+           wp, RACE_VAR[front], pct(w, l) if total and wp >= 13 else '',
+           100 - wp, RACE_VAR[back], pct(l, w) if total and (100 - wp) >= 13 else '')
     )
 
 
@@ -140,7 +157,7 @@ def player_page(p, ctx, css):
                p['firstDate'], p['lastDate']))
     canonical = '%s/p/%s.html' % (BASE_URL, urllib.parse.quote(slug))
 
-    out = [head(title, desc, css, canonical)]
+    out = [head(title, desc, css, canonical, nav('endgame', depth=1))]
 
     out.append('<a class="backlink" href="../index.html">← 기록실 홈으로</a>\n')
 
@@ -256,7 +273,7 @@ def sheets_page(css, manifest):
     """구글 시트에서 이 데이터를 바로 끌어 쓰는 방법 안내."""
     title = '구글 시트 연동 — ' + SITE_NAME
     desc = '끝장전 기록실 데이터를 구글 시트에서 IMPORTDATA 로 바로 불러오는 방법.'
-    out = [head(title, desc, css, BASE_URL + '/sheets.html')]
+    out = [head(title, desc, css, BASE_URL + '/sheets.html', nav('endgame'))]
     out.append(
         '<header><div class="headrow"><img class="brandlogo" src="%s" alt="">'
         '<div><h1><a href="index.html">%s</a></h1>'
@@ -321,7 +338,7 @@ def index_page(css, app_js, data):
             % (SITE_NAME, data['global']['totalMatches'],
                format(data['global']['totalSets'], ','), data['global']['totalPlayers'],
                data['global']['firstDate'], data['global']['lastDate']))
-    out = [head(title, desc, css, BASE_URL + '/')]
+    out = [head(title, desc, css, BASE_URL + '/', nav('endgame'))]
     out.append(
         '<header>\n<div class="headrow">\n'
         '<img class="brandlogo" src="%s" alt="중계진">\n'
@@ -338,4 +355,314 @@ def index_page(css, app_js, data):
     out.append(footer('<span id="built"></span>'))
     out.append('<script>\nconst D = %s;\n%s</script>\n</body>\n</html>\n'
                % (json.dumps(data, ensure_ascii=False, separators=(',', ':')), app_js))
+    return ''.join(out)
+
+
+# ── ASL ────────────────────────────────────────────────────────
+ASL_NAME = 'ASL 기록실'
+ASL_FULL = 'ASL (AfreecaTV / SOOP 스타리그) 기록실'
+
+
+def asl_download_box(depth=1):
+    up = '../' * depth
+    files = [('선수', 'players'), ('매치', 'matches'), ('세트', 'sets'),
+             ('맵', 'maps'), ('상대전적', 'headtohead'), ('대회', 'tournaments')]
+    btns = ''.join(
+        '<a class="dlbtn" href="%scsv/asl-%s.csv" download>%s CSV</a>' % (up, f, label)
+        for label, f in files)
+    return (
+        '<div class="dlbox">\n'
+        '<span class="t">ASL 데이터 내려받기</span>\n'
+        '<a class="dlbtn on" href="%sxlsx/asl.xlsx" download>엑셀 (.xlsx)</a>\n'
+        '%s\n'
+        '<a class="dlbtn" href="%ssheets.html">구글 시트 연동 →</a>\n'
+        '</div>\n' % (up, btns, up)
+    )
+
+
+def asl_footer(built, depth=1):
+    up = '../' * depth
+    return (
+        '<footer>\n'
+        'ASL(스타크래프트 리그) 대회 기록입니다. 방송팀이 정리한 세트 단위 원본을 그대로 다시 계산했습니다.<br>\n'
+        '이 기록에는 경기 날짜가 없어 대회와 라운드 순서로만 정리했습니다. '
+        '매치(시리즈)는 같은 라운드에서 같은 두 선수가 연달아 치른 세트를 하나로 묶은 것입니다.<br>\n'
+        '<a href="%sindex.html">끝장전 기록실</a>은 별개 대회라 따로 있습니다.<br>\n'
+        '마지막 갱신: %s\n'
+        '<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. '
+        '이 사이트는 SOOP·아프리카TV 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
+        '</footer>\n</div>\n' % (up, built)
+    )
+
+
+def asl_index_page(css, app_js, data):
+    g = data['global']
+    desc = ('%s — 대회 %d개, 매치 %s, 세트 %s, 선수 %d명. %s ~ %s. '
+            '역대 우승자·선수 랭킹·상대 전적·맵 통계를 한곳에서.'
+            % (ASL_FULL, g['totalTournaments'], format(g['totalMatches'], ','),
+               format(g['totalSets'], ','), g['totalPlayers'],
+               g['firstTournament'], g['lastTournament']))
+    out = [head(ASL_NAME, desc, css, BASE_URL + '/asl/', nav('asl', depth=1))]
+    out.append(
+        '<header>\n<div class="headrow">\n'
+        '<img class="brandlogo" src="%s" alt="중계진">\n'
+        '<div>\n<h1>%s</h1>\n<div class="stats-strip" id="strip"></div>\n</div>\n'
+        '</div>\n</header>\n' % (LOGO, ASL_NAME))
+    out.append('<div class="tabs" id="tabs"></div>\n<div id="view"></div>\n')
+    out.append(asl_download_box(depth=1))
+    out.append(asl_footer('<span id="built"></span>', depth=1))
+    out.append('<script>\nconst D = %s;\n%s</script>\n</body>\n</html>\n'
+               % (json.dumps(data, ensure_ascii=False, separators=(',', ':')), app_js))
+    return ''.join(out)
+
+
+def asl_player_page(p, ctx, css):
+    """ASL 선수 한 명의 정적 상세 페이지."""
+    name, race, slug = p['name'], p['race'], p['slug']
+    slugs = ctx['slugs']
+    race_of = ctx['raceOf']
+    tours = ctx['tournaments']
+    matches = [m for m in ctx['matches'] if name in m['players']]
+
+    title = '%s (%s) — %s' % (name, RACE_LABEL[race], ASL_NAME)
+    desc = ('%s %s · ASL 우승 %d회 · 매치 %d승 %d패(%s) · 세트 %d승 %d패(%s) · %d개 대회 출전'
+            % (name, RACE_LABEL[race], p['titles'], p['matchWin'], p['matchLoss'],
+               pct(p['matchWin'], p['matchLoss']), p['setWin'], p['setLoss'],
+               pct(p['setWin'], p['setLoss']), p['tournaments']))
+    canonical = '%s/asl/p/%s.html' % (BASE_URL, urllib.parse.quote(slug))
+
+    out = [head(title, desc, css, canonical, nav('asl', depth=2))]
+    out.append('<a class="backlink" href="../index.html">← ASL 기록실로</a>\n')
+
+    tags = ''
+    if p['titles']:
+        tags += '<span class="ptag" style="color:var(--gold);border-color:var(--gold)">' \
+                '🏆 우승 %d회</span>' % p['titles']
+    if p['runnerUps']:
+        tags += '<span class="ptag">준우승 %d회</span>' % p['runnerUps']
+    if ctx['endgameSlug'].get(name):
+        tags += ('<span class="ptag"><a href="../../p/%s.html">끝장전 기록 보기 →</a></span>'
+                 % urllib.parse.quote(ctx['endgameSlug'][name]))
+
+    out.append(
+        '<header style="border-bottom:none;padding-bottom:0">'
+        '<div class="phead"><span class="race %s">%s</span>'
+        '<span class="pname">%s</span>'
+        '<span class="ptag">%s</span>%s</div>'
+        '<div class="stats-strip">%s</div></header>\n'
+        % (race, race, e(name), RACE_LABEL[race], tags,
+           ''.join('<div class="item">%s<b>%s</b></div>' % kv for kv in [
+               ('매치 전적', '%d승 %d패 · %s' % (p['matchWin'], p['matchLoss'],
+                                             pct(p['matchWin'], p['matchLoss']))),
+               ('세트 전적', '%d승 %d패 · %s' % (p['setWin'], p['setLoss'],
+                                             pct(p['setWin'], p['setLoss']))),
+               ('출전 대회', '%d개' % p['tournaments']),
+               ('최고 성적', p.get('bestRound') or '-'),
+           ])))
+
+    pairs = [(r, p['vsRace'][r]) for r in ['T', 'P', 'Z']
+             if p['vsRace'][r]['w'] + p['vsRace'][r]['l']]
+    out.append('<div class="card" style="margin-top:16px"><div class="cardtitle">'
+               '종족별 세트 전적</div>')
+    for r, v in pairs:
+        out.append(race_bar(v['w'], v['l'], race, r))
+    if not pairs:
+        out.append('<div class="emptybox">기록이 없습니다.</div>')
+    out.append('</div>\n')
+
+    rows = []
+    for t in tours:
+        v = p['byTour'].get(t['name'])
+        if not v:
+            continue
+        crown = ' 🏆' if t.get('champion') == name else (
+            ' 🥈' if t.get('runnerUp') == name else '')
+        rows.append(
+            '<tr><td class="nm">%s%s</td><td class="num">%d-%d</td><td class="num">%s</td>'
+            '<td class="num">%d-%d</td><td class="num">%s</td>'
+            '<td class="hide-mobile dim">%s</td></tr>'
+            % (e(t['name']), crown, v['matchWin'], v['matchLoss'],
+               pct(v['matchWin'], v['matchLoss']), v['setWin'], v['setLoss'],
+               pct(v['setWin'], v['setLoss']), e(v.get('best') or '-')))
+    out.append(
+        '<div class="card"><div class="cardtitle">대회별 성적'
+        '<span class="note">%d개 대회</span></div>'
+        '<div class="tblwrap"><table><thead><tr>'
+        '<th class="static">대회</th><th class="static num">매치</th>'
+        '<th class="static num">매치 승률</th><th class="static num">세트</th>'
+        '<th class="static num">세트 승률</th>'
+        '<th class="static hide-mobile">최고 라운드</th></tr></thead><tbody>%s</tbody>'
+        '</table></div></div>\n' % (p['tournaments'], ''.join(rows)))
+
+    vs_rows = []
+    for o in p['vsPlayers']:
+        o_slug = slugs.get(o['name'])
+        label = ('<a href="%s.html"><span class="race %s">%s</span>'
+                 '<span class="nm-link">%s</span></a>'
+                 % (urllib.parse.quote(o_slug), race_of.get(o['name'], ''),
+                    race_of.get(o['name'], '?'), e(o['name']))) if o_slug else e(o['name'])
+        vs_rows.append(
+            '<tr><td>%s</td><td class="num">%d-%d</td><td class="num">%d-%d</td>'
+            '<td class="num">%s</td></tr>'
+            % (label, o['mw'], o['ml'], o['w'], o['l'], pct(o['w'], o['l'])))
+    out.append(
+        '<div class="card"><div class="cardtitle">상대 전적'
+        '<span class="note">%d명</span></div>'
+        '<div class="tblwrap"><table><thead><tr><th class="static">상대</th>'
+        '<th class="static num">매치</th><th class="static num">세트</th>'
+        '<th class="static num">세트 승률</th></tr></thead><tbody>%s</tbody>'
+        '</table></div></div>\n' % (len(p['vsPlayers']), ''.join(vs_rows)))
+
+    mrows = []
+    for m in matches:
+        opp = m['players'][1] if m['players'][0] == name else m['players'][0]
+        win = m['winner'] == name
+        o_slug = slugs.get(opp)
+        label = ('<a href="%s.html"><span class="race %s">%s</span>'
+                 '<span class="nm-link">%s</span></a>'
+                 % (urllib.parse.quote(o_slug), m['race'][opp], m['race'][opp], e(opp))) \
+            if o_slug else e(opp)
+        maps = [x for x in (m.get('maps') or []) if x]
+        mrows.append(
+            '<tr><td class="muted hide-mobile">%s</td><td class="muted">%s</td>'
+            '<td>%s</td><td class="num %s">%d-%d</td>'
+            '<td class="muted hide-mobile" style="white-space:normal">%s</td></tr>'
+            % (e(m['tournament']), e(m['round']), label,
+               'win' if win else ('lose' if m['winner'] else ''),
+               m['setWins'][name], m['setWins'][opp], e(', '.join(maps))))
+    out.append(
+        '<div class="card"><div class="cardtitle">전체 경기'
+        '<span class="note">%d매치 · 최신 대회순</span></div>'
+        '<div class="tblwrap"><table><thead><tr>'
+        '<th class="static hide-mobile">대회</th><th class="static">라운드</th>'
+        '<th class="static">상대</th><th class="static num">스코어</th>'
+        '<th class="static hide-mobile">맵</th></tr></thead><tbody>%s</tbody>'
+        '</table></div></div>\n' % (len(matches), ''.join(mrows)))
+
+    out.append(asl_download_box(depth=2))
+    out.append(asl_footer(ctx['builtAtKo'], depth=2))
+    out.append('</body>\n</html>\n')
+    return ''.join(out)
+
+
+# ── CG 제작 툴 ─────────────────────────────────────────────────
+def _fld(label, inner):
+    return '<div class="fld"><label>%s</label>%s</div>\n' % (label, inner)
+
+
+def _player_block(n):
+    i = n - 1
+    return (
+        '<div class="card"><div class="cardtitle">선수 %d '
+        '<span class="note">%s</span></div>\n'
+        % (n, '왼쪽' if i == 0 else '오른쪽') +
+        _fld('이름 (기록실에 있는 선수는 종족이 자동으로 채워집니다)',
+             '<input type="text" id="name%d" list="playerList" '
+             'placeholder="예: 김지성">' % n) +
+        '<div class="row2">' +
+        _fld('닉네임', '<input type="text" id="nick%d" placeholder="예: RoyaL">' % n) +
+        _fld('종족',
+             '<select id="race%d"><option value="T">테란 (T)</option>'
+             '<option value="P">프로토스 (P)</option>'
+             '<option value="Z">저그 (Z)</option>'
+             '<option value="">표시 안 함</option></select>' % n) +
+        '</div>\n' +
+        _fld('사진',
+             '<div class="row-inline">'
+             '<label class="filebtn">파일 선택<input type="file" id="photo%d" '
+             'accept="image/*"></label>'
+             '<button class="btn danger" id="photo%dClear" type="button">지우기</button>'
+             '</div>' % (n, n)) +
+        _fld('사진 크기',
+             '<input type="range" id="zoom%d" min="0.4" max="4" step="0.02" value="1">' % n) +
+        '<div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 '
+        '<b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 '
+        '끌어다 놓아도 바로 들어갑니다.</div>\n'
+        '</div>\n')
+
+
+def _box_block(i, label, hint):
+    return (
+        '<div class="card"><div class="cardtitle">%s</div>\n' % label +
+        _fld('제목', '<input type="text" id="boxTitle%d">' % i) +
+        _fld('내용 (한 줄에 하나씩)', '<textarea id="boxBody%d"></textarea>' % i) +
+        '<div class="helptxt">%s</div>\n</div>\n' % hint)
+
+
+def cg_page(css, app_js, players):
+    title = 'CG 제작 툴 — ' + SITE_NAME
+    desc = '끝장전 대진표 CG(1920×1080)를 만들어 PNG 로 내려받는 방송용 도구.'
+    out = [head(title, desc, css, BASE_URL + '/admin/cg.html', nav('cg', depth=1))
+           .replace('<div class="wrap">', '<div class="wrap cgwrap">')]
+
+    out.append(
+        '<header style="border-bottom:none;padding-bottom:6px">'
+        '<div class="headrow"><div><h1>CG 제작 툴</h1>'
+        '<div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. '
+        '입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div></div></header>\n')
+
+    out.append('<div class="cglayout">\n<div class="cgpanel">\n')
+
+    out.append('<div class="card"><div class="cardtitle">상단</div>\n')
+    out.append('<div class="row2">')
+    out.append(_fld('타이틀', '<input type="text" id="title">'))
+    out.append(_fld('타이틀 색', '<input type="color" id="titleColor">'))
+    out.append('</div>\n')
+    out.append(_fld('스폰서 글자 (로고를 올리면 로고가 우선입니다)',
+                    '<input type="text" id="sponsorText" placeholder="예: Google Play">'))
+    out.append(_fld('스폰서 로고',
+                    '<div class="row-inline">'
+                    '<label class="filebtn">파일 선택<input type="file" id="logoSponsor" '
+                    'accept="image/*"></label>'
+                    '<button class="btn danger" id="logoSponsorClear" type="button">지우기</button>'
+                    '</div>'))
+    out.append(_fld('방송국 로고 (오른쪽 위)',
+                    '<div class="row-inline">'
+                    '<label class="filebtn">파일 선택<input type="file" id="logoBroadcast" '
+                    'accept="image/*"></label>'
+                    '<button class="btn danger" id="logoBroadcastClear" type="button">지우기</button>'
+                    '</div>'))
+    out.append('</div>\n')
+
+    out.append(_player_block(1))
+    out.append(_player_block(2))
+
+    out.append('<div class="card"><div class="cardtitle">배경색</div>\n<div class="row2">')
+    out.append(_fld('왼쪽', '<input type="color" id="bgLeft">'))
+    out.append(_fld('오른쪽', '<input type="color" id="bgRight">'))
+    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>\n</div>\n')
+
+    hint = ('<code>[글자]</code> 는 노란 테두리 강조 칸, '
+            '<code>* 글자</code> 는 작은 회색 주석, '
+            '빈 줄은 한 칸 띄우기입니다. 상자 높이는 내용에 맞춰 알아서 늘어납니다.')
+    out.append(_box_block(0, '상자 1', hint))
+    out.append(_box_block(1, '상자 2', hint))
+    out.append(_box_block(2, '상자 3', hint))
+
+    out.append(
+        '<div class="card"><div class="cardtitle">내보내기</div>\n'
+        '<div class="btnrow">'
+        '<button class="btn primary" id="download" type="button">PNG 내려받기</button>'
+        '<button class="btn" id="exportJson" type="button">설정 내보내기</button>'
+        '<label class="filebtn">설정 불러오기'
+        '<input type="file" id="importJson" accept="application/json,.json"></label>'
+        '<button class="btn danger" id="reset" type="button">처음으로</button>'
+        '</div>\n<div class="note" id="note"></div>\n'
+        '<div class="helptxt">사진까지 포함해 자동 저장하므로, 사진이 아주 크면 저장에 '
+        '실패할 수 있습니다. 그럴 때는 "설정 내보내기"로 파일에 남겨 두세요.</div>\n'
+        '</div>\n')
+
+    out.append('</div>\n')                                  # cgpanel
+    out.append('<div class="cgstage"><canvas id="cv"></canvas>\n'
+               '<div class="helptxt">미리보기는 실제 1920×1080 캔버스를 줄여 보여 주는 것이라 '
+               '내려받은 PNG 와 똑같습니다.</div></div>\n')
+    out.append('</div>\n')                                  # cglayout
+
+    out.append('<datalist id="playerList"></datalist>\n')
+    out.append(
+        '<footer>이 도구는 브라우저 안에서만 동작합니다 — 올린 사진은 어디에도 올라가지 않고 '
+        '이 컴퓨터를 벗어나지 않습니다.<br>선수 자동완성 목록은 끝장전·ASL 기록실 데이터에서 '
+        '가져온 %d명입니다.</footer>\n</div>\n' % len(players))
+    out.append('<script>\nconst PLAYERS = %s;\n%s</script>\n</body>\n</html>\n'
+               % (json.dumps(players, ensure_ascii=False, separators=(',', ':')), app_js))
     return ''.join(out)
