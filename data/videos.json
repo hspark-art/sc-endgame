@@ -1,0 +1,14 @@
+{
+ "_note": [
+  "끝장전 다시보기 영상 매핑 파일입니다. 빌드할 때 index.html / p/*.html 에 그대로 반영됩니다.",
+  "키 형식: \"경기날짜|선수A|선수B\" — 선수 이름은 가나다순으로 정렬해서 씁니다.",
+  "예: \"2026-08-12|김지성|김택용\": \"https://www.youtube.com/watch?v=XXXXXXXXXXX\"",
+  "tools/fetch_videos.py 로 유튜브 채널에서 자동으로 채울 수 있고, 손으로 추가해도 됩니다.",
+  "여기에 없는 경기는 사이트에서 '채널에서 찾기' 검색 링크로 대신 안내합니다."
+ ],
+ "channels": {
+  "ETALENT-TV": "https://www.youtube.com/@ETALENT-TV",
+  "ETALENT-SC": "https://www.youtube.com/@ETALENT-SC"
+ },
+ "matches": {}
+}
