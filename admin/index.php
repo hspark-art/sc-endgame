@@ -67,6 +67,9 @@ $csrf = admin_csrf();
   --t:#4a9eff; --p:#f5c518; --z:#ff6b6b;
 }
 *{box-sizing:border-box}
+/* hidden 속성이 항상 이기도록. display 를 지정한 요소에 hidden 을 걸면
+   작성자 규칙이 브라우저 기본값을 눌러 버려서 계속 보입니다. */
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--txt);
   font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
   font-size:14px;-webkit-text-size-adjust:100%}

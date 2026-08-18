@@ -477,11 +477,13 @@ def asl_player_page(p, ctx, css):
             continue
         crown = ' 🏆' if t.get('champion') == name else (
             ' 🥈' if t.get('runnerUp') == name else '')
+        tlink = ('<a href="../t/%s.html"><span class="nm-link">%s</span></a>'
+                 % (urllib.parse.quote(t['id']), e(t['name'])))
         rows.append(
             '<tr><td class="nm">%s%s</td><td class="num">%d-%d</td><td class="num">%s</td>'
             '<td class="num">%d-%d</td><td class="num">%s</td>'
             '<td class="hide-mobile dim">%s</td></tr>'
-            % (e(t['name']), crown, v['matchWin'], v['matchLoss'],
+            % (tlink, crown, v['matchWin'], v['matchLoss'],
                pct(v['matchWin'], v['matchLoss']), v['setWin'], v['setLoss'],
                pct(v['setWin'], v['setLoss']), e(v.get('best') or '-')))
     out.append(
@@ -513,6 +515,7 @@ def asl_player_page(p, ctx, css):
         '<th class="static num">세트 승률</th></tr></thead><tbody>%s</tbody>'
         '</table></div></div>\n' % (len(p['vsPlayers']), ''.join(vs_rows)))
 
+    tour_id = {t['name']: t['id'] for t in tours}
     mrows = []
     for m in matches:
         opp = m['players'][1] if m['players'][0] == name else m['players'][0]
@@ -527,7 +530,10 @@ def asl_player_page(p, ctx, css):
             '<tr><td class="muted hide-mobile">%s</td><td class="muted">%s</td>'
             '<td>%s</td><td class="num %s">%d-%d</td>'
             '<td class="muted hide-mobile" style="white-space:normal">%s</td></tr>'
-            % (e(m['tournament']), e(m['round']), label,
+            % ('<a href="../t/%s.html"><span class="nm-link">%s</span></a>'
+               % (urllib.parse.quote(tour_id[m['tournament']]), e(m['tournament']))
+               if m['tournament'] in tour_id else e(m['tournament']),
+               e(m['round']), label,
                'win' if win else ('lose' if m['winner'] else ''),
                m['setWins'][name], m['setWins'][opp], e(', '.join(maps))))
     out.append(
@@ -677,3 +683,148 @@ def cg_page(css, app_js, players):
     out.append('<script>\nconst PLAYERS = %s;\n%s</script>\n</body>\n</html>\n'
                % (json.dumps(players, ensure_ascii=False, separators=(',', ':')), app_js))
     return ''.join(out)
+
+
+# ── ASL 대회 상세 페이지 ────────────────────────────────────────
+PLACE_LABEL = {'결승전-W': '우승', '결승전-L': '준우승',
+               '3-4위전-W': '3위', '3-4위전-L': '4위'}
+
+
+def _asl_score_cell(m, a, b):
+    """스포일러를 가린 스코어 칸. 눌러야 보입니다."""
+    return ('<td class="num score-cell" data-awin="%d">'
+            '<span class="spoiler">결과 보기</span>'
+            '<span class="score-value" hidden>%d - %d</span></td>'
+            % (1 if m['winner'] == a else 0, m['setWins'][a], m['setWins'][b]))
+
+
+def asl_tournament_page(t, detail, ctx, css):
+    """대회 하나의 전체 그림 — 진출 현황·라운드별 경기·선수 성적·맵."""
+    slugs = ctx['slugs']
+    name = t['name']
+
+    champ = t.get('champion')
+    desc = ('%s — 매치 %d · 세트 %d · 선수 %d명%s. 라운드별 경기와 선수 성적을 한곳에서.'
+            % (name, t['matches'], t['sets'], t['players'],
+               (' · 우승 %s' % champ) if champ else ' · 진행 중'))
+    canonical = '%s/asl/t/%s.html' % (BASE_URL, urllib.parse.quote(t['id']))
+
+    out = [head('%s — %s' % (name, ASL_NAME), desc, css, canonical, nav('asl', depth=2))]
+    out.append('<a class="backlink" href="../index.html">← ASL 기록실로</a>\n')
+
+    crown = ''
+    if champ:
+        crown = ('<span class="ptag" style="color:var(--gold);border-color:var(--gold)">'
+                 '🏆 %s %s</span>' % (e(champ), e(t.get('finalScore') or '')))
+    out.append(
+        '<header style="border-bottom:none;padding-bottom:0">'
+        '<div class="phead"><span class="pname">%s</span>%s</div>'
+        '<div class="stats-strip">%s</div></header>\n'
+        % (e(name), crown,
+           ''.join('<div class="item">%s<b>%s</b></div>' % kv for kv in [
+               ('매치', '%d' % t['matches']),
+               ('세트', '%d' % t['sets']),
+               ('참가 선수', '%d명' % t['players']),
+               ('라운드', '%d개' % len(t['rounds'])),
+               ('동족전', '%d세트' % t.get('mirrorSets', 0)),
+           ])))
+
+    # 진출 현황 — 어디까지 갔는지
+    groups = detail['placements']
+    if groups:
+        rows = ''.join(
+            '<tr><td class="nm" style="white-space:nowrap">%s</td><td>%s</td></tr>'
+            % (e(label),
+               ' '.join('<a href="../p/%s.html"><span class="race %s">%s</span>'
+                        '<span class="nm-link">%s</span></a>'
+                        % (urllib.parse.quote(slugs[p['name']]), p['race'], p['race'],
+                           e(p['name'])) if p['name'] in slugs else e(p['name'])
+                        for p in players))
+            for label, players in groups)
+        out.append(
+            '<div class="card" style="margin-top:16px">'
+            '<div class="cardtitle">진출 현황<span class="note">어디까지 올라갔는지</span></div>'
+            '<div class="tblwrap"><table><tbody>%s</tbody></table></div></div>\n' % rows)
+
+    # 라운드별 경기
+    for rnd in detail['rounds']:
+        body = ''
+        for m in rnd['matches']:
+            a, b = m['players']
+            maps = ', '.join(x for x in m['maps'] if x)
+            body += ('<tr><td>%s <span class="muted">vs</span> %s</td>%s'
+                     '<td class="muted hide-mobile" style="white-space:normal">%s</td></tr>'
+                     % (_asl_name_link(a, m['race'][a], slugs),
+                        _asl_name_link(b, m['race'][b], slugs),
+                        _asl_score_cell(m, a, b), e(maps)))
+        out.append(
+            '<div class="card"><div class="cardtitle">%s'
+            '<span class="note">%d매치 · %d세트</span></div>'
+            '<div class="tblwrap"><table><thead><tr>'
+            '<th class="static">대진</th><th class="static num">결과</th>'
+            '<th class="static hide-mobile">맵</th></tr></thead>'
+            '<tbody>%s</tbody></table></div></div>\n'
+            % (e(rnd['name']), len(rnd['matches']),
+               sum(m['sets'] for m in rnd['matches']), body))
+
+    # 선수 성적
+    prows = ''
+    for p in detail['players']:
+        prows += ('<tr><td>%s</td><td class="num">%d-%d</td><td class="num">%s</td>'
+                  '<td class="num">%d-%d</td><td class="num">%s</td>'
+                  '<td class="hide-mobile dim">%s</td></tr>'
+                  % (_asl_name_link(p['name'], p['race'], slugs),
+                     p['matchWin'], p['matchLoss'],
+                     pct(p['matchWin'], p['matchLoss']),
+                     p['setWin'], p['setLoss'], pct(p['setWin'], p['setLoss']),
+                     e(p['best'])))
+    out.append(
+        '<div class="card"><div class="cardtitle">선수 성적'
+        '<span class="note">%d명 · 세트 승 많은 순</span></div>'
+        '<div class="tblwrap"><table><thead><tr>'
+        '<th class="static">선수</th><th class="static num">매치</th>'
+        '<th class="static num">매치 승률</th><th class="static num">세트</th>'
+        '<th class="static num">세트 승률</th>'
+        '<th class="static hide-mobile">최고 라운드</th></tr></thead>'
+        '<tbody>%s</tbody></table></div></div>\n' % (len(detail['players']), prows))
+
+    # 맵과 상성
+    mrows = ''.join('<tr><td class="nm">%s</td><td class="num">%d세트</td></tr>'
+                    % (e(n), c) for n, c in detail['maps'])
+    out.append(
+        '<div class="grid2">'
+        '<div class="card"><div class="cardtitle">쓰인 맵'
+        '<span class="note">%d개</span></div>'
+        '<div class="tblwrap"><table><tbody>%s</tbody></table></div></div>'
+        '<div class="card"><div class="cardtitle">종족 상성<span class="note">세트 기준</span></div>'
+        '%s%s</div></div>\n'
+        % (len(detail['maps']), mrows,
+           ''.join(race_bar(t['mu'][k]['w'], t['mu'][k]['l'], k[0], k[2]) for k in MU_KEYS),
+           ('<div class="hint">동족전 %d세트는 이기고 지는 종족이 같아 상성에 넣지 '
+            '않았습니다.</div>' % t['mirrorSets']) if t.get('mirrorSets') else ''))
+
+    out.append(asl_download_box(depth=2))
+    out.append(asl_footer(ctx['builtAtKo'], depth=2))
+    out.append('''<script>
+document.querySelectorAll('.score-cell').forEach(function (cell) {
+  cell.addEventListener('click', function () {
+    cell.querySelector('.spoiler').hidden = true;
+    cell.querySelector('.score-value').hidden = false;
+    var aWin = cell.dataset.awin === '1';
+    var links = cell.closest('tr').querySelectorAll('.nm-link');
+    if (links[0]) links[0].classList.add(aWin ? 'win' : 'lose');
+    if (links[1]) links[1].classList.add(aWin ? 'lose' : 'win');
+  });
+});
+</script>
+</body>
+</html>
+''')
+    return ''.join(out)
+
+
+def _asl_name_link(name, race, slugs):
+    s = slugs.get(name)
+    inner = ('<span class="race %s">%s</span><span class="nm-link">%s</span>'
+             % (race, race, e(name)))
+    return '<a href="../p/%s.html">%s</a>' % (urllib.parse.quote(s), inner) if s else inner

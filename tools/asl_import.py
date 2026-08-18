@@ -14,6 +14,7 @@
 조별 리그처럼 같은 두 사람이 라운드 안에서 떨어져 두 번 만나면 별개 매치가 됩니다.
 """
 
+import argparse
 import io
 import json
 import os
@@ -350,15 +351,95 @@ def build(sets, matches):
     }
 
 
+def summarize(data):
+    """대회 → 라운드별 세트 수. 두 판을 견주는 데 씁니다."""
+    out = {}
+    for t in data['tournaments']:
+        out[t['name']] = {r['name']: r['sets'] for r in t['rounds']}
+    return out
+
+
+def show_diff(old, new):
+    """지금 data/asl.json 과 새로 읽은 시트가 어떻게 다른지 보여 줍니다."""
+    if not old:
+        print('  (data/asl.json 이 없어 전부 새 기록입니다)')
+        return True
+
+    o, n = summarize(old), summarize(new)
+    added_t = [t for t in n if t not in o]
+    gone_t = [t for t in o if t not in n]
+    changed = []
+    for t in n:
+        if t not in o:
+            continue
+        for r, c in n[t].items():
+            before = o[t].get(r)
+            if before is None:
+                changed.append(('새 라운드', t, r, 0, c))
+            elif c > before:
+                changed.append(('경기 추가', t, r, before, c))
+            elif c < before:
+                changed.append(('세트가 줄었음', t, r, before, c))
+        for r, c in o[t].items():
+            if r not in n[t]:
+                changed.append(('라운드 사라짐', t, r, c, 0))
+
+    op = {p['name'] for p in old['players']}
+    np_ = {p['name'] for p in new['players']}
+
+    print('  세트 %d → %d (%+d) · 매치 %d → %d (%+d)'
+          % (old['global']['totalSets'], new['global']['totalSets'],
+             new['global']['totalSets'] - old['global']['totalSets'],
+             old['global']['totalMatches'], new['global']['totalMatches'],
+             new['global']['totalMatches'] - old['global']['totalMatches']))
+    if added_t:
+        print('  새 대회: ' + ', '.join(added_t))
+    if np_ - op:
+        print('  새 선수: ' + ', '.join(sorted(np_ - op)))
+    for kind, t, r, a, b in changed:
+        ok = kind in ('새 라운드', '경기 추가')          # 대회가 진행되면 자연스러운 변화
+        print('%s %s — %s %s (%d → %d세트)'
+              % ('  +' if ok else '  !', t, r, kind, a, b))
+    if gone_t:
+        print('  ! 사라진 대회: ' + ', '.join(gone_t) + '  — 시트를 확인해 주세요')
+
+    risky = [c for c in changed
+             if c[0] not in ('새 라운드', '경기 추가')] or gone_t
+    if risky:
+        print('\n  ! 기록이 줄거나 사라졌습니다. 시트에서 지워진 줄이 없는지 확인하세요.')
+    elif not (added_t or changed):
+        print('  달라진 것이 없습니다.')
+    return True
+
+
 def main():
-    if len(sys.argv) < 2:
-        raise SystemExit('사용법: python3 tools/asl_import.py <ASL.xlsx>')
-    sets = read_sets(sys.argv[1])
+    ap = argparse.ArgumentParser(description='ASL 엑셀을 data/asl.json 으로 옮깁니다.')
+    ap.add_argument('xlsx', help='ASL 엑셀 파일')
+    ap.add_argument('--diff', action='store_true',
+                    help='저장하지 않고 지금 데이터와 무엇이 다른지만 봅니다')
+    args = ap.parse_args()
+
+    sets = read_sets(args.xlsx)
     fixes = fix_races(sets)
     matches = group_matches(sets)
     data = build(sets, matches)
 
     out = os.path.join(ROOT, 'data', 'asl.json')
+    old = None
+    if os.path.exists(out):
+        try:
+            old = json.load(io.open(out, encoding='utf-8'))
+        except ValueError:
+            old = None
+
+    print('지금 데이터와 견주기')
+    show_diff(old, data)
+    print()
+
+    if args.diff:
+        print('--diff 라서 저장하지 않았습니다.')
+        return
+
     io.open(out, 'w', encoding='utf-8').write(
         json.dumps(data, ensure_ascii=False, indent=1) + '\n')
 

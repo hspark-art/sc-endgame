@@ -48,7 +48,7 @@ var TABS = [
 var TAB_IDS = TABS.map(function (t) { return t.id; });
 
 var state = {
-  tab: 'season', tour: 'ALL', race: 'ALL', round: 'ALL', q: '',
+  tab: 'season', tour: 'ALL', race: 'ALL', round: 'ALL', q: '', touchedTour: false,
   sort: { rank: { key: 'setWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 } },
   open: {}
 };
@@ -65,7 +65,10 @@ function readHash() {
   if (TAB_IDS.indexOf(parts[0]) >= 0) state.tab = parts[0];
   if (parts[1]) {
     var want = decodeURIComponent(parts[1]);
-    if (D.tournaments.some(function (t) { return t.name === want; })) state.tour = want;
+    if (D.tournaments.some(function (t) { return t.name === want; })) {
+      state.tour = want;
+      state.touchedTour = true;
+    }
   }
 }
 
@@ -93,7 +96,11 @@ function tourChips() {
         '" data-tour="' + esc(t.name) + '">' + esc(t.short) + '</div>';
     }).join('');
   el.querySelectorAll('[data-tour]').forEach(function (c) {
-    c.addEventListener('click', function () { state.tour = c.dataset.tour; render(); });
+    c.addEventListener('click', function () {
+      state.tour = c.dataset.tour;
+      state.touchedTour = true;      // 직접 고른 뒤로는 자동으로 안 바꿉니다
+      render();
+    });
   });
   return el;
 }
@@ -210,17 +217,20 @@ function renderSeason() {
     var mu = '<div class="stlabel">종족 상성 (세트)</div><div style="padding:4px 20px 14px">' +
       MU_KEYS.map(function (k) { return muBar(k, t.mu[k]); }).join('') +
       mirrorNote(t.mirror, t.mirrorSets, t.sets) + '</div>';
-    var go = '<div style="padding:0 20px 16px">' +
-      '<span class="dlbtn" data-go="' + esc(t.name) + '">이 대회 경기 기록 보기 →</span></div>';
+    var go = '<div style="padding:14px 20px 4px;display:flex;gap:8px;flex-wrap:wrap">' +
+      '<a class="dlbtn on" href="t/' + encodeURIComponent(t.id) + '.html">' +
+      '대회 상세 보기 →</a>' +
+      '<span class="dlbtn" data-go="' + esc(t.name) + '">경기 기록에서 보기</span></div>';
 
     return head + '<div class="stages' + (isOpen ? ' open' : '') + '">' +
-      runner + rounds + mu + go + '</div>';
+      go + runner + rounds + mu + '</div>';
   }).join('');
 
   view.innerHTML = '<div class="srow thead"><span>대회</span><span class="num">매치</span>' +
     '<span class="num">세트</span><span class="num">선수</span><span>우승</span><span></span></div>' +
     '<div class="tourlist">' + html + '</div>' +
-    '<div class="hint">대회를 누르면 라운드 구성과 종족 상성이 펼쳐집니다. ' +
+    '<div class="hint">대회 줄을 누르면 펼쳐지고, 그 안의 <b>대회 상세 보기</b>를 누르면 ' +
+    '진출 현황·라운드별 경기·선수 성적을 한 화면에서 볼 수 있습니다.<br>' +
     'ASL 기록에는 날짜가 없어 대회·라운드 순서로만 정리했습니다.</div>';
 
   view.querySelectorAll('[data-t]').forEach(function (el) {
@@ -235,6 +245,7 @@ function renderSeason() {
     el.addEventListener('click', function (ev) {
       ev.stopPropagation();
       state.tour = el.dataset.go;
+      state.touchedTour = true;
       state.tab = 'matches';
       render();
     });
@@ -394,6 +405,10 @@ function renderMaps() {
 
 /* ── 경기 기록 ─────────────────────────────────────────────── */
 function renderMatches() {
+  // 1,299매치를 한 번에 늘어놓으면 보기 어렵습니다. 처음 들어오면 최신 대회만 봅니다.
+  if (!state.touchedTour && state.tour === 'ALL' && D.tournaments.length) {
+    state.tour = D.tournaments[0].name;
+  }
   view.appendChild(tourChips());
   var roundRow = document.createElement('div');
   roundRow.className = 'chips';

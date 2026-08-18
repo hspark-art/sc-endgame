@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+from collections import Counter, OrderedDict
 from datetime import datetime, timezone, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -466,6 +467,19 @@ def main():
                            render.asl_player_page(p, asl_ctx, css))
         print('  asl/p/*.html          %d개 · 합계 %.0fKB'
               % (len(asl['players']), total / 1024))
+
+        tdir = os.path.join(ROOT, 'asl', 't')
+        if os.path.isdir(tdir):
+            for f in os.listdir(tdir):
+                if f.endswith('.html'):
+                    os.remove(os.path.join(tdir, f))
+        tot = 0
+        for t in asl['tournaments']:
+            detail = asl_tournament_detail(asl, t)
+            tot += write('asl/t/%s.html' % t['id'],
+                         render.asl_tournament_page(t, detail, asl_ctx, css))
+        print('  asl/t/*.html          %d개 · 합계 %.0fKB'
+              % (len(asl['tournaments']), tot / 1024))
         g = asl['global']
         print('    ASL 대회 %d · 매치 %s · 세트 %s · 선수 %d'
               % (g['totalTournaments'], format(g['totalMatches'], ','),
@@ -716,5 +730,63 @@ def asl_build_csv(data, ctx):
     ], rows)
     return counts
 
+
+def asl_tournament_detail(data, tour):
+    """대회 하나를 화면에 필요한 모양으로 정리합니다."""
+    order = data['roundOrder']
+    rank = {r: i for i, r in enumerate(order)}
+    ms = [m for m in data['matches'] if m['tournament'] == tour['name']]
+
+    by_round = OrderedDict()
+    for m in sorted(ms, key=lambda x: (rank.get(x['round'], 99), x['no'])):
+        by_round.setdefault(m['round'], []).append(m)
+    rounds = [{'name': r, 'matches': v} for r, v in by_round.items()]
+
+    # 선수별 그 대회 성적 + 최고 라운드와 그 라운드에서의 결과
+    P = {}
+    for m in ms:
+        a, b = m['players']
+        for me, opp in ((a, b), (b, a)):
+            p = P.setdefault(me, {
+                'name': me, 'race': m['race'][me], 'matchWin': 0, 'matchLoss': 0,
+                'setWin': 0, 'setLoss': 0, 'best': '', 'bestWon': False,
+            })
+            p['setWin'] += m['setWins'][me]
+            p['setLoss'] += m['setWins'][opp]
+            won = m['winner'] == me
+            if m['winner']:
+                p['matchWin' if won else 'matchLoss'] += 1
+            if rank.get(m['round'], -1) >= rank.get(p['best'], -1):
+                if rank.get(m['round'], -1) > rank.get(p['best'], -1):
+                    p['best'], p['bestWon'] = m['round'], won
+                elif won:
+                    p['bestWon'] = True      # 같은 라운드에서 이긴 적이 있으면 이긴 것으로
+
+    players = sorted(P.values(), key=lambda p: (-p['setWin'], p['setLoss'], p['name']))
+
+    # 진출 현황 — 위에서부터 우승·준우승·3위·4위, 그 아래는 라운드 이름 그대로
+    buckets = OrderedDict()
+    for p in sorted(P.values(), key=lambda p: (-rank.get(p['best'], -1),
+                                               not p['bestWon'], p['name'])):
+        key = '%s-%s' % (p['best'], 'W' if p['bestWon'] else 'L')
+        label = render.PLACE_LABEL.get(key)
+        if label is None:
+            label = p['best'] or '기록 없음'
+        buckets.setdefault(label, []).append(p)
+    placements = list(buckets.items())
+
+    maps = Counter()
+    for m in ms:
+        for name in m['maps']:
+            if name:
+                maps[name] += 1
+
+    return {'rounds': rounds, 'players': players, 'placements': placements,
+            'maps': maps.most_common()}
+
+
+# ── 실행 지점은 항상 파일 맨 끝에 두세요 ──────────────────────
+# main() 이 아래 함수들을 쓰기 때문에, 이 블록 뒤에 함수를 덧붙이면
+# 정의되기 전에 실행돼 NameError 가 납니다.
 if __name__ == '__main__':
     main()
