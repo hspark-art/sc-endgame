@@ -1,11 +1,11 @@
 {
-  "updatedAt": "2026-08-18T08:16:06.598Z",
-  "updatedAtKo": "2026년 08월 18일 17:16 (KST)",
-  "base": "https://hspark-art.github.io/sc-endgame",
-  "xlsx": "https://hspark-art.github.io/sc-endgame/xlsx/sc-endgame.xlsx",
-  "aslXlsx": "https://hspark-art.github.io/sc-endgame/xlsx/asl.xlsx",
-  "json": "https://hspark-art.github.io/sc-endgame/data/endgame.json",
-  "aslJson": "https://hspark-art.github.io/sc-endgame/data/asl.json",
+  "updatedAt": "2026-08-18T09:05:56.459Z",
+  "updatedAtKo": "2026년 08월 18일 18:05 (KST)",
+  "base": "https://pubgin.com/endgame",
+  "xlsx": "https://pubgin.com/endgame/xlsx/sc-endgame.xlsx",
+  "aslXlsx": "https://pubgin.com/endgame/xlsx/asl.xlsx",
+  "json": "https://pubgin.com/endgame/data/endgame.json",
+  "aslJson": "https://pubgin.com/endgame/data/asl.json",
   "files": [
     {
       "label": "선수",
@@ -13,7 +13,7 @@
       "file": "players.csv",
       "group": "끝장전",
       "rows": 35,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/players.csv"
+      "url": "https://pubgin.com/endgame/csv/players.csv"
     },
     {
       "label": "경기",
@@ -21,7 +21,7 @@
       "file": "matches.csv",
       "group": "끝장전",
       "rows": 296,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/matches.csv"
+      "url": "https://pubgin.com/endgame/csv/matches.csv"
     },
     {
       "label": "세트별 맵",
@@ -29,7 +29,7 @@
       "file": "sets.csv",
       "group": "끝장전",
       "rows": 2656,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/sets.csv"
+      "url": "https://pubgin.com/endgame/csv/sets.csv"
     },
     {
       "label": "맵",
@@ -37,7 +37,7 @@
       "file": "maps.csv",
       "group": "끝장전",
       "rows": 82,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/maps.csv"
+      "url": "https://pubgin.com/endgame/csv/maps.csv"
     },
     {
       "label": "상대전적",
@@ -45,7 +45,7 @@
       "file": "headtohead.csv",
       "group": "끝장전",
       "rows": 115,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/headtohead.csv"
+      "url": "https://pubgin.com/endgame/csv/headtohead.csv"
     },
     {
       "label": "연도별",
@@ -53,7 +53,7 @@
       "file": "yearly.csv",
       "group": "끝장전",
       "rows": 8,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/yearly.csv"
+      "url": "https://pubgin.com/endgame/csv/yearly.csv"
     },
     {
       "label": "ASL 선수",
@@ -61,7 +61,7 @@
       "file": "asl-players.csv",
       "group": "ASL",
       "rows": 95,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-players.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-players.csv"
     },
     {
       "label": "ASL 대회",
@@ -69,7 +69,7 @@
       "file": "asl-tournaments.csv",
       "group": "ASL",
       "rows": 23,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-tournaments.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-tournaments.csv"
     },
     {
       "label": "ASL 매치",
@@ -77,7 +77,7 @@
       "file": "asl-matches.csv",
       "group": "ASL",
       "rows": 1299,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-matches.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-matches.csv"
     },
     {
       "label": "ASL 세트",
@@ -85,7 +85,7 @@
       "file": "asl-sets.csv",
       "group": "ASL",
       "rows": 2177,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-sets.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-sets.csv"
     },
     {
       "label": "ASL 맵",
@@ -93,7 +93,7 @@
       "file": "asl-maps.csv",
       "group": "ASL",
       "rows": 94,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-maps.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-maps.csv"
     },
     {
       "label": "ASL 상대전적",
@@ -101,7 +101,7 @@
       "file": "asl-headtohead.csv",
       "group": "ASL",
       "rows": 720,
-      "url": "https://hspark-art.github.io/sc-endgame/csv/asl-headtohead.csv"
+      "url": "https://pubgin.com/endgame/csv/asl-headtohead.csv"
     }
   ]
 }

@@ -2,11 +2,11 @@
  "_note": [
   "사이트를 어느 주소에 올릴지 정하는 파일입니다.",
   "baseUrl 은 canonical·og:url·구글시트 IMPORTDATA 수식에 들어갑니다.",
-  "도메인을 옮기면 이 값만 고치고 python3 tools/build.py 를 다시 돌리면 됩니다.",
+  "실제 공개 주소는 pubgin.com/endgame 이고, GitHub Pages 는 백업·기록용입니다.",
+  "주소를 옮기면 이 값만 고치고 python3 tools/build.py 를 다시 돌리면 됩니다.",
   "끝에 슬래시는 붙이지 마세요.",
-  "cname 에 도메인을 적으면 GitHub Pages 커스텀 도메인용 CNAME 파일을 만듭니다.",
-  "커스텀 도메인을 안 쓰면 null 로 두세요."
+  "cname 은 GitHub Pages 커스텀 도메인을 쓸 때만 채웁니다. pubgin.com 은 GitHub 이 아니므로 null 입니다."
  ],
- "baseUrl": "https://hspark-art.github.io/sc-endgame",
+ "baseUrl": "https://pubgin.com/endgame",
  "cname": null
 }
