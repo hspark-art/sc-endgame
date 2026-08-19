@@ -382,6 +382,8 @@ def main():
     now = datetime.now(timezone.utc)
     built_at = now.strftime('%Y-%m-%dT%H:%M:%S.') + '%03dZ' % (now.microsecond // 1000)
     built_ko = now.astimezone(KST).strftime('%Y년 %m월 %d일 %H:%M (KST)')
+    photos = find_photos()
+    ctx['photos'] = photos
     ctx['builtAtKo'] = built_ko
 
     css = io.open(os.path.join(HERE, 'site.css'), encoding='utf-8').read()
@@ -398,6 +400,7 @@ def main():
     asl_ctx = None
     if asl:
         asl_ctx = asl_enrich(asl)
+        asl_ctx['photos'] = photos
         asl_ctx['builtAtKo'] = built_ko
         asl_ctx['endgameSlug'] = {p['name']: p['slug'] for p in data['players']}
 
@@ -443,8 +446,12 @@ def main():
             if p['name'] in seen:
                 continue
             seen.add(p['name'])
-            roster.append({'name': p['name'], 'race': p['race'], 'from': tag})
+            roster.append({'name': p['name'], 'race': p['race'], 'from': tag,
+                           'slug': p['slug'], 'photo': photos.get(p['slug'], '')})
     roster.sort(key=lambda x: x['name'])
+    have = write_photo_guide(roster, photos)
+    print('  img/players/          사진 %d/%d명 · 넣을 이름은 _사진목록.txt 에'
+          % (have, len(roster)))
     cg_js = io.open(os.path.join(HERE, 'cg_app.js'), encoding='utf-8').read()
     n = write('admin/cg.php', render.cg_page(css, cg_js, roster))
     write('admin/auth.php', admin_php.AUTH_PHP)
@@ -620,6 +627,43 @@ def asl_global_mu(data):
     return mu
 
 
+
+def find_photos():
+    """img/players/ 에 있는 선수 사진을 찾습니다 → {슬러그: 파일이름}
+
+    파일을 넣기만 하면 다음 빌드부터 사이트와 CG 툴에 자동으로 붙습니다.
+    같은 슬러그로 확장자가 여럿이면 먼저 오는 것(jpg)을 씁니다.
+    """
+    d = os.path.join(ROOT, 'img', 'players')
+    out = {}
+    if not os.path.isdir(d):
+        return out
+    for name in sorted(os.listdir(d)):
+        stem, ext = os.path.splitext(name)
+        if ext.lower() in render.PHOTO_EXTS and stem not in out:
+            out[stem] = name
+    return out
+
+
+def write_photo_guide(rows, photos):
+    """어떤 이름으로 사진을 넣어야 하는지 목록으로 남깁니다."""
+    lines = ['선수 사진 넣는 법', '',
+             '이 폴더(img/players/)에 아래 이름 그대로 넣으시면 됩니다.',
+             '확장자는 jpg · png · webp 중 아무거나 됩니다.',
+             '넣고 나서 python3 tools/build.py 를 한 번 돌리면 사이트에 붙습니다.',
+             '가로세로 같은 정사각형(400x400 이상)을 권합니다. 얼굴이 위쪽에 오게 잘립니다.',
+             '', '=' * 52, '']
+    have = sum(1 for r in rows if r['slug'] in photos)
+    lines.append('지금 %d명 중 %d명 사진이 있습니다.' % (len(rows), have))
+    lines.append('')
+    for r in rows:
+        mark = '[있음] ' + photos[r['slug']] if r['slug'] in photos else '[없음] %s.jpg' % r['slug']
+        lines.append('%-8s %-28s %s' % (r['race'], r['name'], mark))
+    path = os.path.join(ROOT, 'img', 'players', '_사진목록.txt')
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    io.open(path, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
+    return have
+
 def asl_hub_data(data, ctx, built_at):
     players = [{
         'name': p['name'], 'slug': p['slug'], 'race': p['race'],
@@ -646,6 +690,9 @@ def asl_hub_data(data, ctx, built_at):
         'players': players,
         'maps': maps,
         'matches': data['matches'],
+        # 상대전적 조회용 세트 단위 기록. rows 안의 번호는 위 players·maps 와
+        # tournaments 배열의 자리 번호라서, 그 순서를 바꾸면 어긋납니다.
+        'setList': data['setList'],
     }
 
 

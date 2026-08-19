@@ -26,6 +26,22 @@ def pct(w, l):
     return '%.1f%%' % (w / t * 100) if t else '-'
 
 
+
+PHOTO_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
+
+
+def photo_tag(slug, photos, depth, name=''):
+    """img/players/<slug>.jpg 가 있으면 동그란 사진을, 없으면 아무것도 안 냅니다.
+
+    사진은 나중에 파일만 넣으면 바로 붙습니다 — 빌드가 폴더를 훑어서
+    있는 것만 넣기 때문에, 없는 선수는 지금처럼 이름만 나옵니다.
+    """
+    f = (photos or {}).get(slug)
+    if not f:
+        return ''
+    return ('<img class="pphoto" src="%simg/players/%s" alt="%s" loading="lazy" '
+            'width="56" height="56">' % ('../' * depth, urllib.parse.quote(f), e(name)))
+
 def head(title, desc, css, canonical, navbar=''):
     """<head> 부터 <body> 열기까지. navbar 는 사이트 전환 바 HTML 입니다."""
     return (
@@ -52,7 +68,7 @@ def head(title, desc, css, canonical, navbar=''):
     ) + navbar
 
 
-def footer(built, extra=''):
+def footer(built, extra='', depth=0):
     """built 는 갱신 시각으로 넣을 HTML — 허브는 <span id="built">, 정적 페이지는 문자열."""
     return (
         '<footer>\n'
@@ -62,6 +78,7 @@ def footer(built, extra=''):
         '마지막 갱신: ' + built + '\n'
         '<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. '
         '이 사이트는 SOOP·유튜브 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
+        + gear(depth) +
         '</footer>\n</div>\n'
     )
 
@@ -69,8 +86,22 @@ def footer(built, extra=''):
 SITES = [
     ('endgame', '끝장전', '', 'index.html'),
     ('asl', 'ASL', 'asl/', 'asl/index.html'),
-    ('cg', 'CG 제작', 'admin/', 'admin/'),
 ]
+# CG 제작(admin/)은 메뉴에 두지 않습니다. 페이지 맨 아래 톱니바퀴로만 들어갑니다.
+
+
+def gear(depth=0):
+    """페이지 맨 아래에 조용히 놓이는 관리자 입구."""
+    return ('<a class="gear" href="%sadmin/" title="관리자" aria-label="관리자">'
+            '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">'
+            '<path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0'
+            ' .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5'
+            ' 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5'
+            ' 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.6 7.6 0 0 0 0 1.88l-2.03 1.58a.5.5'
+            ' 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5'
+            ' 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08'
+            ' .47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0'
+            ' 1 12 15.6z"/></svg></a>\n') % ('../' * depth)
 
 
 def nav(active, depth=0):
@@ -166,11 +197,12 @@ def player_page(p, ctx, css):
                '<span class="ptag streak-l">%d연패 중</span>' % -cur if cur < 0 else '')
     out.append(
         '<header style="border-bottom:none;padding-bottom:0">'
-        '<div class="phead"><span class="race %s">%s</span>'
+        '<div class="phead">%s<span class="race %s">%s</span>'
         '<span class="pname">%s</span>'
         '<span class="ptag">%s</span>%s</div>'
         '<div class="stats-strip">%s</div></header>\n'
-        % (race, race, e(name), RACE_LABEL[race], cur_txt,
+        % (photo_tag(slug, ctx.get('photos'), 1, name),
+           race, race, e(name), RACE_LABEL[race], cur_txt,
            ''.join('<div class="item">%s<b>%s</b></div>' % kv for kv in [
                ('매치 전적', '%d승 %d패 · %s' % (p['matchWin'], p['matchLoss'],
                                              pct(p['matchWin'], p['matchLoss']))),
@@ -264,7 +296,7 @@ def player_page(p, ctx, css):
         % (len(matches), ''.join(mrows)))
 
     out.append(download_box(depth=1))
-    out.append(footer(ctx['builtAtKo']))
+    out.append(footer(ctx['builtAtKo'], depth=1))     # p/<선수>.html
     out.append('</body>\n</html>\n')
     return ''.join(out)
 
@@ -391,7 +423,8 @@ def asl_footer(built, depth=1):
         '마지막 갱신: %s\n'
         '<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. '
         '이 사이트는 SOOP·아프리카TV 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
-        '</footer>\n</div>\n' % (up, built)
+        '%s'
+        '</footer>\n</div>\n' % (up, built, gear(depth))
     )
 
 
@@ -446,11 +479,12 @@ def asl_player_page(p, ctx, css):
 
     out.append(
         '<header style="border-bottom:none;padding-bottom:0">'
-        '<div class="phead"><span class="race %s">%s</span>'
+        '<div class="phead">%s<span class="race %s">%s</span>'
         '<span class="pname">%s</span>'
         '<span class="ptag">%s</span>%s</div>'
         '<div class="stats-strip">%s</div></header>\n'
-        % (race, race, e(name), RACE_LABEL[race], tags,
+        % (photo_tag(slug, ctx.get('photos'), 2, name),
+           race, race, e(name), RACE_LABEL[race], tags,
            ''.join('<div class="item">%s<b>%s</b></div>' % kv for kv in [
                ('매치 전적', '%d승 %d패 · %s' % (p['matchWin'], p['matchLoss'],
                                              pct(p['matchWin'], p['matchLoss']))),

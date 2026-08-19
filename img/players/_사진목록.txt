@@ -1,0 +1,106 @@
+선수 사진 넣는 법
+
+이 폴더(img/players/)에 아래 이름 그대로 넣으시면 됩니다.
+확장자는 jpg · png · webp 중 아무거나 됩니다.
+넣고 나서 python3 tools/build.py 를 한 번 돌리면 사이트에 붙습니다.
+가로세로 같은 정사각형(400x400 이상)을 권합니다. 얼굴이 위쪽에 오게 잘립니다.
+
+====================================================
+
+지금 95명 중 0명 사진이 있습니다.
+
+T        강정우                          [없음] kang-jeongu.jpg
+T        강태완                          [없음] kang-taewan.jpg
+Z        고석현                          [없음] ko-seokhyeon.jpg
+T        구성훈                          [없음] koo-seonghun.jpg
+Z        김건욱                          [없음] kim-geonuk.jpg
+Z        김경모                          [없음] kim-gyeongmo.jpg
+P        김규회                          [없음] kim-gyuhoe.jpg
+P        김기훈                          [없음] kim-gihun.jpg
+Z        김명운                          [없음] kim-myeongun.jpg
+Z        김민철                          [없음] kim-mincheol.jpg
+Z        김범성                          [없음] kim-beomseong.jpg
+P        김범수                          [없음] kim-beomsu.jpg
+P        김봉준                          [없음] kim-bongjun.jpg
+Z        김상곤                          [없음] kim-sanggon.jpg
+Z        김성대                          [없음] kim-seongdae.jpg
+T        김성현                          [없음] kim-seonghyeon.jpg
+P        김승현                          [없음] kim-seunghyeon.jpg
+T        김영진                          [없음] kim-yeongjin.jpg
+P        김윤중                          [없음] kim-yunjung.jpg
+Z        김윤환                          [없음] kim-yunhwan.jpg
+T        김재현                          [없음] kim-jaehyeon.jpg
+P        김재훈                          [없음] kim-jaehun.jpg
+Z        김정우                          [없음] kim-jeongu.jpg
+T        김지성                          [없음] kim-jiseong.jpg
+T        김태영                          [없음] kim-taeyeong.jpg
+P        김택용                          [없음] kim-taekyong.jpg
+Z        김현우                          [없음] kim-hyeonu.jpg
+P        도재욱                          [없음] do-jaeuk.jpg
+Z        문기호                          [없음] moon-giho.jpg
+T        문태호                          [없음] moon-taeho.jpg
+Z        박상현                          [없음] park-sanghyeon.jpg
+T        박성균                          [없음] park-seonggyun.jpg
+Z        박성준                          [없음] park-seongjun.jpg
+P        박세정                          [없음] park-sejeong.jpg
+Z        박재혁                          [없음] park-jaehyeok.jpg
+P        박재현                          [없음] park-jaehyeon.jpg
+Z        박준오                          [없음] park-juno.jpg
+T        박지수                          [없음] park-jisu.jpg
+P        박지호                          [없음] park-jiho.jpg
+P        박지훈                          [없음] park-jihun.jpg
+Z        방태수                          [없음] bang-taesu.jpg
+Z        배병우                          [없음] bae-byeongu.jpg
+Z        배성흠                          [없음] bae-seongheum.jpg
+T        배호연                          [없음] bae-hoyeon.jpg
+P        변현제                          [없음] byun-hyeonje.jpg
+T        변형태                          [없음] byun-hyeongtae.jpg
+Z        서문지훈                         [없음] seo-munjihun.jpg
+P        손경훈                          [없음] son-gyeonghun.jpg
+P        송병구                          [없음] song-byeonggu.jpg
+T        신상문                          [없음] shin-sangmun.jpg
+Z        심대성                          [없음] shim-daeseong.jpg
+T        염보성                          [없음] yeom-boseong.jpg
+Z        오진식                          [없음] oh-jinsik.jpg
+P        원선재                          [없음] won-seonjae.jpg
+P        원지훈                          [없음] won-jihun.jpg
+T        유승곤                          [없음] yoo-seunggon.jpg
+T        유영진                          [없음] yoo-yeongjin.jpg
+Z        유진우                          [없음] yoo-jinu.jpg
+P        윤수철                          [없음] yoon-sucheol.jpg
+P        윤용태                          [없음] yoon-yongtae.jpg
+T        윤종현                          [없음] yoon-jonghyeon.jpg
+Z        윤진규                          [없음] yoon-jingyu.jpg
+T        윤찬희                          [없음] yoon-chanhui.jpg
+T        이경민                          [없음] lee-gyeongmin.jpg
+T        이성은                          [없음] lee-seongeun.jpg
+T        이영웅                          [없음] lee-yeongung.jpg
+Z        이영한                          [없음] lee-yeonghan.jpg
+T        이영호                          [없음] lee-yeongho.jpg
+Z        이예준                          [없음] lee-yejun.jpg
+Z        이예훈                          [없음] lee-yehun.jpg
+T        이윤열                          [없음] lee-yunyeol.jpg
+T        이재호                          [없음] lee-jaeho.jpg
+Z        이제동                          [없음] lee-jedong.jpg
+Z        이창우                          [없음] lee-changu.jpg
+Z        인치호                          [없음] in-chiho.jpg
+T        임진묵                          [없음] lim-jinmuk.jpg
+Z        임홍규                          [없음] lim-honggyu.jpg
+P        장윤철                          [없음] jang-yuncheol.jpg
+T        전태양                          [없음] jeon-taeyang.jpg
+P        정경두                          [없음] jung-gyeongdu.jpg
+T        정민기                          [없음] jung-mingi.jpg
+T        정영재                          [없음] jung-yeongjae.jpg
+P        정윤성                          [없음] jung-yunseong.jpg
+P        정윤종                          [없음] jung-yunjong.jpg
+T        조기석                          [없음] cho-giseok.jpg
+Z        조일장                          [없음] cho-iljang.jpg
+P        진영화                          [없음] jin-yeonghwa.jpg
+P        최영현                          [없음] choi-yeonghyeon.jpg
+T        최호선                          [없음] choi-hoseon.jpg
+P        하늘                           [없음] ha-neul.jpg
+Z        한두열                          [없음] han-duyeol.jpg
+Z        한상봉                          [없음] han-sangbong.jpg
+T        현지섭                          [없음] hyun-jiseop.jpg
+P        홍덕                           [없음] hong-deok.jpg
+T        황병영                          [없음] hwang-byeongyeong.jpg

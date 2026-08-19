@@ -308,12 +308,59 @@ ol.steps li{margin-bottom:4px}
   .cglayout{grid-template-columns:1fr}
   .cgpanel{position:static;max-height:none}
 }
+
+/* ── 상대 전적 ─────────────────────────────────────────────── */
+.h2hpanel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;
+  border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:12px;margin-bottom:12px}
+.h2hside{display:flex;flex-direction:column;gap:6px;flex:1 1 150px;min-width:0}
+.h2hside.wide{flex:1 1 220px}
+.h2hcap{font-size:11px;color:var(--dim)}
+.h2hsel{width:100%;padding:8px 10px;border-radius:8px;font-size:13px;
+  background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+  font-family:inherit;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238a93a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:10px;
+  padding-right:26px}
+.h2hsel:focus{border-color:var(--accent)}
+.h2hvs{flex:0 0 auto;color:var(--dim);font-size:12px;font-weight:700;
+  padding:0 2px 10px;align-self:flex-end}
+.h2hreset{margin-bottom:0}
+.h2hhead{text-align:center}
+.h2hnames{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:8px;font-size:16px;font-weight:700}
+.h2hvs2{color:var(--dim);font-size:12px;font-weight:400}
+.h2hscore{display:flex;align-items:baseline;justify-content:center;gap:4px;
+  margin-top:8px;font-size:26px;font-weight:800}
+.h2hscore .dim{font-size:13px;font-weight:400}
+.h2hdash{color:var(--dim);font-size:16px;margin:0 4px}
+.h2hrate{margin-left:10px;font-size:15px;font-weight:700;color:var(--accent)}
+.h2hbar{max-width:420px;margin:10px auto 4px}
+.h2hbar span:first-child{background:var(--win)}
+.h2hbar span:last-child{background:var(--lose)}
+.h2hquick{justify-content:center;margin-top:8px}
+@media (max-width:520px){
+  .h2hvs{display:none}
+  .h2hside{flex:1 1 100%}
+  .h2hscore{font-size:22px}
+}
+
+/* 관리자(CG 제작) 입구 — 눈에 띄지 않게 맨 아래 구석에 둡니다. */
+.gear{display:block;width:15px;height:15px;margin:14px auto 0;color:var(--line);
+  opacity:.5;transition:opacity .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.gear:hover,.gear:focus-visible{opacity:1;color:var(--dim)}
+
+/* 선수 사진 — img/players/<슬러그>.jpg 를 넣으면 자동으로 붙습니다. */
+.pphoto{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:2px solid var(--line);background:var(--panel2);flex:0 0 auto}
+.rphoto{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:6px}
 </style>
 </head>
 <body>
 <div class="brandbar"></div>
 <div class="wrap cgwrap">
-<nav class="sitenav"><a class="navlink" href="../index.html">끝장전</a><a class="navlink" href="../asl/index.html">ASL</a><a class="navlink on" href="../admin/">CG 제작</a></nav>
+<nav class="sitenav"><a class="navlink" href="../index.html">끝장전</a><a class="navlink" href="../asl/index.html">ASL</a></nav>
 <header style="border-bottom:none;padding-bottom:6px"><div class="headrow"><div><h1>CG 제작 툴</h1><div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. 입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div><div style="margin-left:auto;text-align:right"><div class="helptxt" style="margin:0"><?= htmlspecialchars(admin_user(), ENT_QUOTES) ?> 님</div><a class="dlbtn" href="logout.php" style="margin-top:6px;display:inline-block">로그아웃</a></div></div></header>
 <div class="cglayout">
 <div class="cgpanel">
@@ -377,7 +424,7 @@ ol.steps li{margin-bottom:4px}
 <footer>이 도구는 브라우저 안에서만 동작합니다 — 올린 사진은 어디에도 올라가지 않고 이 컴퓨터를 벗어나지 않습니다.<br>선수 자동완성 목록은 끝장전·ASL 기록실 데이터에서 가져온 95명입니다.</footer>
 </div>
 <script>
-const PLAYERS = [{"name":"강정우","race":"T","from":"ASL"},{"name":"강태완","race":"T","from":"ASL"},{"name":"고석현","race":"Z","from":"ASL"},{"name":"구성훈","race":"T","from":"ASL"},{"name":"김건욱","race":"Z","from":"ASL"},{"name":"김경모","race":"Z","from":"ASL"},{"name":"김규회","race":"P","from":"ASL"},{"name":"김기훈","race":"P","from":"ASL"},{"name":"김명운","race":"Z","from":"끝장전"},{"name":"김민철","race":"Z","from":"끝장전"},{"name":"김범성","race":"Z","from":"ASL"},{"name":"김범수","race":"P","from":"ASL"},{"name":"김봉준","race":"P","from":"ASL"},{"name":"김상곤","race":"Z","from":"ASL"},{"name":"김성대","race":"Z","from":"끝장전"},{"name":"김성현","race":"T","from":"끝장전"},{"name":"김승현","race":"P","from":"끝장전"},{"name":"김영진","race":"T","from":"ASL"},{"name":"김윤중","race":"P","from":"끝장전"},{"name":"김윤환","race":"Z","from":"끝장전"},{"name":"김재현","race":"T","from":"ASL"},{"name":"김재훈","race":"P","from":"ASL"},{"name":"김정우","race":"Z","from":"끝장전"},{"name":"김지성","race":"T","from":"끝장전"},{"name":"김태영","race":"T","from":"ASL"},{"name":"김택용","race":"P","from":"끝장전"},{"name":"김현우","race":"Z","from":"ASL"},{"name":"도재욱","race":"P","from":"끝장전"},{"name":"문기호","race":"Z","from":"ASL"},{"name":"문태호","race":"T","from":"ASL"},{"name":"박상현","race":"Z","from":"끝장전"},{"name":"박성균","race":"T","from":"끝장전"},{"name":"박성준","race":"Z","from":"ASL"},{"name":"박세정","race":"P","from":"ASL"},{"name":"박재혁","race":"Z","from":"ASL"},{"name":"박재현","race":"P","from":"ASL"},{"name":"박준오","race":"Z","from":"끝장전"},{"name":"박지수","race":"T","from":"ASL"},{"name":"박지호","race":"P","from":"ASL"},{"name":"박지훈","race":"P","from":"ASL"},{"name":"방태수","race":"Z","from":"ASL"},{"name":"배병우","race":"Z","from":"ASL"},{"name":"배성흠","race":"Z","from":"ASL"},{"name":"배호연","race":"T","from":"ASL"},{"name":"변현제","race":"P","from":"끝장전"},{"name":"변형태","race":"T","from":"ASL"},{"name":"서문지훈","race":"Z","from":"ASL"},{"name":"손경훈","race":"P","from":"ASL"},{"name":"송병구","race":"P","from":"끝장전"},{"name":"신상문","race":"T","from":"ASL"},{"name":"심대성","race":"Z","from":"ASL"},{"name":"염보성","race":"T","from":"끝장전"},{"name":"오진식","race":"Z","from":"ASL"},{"name":"원선재","race":"P","from":"ASL"},{"name":"원지훈","race":"P","from":"ASL"},{"name":"유승곤","race":"T","from":"ASL"},{"name":"유영진","race":"T","from":"끝장전"},{"name":"유진우","race":"Z","from":"ASL"},{"name":"윤수철","race":"P","from":"ASL"},{"name":"윤용태","race":"P","from":"끝장전"},{"name":"윤종현","race":"T","from":"ASL"},{"name":"윤진규","race":"Z","from":"ASL"},{"name":"윤찬희","race":"T","from":"끝장전"},{"name":"이경민","race":"T","from":"끝장전"},{"name":"이성은","race":"T","from":"ASL"},{"name":"이영웅","race":"T","from":"끝장전"},{"name":"이영한","race":"Z","from":"끝장전"},{"name":"이영호","race":"T","from":"끝장전"},{"name":"이예준","race":"Z","from":"ASL"},{"name":"이예훈","race":"Z","from":"ASL"},{"name":"이윤열","race":"T","from":"ASL"},{"name":"이재호","race":"T","from":"끝장전"},{"name":"이제동","race":"Z","from":"끝장전"},{"name":"이창우","race":"Z","from":"ASL"},{"name":"인치호","race":"Z","from":"ASL"},{"name":"임진묵","race":"T","from":"끝장전"},{"name":"임홍규","race":"Z","from":"끝장전"},{"name":"장윤철","race":"P","from":"끝장전"},{"name":"전태양","race":"T","from":"끝장전"},{"name":"정경두","race":"P","from":"ASL"},{"name":"정민기","race":"T","from":"ASL"},{"name":"정영재","race":"T","from":"끝장전"},{"name":"정윤성","race":"P","from":"ASL"},{"name":"정윤종","race":"P","from":"ASL"},{"name":"조기석","race":"T","from":"끝장전"},{"name":"조일장","race":"Z","from":"끝장전"},{"name":"진영화","race":"P","from":"ASL"},{"name":"최영현","race":"P","from":"ASL"},{"name":"최호선","race":"T","from":"끝장전"},{"name":"하늘","race":"P","from":"ASL"},{"name":"한두열","race":"Z","from":"ASL"},{"name":"한상봉","race":"Z","from":"ASL"},{"name":"현지섭","race":"T","from":"ASL"},{"name":"홍덕","race":"P","from":"ASL"},{"name":"황병영","race":"T","from":"끝장전"}];
+const PLAYERS = [{"name":"강정우","race":"T","from":"ASL","slug":"kang-jeongu","photo":""},{"name":"강태완","race":"T","from":"ASL","slug":"kang-taewan","photo":""},{"name":"고석현","race":"Z","from":"ASL","slug":"ko-seokhyeon","photo":""},{"name":"구성훈","race":"T","from":"ASL","slug":"koo-seonghun","photo":""},{"name":"김건욱","race":"Z","from":"ASL","slug":"kim-geonuk","photo":""},{"name":"김경모","race":"Z","from":"ASL","slug":"kim-gyeongmo","photo":""},{"name":"김규회","race":"P","from":"ASL","slug":"kim-gyuhoe","photo":""},{"name":"김기훈","race":"P","from":"ASL","slug":"kim-gihun","photo":""},{"name":"김명운","race":"Z","from":"끝장전","slug":"kim-myeongun","photo":""},{"name":"김민철","race":"Z","from":"끝장전","slug":"kim-mincheol","photo":""},{"name":"김범성","race":"Z","from":"ASL","slug":"kim-beomseong","photo":""},{"name":"김범수","race":"P","from":"ASL","slug":"kim-beomsu","photo":""},{"name":"김봉준","race":"P","from":"ASL","slug":"kim-bongjun","photo":""},{"name":"김상곤","race":"Z","from":"ASL","slug":"kim-sanggon","photo":""},{"name":"김성대","race":"Z","from":"끝장전","slug":"kim-seongdae","photo":""},{"name":"김성현","race":"T","from":"끝장전","slug":"kim-seonghyeon","photo":""},{"name":"김승현","race":"P","from":"끝장전","slug":"kim-seunghyeon","photo":""},{"name":"김영진","race":"T","from":"ASL","slug":"kim-yeongjin","photo":""},{"name":"김윤중","race":"P","from":"끝장전","slug":"kim-yunjung","photo":""},{"name":"김윤환","race":"Z","from":"끝장전","slug":"kim-yunhwan","photo":""},{"name":"김재현","race":"T","from":"ASL","slug":"kim-jaehyeon","photo":""},{"name":"김재훈","race":"P","from":"ASL","slug":"kim-jaehun","photo":""},{"name":"김정우","race":"Z","from":"끝장전","slug":"kim-jeongu","photo":""},{"name":"김지성","race":"T","from":"끝장전","slug":"kim-jiseong","photo":""},{"name":"김태영","race":"T","from":"ASL","slug":"kim-taeyeong","photo":""},{"name":"김택용","race":"P","from":"끝장전","slug":"kim-taekyong","photo":""},{"name":"김현우","race":"Z","from":"ASL","slug":"kim-hyeonu","photo":""},{"name":"도재욱","race":"P","from":"끝장전","slug":"do-jaeuk","photo":""},{"name":"문기호","race":"Z","from":"ASL","slug":"moon-giho","photo":""},{"name":"문태호","race":"T","from":"ASL","slug":"moon-taeho","photo":""},{"name":"박상현","race":"Z","from":"끝장전","slug":"park-sanghyeon","photo":""},{"name":"박성균","race":"T","from":"끝장전","slug":"park-seonggyun","photo":""},{"name":"박성준","race":"Z","from":"ASL","slug":"park-seongjun","photo":""},{"name":"박세정","race":"P","from":"ASL","slug":"park-sejeong","photo":""},{"name":"박재혁","race":"Z","from":"ASL","slug":"park-jaehyeok","photo":""},{"name":"박재현","race":"P","from":"ASL","slug":"park-jaehyeon","photo":""},{"name":"박준오","race":"Z","from":"끝장전","slug":"park-juno","photo":""},{"name":"박지수","race":"T","from":"ASL","slug":"park-jisu","photo":""},{"name":"박지호","race":"P","from":"ASL","slug":"park-jiho","photo":""},{"name":"박지훈","race":"P","from":"ASL","slug":"park-jihun","photo":""},{"name":"방태수","race":"Z","from":"ASL","slug":"bang-taesu","photo":""},{"name":"배병우","race":"Z","from":"ASL","slug":"bae-byeongu","photo":""},{"name":"배성흠","race":"Z","from":"ASL","slug":"bae-seongheum","photo":""},{"name":"배호연","race":"T","from":"ASL","slug":"bae-hoyeon","photo":""},{"name":"변현제","race":"P","from":"끝장전","slug":"byun-hyeonje","photo":""},{"name":"변형태","race":"T","from":"ASL","slug":"byun-hyeongtae","photo":""},{"name":"서문지훈","race":"Z","from":"ASL","slug":"seo-munjihun","photo":""},{"name":"손경훈","race":"P","from":"ASL","slug":"son-gyeonghun","photo":""},{"name":"송병구","race":"P","from":"끝장전","slug":"song-byeonggu","photo":""},{"name":"신상문","race":"T","from":"ASL","slug":"shin-sangmun","photo":""},{"name":"심대성","race":"Z","from":"ASL","slug":"shim-daeseong","photo":""},{"name":"염보성","race":"T","from":"끝장전","slug":"yeom-boseong","photo":""},{"name":"오진식","race":"Z","from":"ASL","slug":"oh-jinsik","photo":""},{"name":"원선재","race":"P","from":"ASL","slug":"won-seonjae","photo":""},{"name":"원지훈","race":"P","from":"ASL","slug":"won-jihun","photo":""},{"name":"유승곤","race":"T","from":"ASL","slug":"yoo-seunggon","photo":""},{"name":"유영진","race":"T","from":"끝장전","slug":"yoo-yeongjin","photo":""},{"name":"유진우","race":"Z","from":"ASL","slug":"yoo-jinu","photo":""},{"name":"윤수철","race":"P","from":"ASL","slug":"yoon-sucheol","photo":""},{"name":"윤용태","race":"P","from":"끝장전","slug":"yoon-yongtae","photo":""},{"name":"윤종현","race":"T","from":"ASL","slug":"yoon-jonghyeon","photo":""},{"name":"윤진규","race":"Z","from":"ASL","slug":"yoon-jingyu","photo":""},{"name":"윤찬희","race":"T","from":"끝장전","slug":"yoon-chanhui","photo":""},{"name":"이경민","race":"T","from":"끝장전","slug":"lee-gyeongmin","photo":""},{"name":"이성은","race":"T","from":"ASL","slug":"lee-seongeun","photo":""},{"name":"이영웅","race":"T","from":"끝장전","slug":"lee-yeongung","photo":""},{"name":"이영한","race":"Z","from":"끝장전","slug":"lee-yeonghan","photo":""},{"name":"이영호","race":"T","from":"끝장전","slug":"lee-yeongho","photo":""},{"name":"이예준","race":"Z","from":"ASL","slug":"lee-yejun","photo":""},{"name":"이예훈","race":"Z","from":"ASL","slug":"lee-yehun","photo":""},{"name":"이윤열","race":"T","from":"ASL","slug":"lee-yunyeol","photo":""},{"name":"이재호","race":"T","from":"끝장전","slug":"lee-jaeho","photo":""},{"name":"이제동","race":"Z","from":"끝장전","slug":"lee-jedong","photo":""},{"name":"이창우","race":"Z","from":"ASL","slug":"lee-changu","photo":""},{"name":"인치호","race":"Z","from":"ASL","slug":"in-chiho","photo":""},{"name":"임진묵","race":"T","from":"끝장전","slug":"lim-jinmuk","photo":""},{"name":"임홍규","race":"Z","from":"끝장전","slug":"lim-honggyu","photo":""},{"name":"장윤철","race":"P","from":"끝장전","slug":"jang-yuncheol","photo":""},{"name":"전태양","race":"T","from":"끝장전","slug":"jeon-taeyang","photo":""},{"name":"정경두","race":"P","from":"ASL","slug":"jung-gyeongdu","photo":""},{"name":"정민기","race":"T","from":"ASL","slug":"jung-mingi","photo":""},{"name":"정영재","race":"T","from":"끝장전","slug":"jung-yeongjae","photo":""},{"name":"정윤성","race":"P","from":"ASL","slug":"jung-yunseong","photo":""},{"name":"정윤종","race":"P","from":"ASL","slug":"jung-yunjong","photo":""},{"name":"조기석","race":"T","from":"끝장전","slug":"cho-giseok","photo":""},{"name":"조일장","race":"Z","from":"끝장전","slug":"cho-iljang","photo":""},{"name":"진영화","race":"P","from":"ASL","slug":"jin-yeonghwa","photo":""},{"name":"최영현","race":"P","from":"ASL","slug":"choi-yeonghyeon","photo":""},{"name":"최호선","race":"T","from":"끝장전","slug":"choi-hoseon","photo":""},{"name":"하늘","race":"P","from":"ASL","slug":"ha-neul","photo":""},{"name":"한두열","race":"Z","from":"ASL","slug":"han-duyeol","photo":""},{"name":"한상봉","race":"Z","from":"ASL","slug":"han-sangbong","photo":""},{"name":"현지섭","race":"T","from":"ASL","slug":"hyun-jiseop","photo":""},{"name":"홍덕","race":"P","from":"ASL","slug":"hong-deok","photo":""},{"name":"황병영","race":"T","from":"끝장전","slug":"hwang-byeongyeong","photo":""}];
 /* 끝장전 대진표 CG 제작 툴.
    1920x1080 캔버스에 직접 그립니다 — 바깥 라이브러리를 쓰지 않아서
    인터넷이 끊겨도 되고, 내보낸 PNG 가 화면에 보이는 것과 정확히 같습니다. */
@@ -409,8 +456,10 @@ var S = {
   bgLeft: '#8c1f2a',
   bgRight: '#123a78',
   players: [
-    { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, zoom: 1, ox: 0, oy: 0 },
-    { nick: 'Bisu', name: '김택용', race: 'P', photo: null, zoom: 1, ox: 0, oy: 0 }
+    { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
+      zoom: 1, ox: 0, oy: 0 },
+    { nick: 'Bisu', name: '김택용', race: 'P', photo: null, photoFrom: null,
+      zoom: 1, ox: 0, oy: 0 }
   ],
   logoSponsor: null,
   logoBroadcast: null,
@@ -825,6 +874,19 @@ function setupControls() {
         S.players[i].name = v;
         var hit = PLAYERS.find(function (p) { return p.name === v; });
         if (hit) { S.players[i].race = hit.race; $('race' + n).value = hit.race; }
+        // 올려 둔 선수 사진이 있으면 바로 붙입니다.
+        // 직접 올리신 사진은 건드리지 않습니다 — 등록 사진일 때만 바꿉니다.
+        if (S.players[i].photoFrom !== 'upload') {
+          if (hit && hit.photo) {
+            S.players[i].photo = '../img/players/' + encodeURIComponent(hit.photo);
+            S.players[i].photoFrom = 'lib';
+            S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
+            var z = $('zoom' + n); if (z) z.value = 1;
+          } else if (S.players[i].photoFrom === 'lib') {
+            // 사진이 없는 선수로 바꿨는데 앞 선수 얼굴이 남아 있으면 안 됩니다.
+            S.players[i].photo = null; S.players[i].photoFrom = null;
+          }
+        }
       });
     bind('race' + n, function () { return S.players[i].race; },
       function (v) { S.players[i].race = v; });
@@ -832,11 +894,12 @@ function setupControls() {
       function (v) { S.players[i].zoom = parseFloat(v); });
     bindPhoto('photo' + n, function (d) {
       S.players[i].photo = d;
+      S.players[i].photoFrom = 'upload';       // 직접 올린 사진이 항상 우선입니다
       S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
       $('zoom' + n).value = 1;
     });
     $('photo' + n + 'Clear').addEventListener('click', function () {
-      S.players[i].photo = null; draw();
+      S.players[i].photo = null; S.players[i].photoFrom = null; draw();
     });
   });
 

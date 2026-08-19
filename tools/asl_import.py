@@ -418,7 +418,41 @@ def build(sets, matches):
             'winner': m['winner'], 'sets': m['sets'], 'maps': m['maps'],
         } for m in matches],
         'roundOrder': ROUND_ORDER,
+        'setList': set_list(sets, players, maps, tour_list),
     }
+
+
+def set_list(sets, players, maps, tour_list):
+    """세트 하나하나를 숫자 배열로 압축합니다 — 상대전적 조회에 씁니다.
+
+    matches 는 세트 수만 갖고 있어서 '누가 어느 맵에서 이겼는지' 를 모릅니다.
+    선수 vs 선수, 종족 vs 종족, 맵별 전적을 내려면 세트 단위가 필요합니다.
+
+    rows 한 줄 = [a, b, map, tour, round, aRace, bRace, winner]
+      a·b·map·tour  각 배열에서의 자리 번호 (map 은 없으면 -1)
+      round         rounds 배열에서의 자리 번호
+      aRace·bRace   0=T 1=P 2=Z
+      winner        0 이면 a 가, 1 이면 b 가 이김
+    """
+    pi = {p['name']: i for i, p in enumerate(players)}
+    mi = {m['name']: i for i, m in enumerate(maps)}
+    ti = {t['name']: i for i, t in enumerate(tour_list)}
+    rounds, ri = [], {}
+    ri_get = ri.setdefault
+    rows = []
+    for s in sets:
+        rnd = s['round']
+        if rnd not in ri:
+            ri_get(rnd, len(rounds))
+            rounds.append(rnd)
+        rows.append([
+            pi[s['a']], pi[s['b']],
+            mi.get(s['map'], -1) if s['map'] else -1,
+            ti[s['tournament']], ri[rnd],
+            RACES.index(s['aRace']), RACES.index(s['bRace']),
+            0 if s['winner'] == s['a'] else 1,
+        ])
+    return {'races': list(RACES), 'rounds': rounds, 'rows': rows}
 
 
 def summarize(data):

@@ -59,7 +59,8 @@ STATE = os.path.join(ROOT, 'data', '.deploy-state.json')
 # 점으로 시작하는 '파일' 중 .nojekyll 과 admin/.htaccess 는 사이트에 필요해서 올립니다.
 # 설명 문서(.md)는 사이트 내용이 아니라서 통째로 뺍니다 — 새로 만들어도 안 올라갑니다.
 SKIP_DIRS = {'tools', 'node_modules', '__pycache__'}
-SKIP_FILES = {'.gitignore', '.deploy-state.json', 'deploy.json'}
+SKIP_FILES = {'.gitignore', '.deploy-state.json', 'deploy.json',
+              '_사진목록.txt'}          # 사진 넣는 법 안내 — 우리끼리 보는 것
 SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
 # 절대 웹서버로 나가면 안 되는 것.
 #   admin/config.php  관리자 계정 (서버에만 있어야 하고 덮어써서도 안 됩니다)

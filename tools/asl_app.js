@@ -43,12 +43,14 @@ var TABS = [
   { id: 'roster', label: '선수 명단' },
   { id: 'maps', label: '맵 통계' },
   { id: 'matches', label: '경기 기록' },
+  { id: 'h2h', label: '상대 전적' },
   { id: 'records', label: '기록실' }
 ];
 var TAB_IDS = TABS.map(function (t) { return t.id; });
 
 var state = {
   tab: 'season', tour: 'ALL', race: 'ALL', round: 'ALL', q: '', touchedTour: false,
+  h2h: { pa: '', pb: '', ra: '', rb: '', map: '', tour: '' },
   sort: { rank: { key: 'setWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 } },
   open: {}
 };
@@ -541,6 +543,249 @@ function renderRecords() {
   view.innerHTML = html;
 }
 
+/* ── 상대 전적 ─────────────────────────────────────────────── */
+/* 세트 한 줄 = [a, b, map, tour, round, aRace, bRace, winner]
+   a·b·map·tour 는 D.players / D.maps / D.tournaments 의 자리 번호,
+   winner 는 0 이면 a 가, 1 이면 b 가 이긴 세트입니다. */
+var SL = D.setList || { races: ['T', 'P', 'Z'], rounds: [], rows: [] };
+
+// 선수 고르는 목록은 세트를 많이 치른 순으로 — 자주 찾는 선수가 위에 옵니다.
+var H2H_ORDER = D.players.map(function (p, i) { return i; }).sort(function (x, y) {
+  var a = D.players[x], b = D.players[y];
+  return (b.setWin + b.setLoss) - (a.setWin + a.setLoss);
+});
+
+function h2hSel(name, value, opts, placeholder) {
+  return '<select class="h2hsel" data-f="' + name + '">' +
+    '<option value="">' + placeholder + '</option>' +
+    opts.map(function (o) {
+      return '<option value="' + o[0] + '"' +
+        (String(o[0]) === String(value) ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+    }).join('') + '</select>';
+}
+
+function h2hPlayerOpts() {
+  return H2H_ORDER.map(function (i) {
+    var p = D.players[i];
+    return [i, p.name + ' (' + p.race + ')'];
+  });
+}
+
+function h2hSideMatch(pIdx, rIdx, wantP, wantR) {
+  if (wantP !== '' && pIdx !== +wantP) return false;
+  if (wantR !== '' && SL.races[rIdx] !== wantR) return false;
+  return true;
+}
+
+/** 조건에 맞는 세트를 모아 A 쪽 기준으로 집계합니다. */
+function h2hCollect() {
+  var f = state.h2h;
+  var out = {
+    w: 0, l: 0, byMap: {}, byTour: {}, byOpp: {}, byMu: {}, sets: [],
+    bothOpen: f.pa === '' && f.ra === '' && f.pb === '' && f.rb === ''
+  };
+  if (out.bothOpen) return out;
+  for (var i = 0; i < SL.rows.length; i++) {
+    var r = SL.rows[i];
+    if (f.map !== '' && r[2] !== +f.map) continue;
+    if (f.tour !== '' && r[3] !== +f.tour) continue;
+    // 어느 쪽을 A 로 볼지 — 앞사람을 먼저 맞춰 보고, 안 되면 뒷사람을 봅니다.
+    var fwd = h2hSideMatch(r[0], r[5], f.pa, f.ra) && h2hSideMatch(r[1], r[6], f.pb, f.rb);
+    var rev = !fwd &&
+      h2hSideMatch(r[1], r[6], f.pa, f.ra) && h2hSideMatch(r[0], r[5], f.pb, f.rb);
+    if (!fwd && !rev) continue;
+    var aI = fwd ? r[0] : r[1], bI = fwd ? r[1] : r[0];
+    var aR = SL.races[fwd ? r[5] : r[6]], bR = SL.races[fwd ? r[6] : r[5]];
+    var won = fwd ? r[7] === 0 : r[7] === 1;
+    if (won) out.w++; else out.l++;
+    bump(out.byMap, r[2], won);
+    bump(out.byTour, r[3], won);
+    bump(out.byOpp, bI, won);
+    bump(out.byMu, aR + 'v' + bR, won);
+    out.sets.push({ a: aI, b: bI, aR: aR, bR: bR, map: r[2], tour: r[3], rd: r[4], won: won });
+  }
+  return out;
+
+  function bump(o, k, won) {
+    var e = o[k] || (o[k] = [0, 0]);
+    e[won ? 0 : 1]++;
+  }
+}
+
+/** 두 선수를 콕 집었을 때만 — 세트가 아니라 '경기(매치)' 전적입니다. */
+function h2hMatchRecord() {
+  var f = state.h2h;
+  if (f.pa === '' || f.pb === '') return null;
+  var an = D.players[+f.pa].name, bn = D.players[+f.pb].name;
+  var w = 0, l = 0, drawn = 0;
+  D.matches.forEach(function (m) {
+    if (m.players.indexOf(an) < 0 || m.players.indexOf(bn) < 0) return;
+    if (f.tour !== '' && m.tournament !== D.tournaments[+f.tour].name) return;
+    if (f.map !== '' && m.maps.indexOf(D.maps[+f.map].name) < 0) return;
+    if (m.winner === an) w++;
+    else if (m.winner === bn) l++;
+    else drawn++;
+  });
+  return { w: w, l: l, drawn: drawn };
+}
+
+function h2hSideName(pKey, rKey, fallback) {
+  var f = state.h2h;
+  if (f[pKey] !== '') {
+    var p = D.players[+f[pKey]];
+    return raceBadge(p.race) + ' ' + esc(p.name);
+  }
+  if (f[rKey] !== '') return raceBadge(f[rKey]) + ' ' + RACE_LABEL[f[rKey]] + ' 전체';
+  return '<span class="dim">' + fallback + '</span>';
+}
+
+function h2hTable(title, obj, labelOf, linkOf) {
+  var keys = Object.keys(obj);
+  if (!keys.length) return '';
+  keys.sort(function (x, y) {
+    return (obj[y][0] + obj[y][1]) - (obj[x][0] + obj[x][1]);
+  });
+  var body = keys.map(function (k) {
+    var o = obj[k], lbl = labelOf(k);
+    if (lbl === null) return '';
+    return '<tr><td class="nm">' + (linkOf ? linkOf(k) : esc(lbl)) + '</td>' +
+      '<td class="num"><b class="win">' + o[0] + '</b></td>' +
+      '<td class="num"><b class="lose">' + o[1] + '</b></td>' +
+      '<td class="num">' + (o[0] + o[1]) + '</td>' +
+      '<td class="num pct">' + pct(o[0], o[1]) + '</td></tr>';
+  }).join('');
+  return '<div class="card"><div class="cardtitle">' + title + '</div>' +
+    '<div class="tblwrap"><table><thead><tr>' +
+    '<th class="static">구분</th><th class="static num">승</th>' +
+    '<th class="static num">패</th><th class="static num">세트</th>' +
+    '<th class="static num">승률</th></tr></thead><tbody>' + body +
+    '</tbody></table></div></div>';
+}
+
+function renderH2H() {
+  var f = state.h2h;
+  var panel = document.createElement('div');
+  panel.className = 'h2hpanel';
+  var raceOpts = RACE_ORDER.map(function (r) { return [r, RACE_LABEL[r]]; });
+  panel.innerHTML =
+    '<div class="h2hside"><span class="h2hcap">한쪽</span>' +
+    h2hSel('pa', f.pa, h2hPlayerOpts(), '선수 전체') +
+    h2hSel('ra', f.ra, raceOpts, '종족 전체') + '</div>' +
+    '<div class="h2hvs">VS</div>' +
+    '<div class="h2hside"><span class="h2hcap">상대</span>' +
+    h2hSel('pb', f.pb, h2hPlayerOpts(), '선수 전체') +
+    h2hSel('rb', f.rb, raceOpts, '종족 전체') + '</div>' +
+    '<div class="h2hside wide"><span class="h2hcap">맵 · 대회</span>' +
+    h2hSel('map', f.map, D.maps.map(function (m, i) {
+      return [i, m.name + ' (' + m.totalSets + ')'];
+    }), '맵 전체') +
+    h2hSel('tour', f.tour, D.tournaments.map(function (t, i) {
+      return [i, t.name];
+    }), '대회 전체') + '</div>' +
+    '<div class="h2hside"><button class="btn h2hreset" type="button">비우기</button></div>';
+  panel.querySelectorAll('select').forEach(function (el) {
+    el.addEventListener('change', function () {
+      state.h2h[el.dataset.f] = el.value;
+      render();
+    });
+  });
+  panel.querySelector('.h2hreset').addEventListener('click', function () {
+    state.h2h = { pa: '', pb: '', ra: '', rb: '', map: '', tour: '' };
+    render();
+  });
+  view.appendChild(panel);
+
+  var res = h2hCollect();
+  var box = document.createElement('div');
+
+  if (res.bothOpen) {
+    box.innerHTML = '<div class="emptybox">양쪽에 선수나 종족을 하나 이상 골라 주세요.' +
+      '<div class="hint" style="margin-top:8px">자주 찾는 맞대결</div>' +
+      '<div class="chips h2hquick">' + D.rivalries.slice(0, 6).map(function (r) {
+        return '<div class="chip" data-a="' + esc(r.a) + '" data-b="' + esc(r.b) + '">' +
+          esc(r.a) + ' vs ' + esc(r.b) + '</div>';
+      }).join('') + '</div></div>';
+    box.querySelectorAll('[data-a]').forEach(function (c) {
+      c.addEventListener('click', function () {
+        D.players.forEach(function (p, i) {
+          if (p.name === c.dataset.a) state.h2h.pa = String(i);
+          if (p.name === c.dataset.b) state.h2h.pb = String(i);
+        });
+        render();
+      });
+    });
+    view.appendChild(box);
+    return;
+  }
+
+  var total = res.w + res.l;
+  var mr = h2hMatchRecord();
+  var scoreLine = total
+    ? '<div class="h2hscore"><b class="win">' + res.w + '</b>' +
+      '<span class="dim">승</span><span class="h2hdash">·</span>' +
+      '<b class="lose">' + res.l + '</b><span class="dim">패</span>' +
+      '<span class="h2hrate">' + pct(res.w, res.l) + '</span></div>'
+    : '<div class="h2hscore dim">맞붙은 기록이 없습니다</div>';
+
+  var head = '<div class="card h2hhead">' +
+    '<div class="h2hnames">' + h2hSideName('pa', 'ra', '누구든') +
+    '<span class="h2hvs2">vs</span>' + h2hSideName('pb', 'rb', '누구든') + '</div>' +
+    scoreLine +
+    (total ? '<div class="mubar h2hbar"><span style="width:' +
+      pctNum(res.w, res.l) + '%"></span><span style="width:' +
+      pctNum(res.l, res.w) + '%"></span></div>' : '') +
+    (mr && (mr.w + mr.l + mr.drawn)
+      ? '<div class="hint">경기(매치) 기준으로는 <b>' + mr.w + '승 ' + mr.l + '패</b>' +
+        (mr.drawn ? ' · 진행 중 ' + mr.drawn : '') + ' 입니다. 위 숫자는 세트 기준입니다.</div>'
+      : '') +
+    '<div class="hint">세트 ' + total.toLocaleString() + '개를 셌습니다.</div>' +
+    '</div>';
+
+  var tables = '';
+  if (f.pa !== '' && f.pb === '') {
+    tables += h2hTable('상대 선수별', res.byOpp, function (k) {
+      return D.players[+k].name;
+    }, function (k) {
+      var p = D.players[+k];
+      return nameLink(p.name, p.race);
+    });
+  }
+  tables += h2hTable('맵별', res.byMap, function (k) {
+    return +k < 0 ? null : D.maps[+k].name;
+  });
+  tables += h2hTable('대회별', res.byTour, function (k) {
+    return D.tournaments[+k].name;
+  });
+  if (Object.keys(res.byMu).length > 1) {
+    tables += h2hTable('종족 대결별', res.byMu, function (k) {
+      return RACE_LABEL[k[0]] + ' vs ' + RACE_LABEL[k[2]];
+    });
+  }
+
+  var LIMIT = 300;
+  var shown = res.sets.slice(0, LIMIT);
+  var list = !shown.length ? '' :
+    '<div class="card"><div class="cardtitle">세트 기록' +
+    (res.sets.length > LIMIT ? ' <span class="dim">(' + LIMIT + '개만 보임 · 전체 ' +
+      res.sets.length.toLocaleString() + ')</span>' : '') + '</div>' +
+    '<div class="tblwrap"><table><thead><tr>' +
+    '<th class="static">대회</th><th class="static">라운드</th>' +
+    '<th class="static">맵</th><th class="static">한쪽</th>' +
+    '<th class="static">상대</th><th class="static num">결과</th>' +
+    '</tr></thead><tbody>' + shown.map(function (s) {
+      return '<tr><td class="dim">' + esc(D.tournaments[s.tour].short) + '</td>' +
+        '<td class="dim">' + esc(SL.rounds[s.rd] || '') + '</td>' +
+        '<td>' + (s.map < 0 ? '<span class="dim">-</span>' : esc(D.maps[s.map].name)) + '</td>' +
+        '<td class="nm">' + raceBadge(s.aR) + ' ' + esc(D.players[s.a].name) + '</td>' +
+        '<td class="nm">' + raceBadge(s.bR) + ' ' + esc(D.players[s.b].name) + '</td>' +
+        '<td class="num"><b class="' + (s.won ? 'win' : 'lose') + '">' +
+        (s.won ? '승' : '패') + '</b></td></tr>';
+    }).join('') + '</tbody></table></div></div>';
+
+  box.innerHTML = head + tables + list;
+  view.appendChild(box);
+}
+
 /* ── 라우팅 ────────────────────────────────────────────────── */
 function render() {
   renderTabs();
@@ -551,6 +796,7 @@ function render() {
   else if (state.tab === 'roster') renderRoster();
   else if (state.tab === 'maps') renderMaps();
   else if (state.tab === 'matches') renderMatches();
+  else if (state.tab === 'h2h') renderH2H();
   else if (state.tab === 'records') renderRecords();
 }
 

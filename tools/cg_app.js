@@ -29,8 +29,10 @@ var S = {
   bgLeft: '#8c1f2a',
   bgRight: '#123a78',
   players: [
-    { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, zoom: 1, ox: 0, oy: 0 },
-    { nick: 'Bisu', name: '김택용', race: 'P', photo: null, zoom: 1, ox: 0, oy: 0 }
+    { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
+      zoom: 1, ox: 0, oy: 0 },
+    { nick: 'Bisu', name: '김택용', race: 'P', photo: null, photoFrom: null,
+      zoom: 1, ox: 0, oy: 0 }
   ],
   logoSponsor: null,
   logoBroadcast: null,
@@ -445,6 +447,19 @@ function setupControls() {
         S.players[i].name = v;
         var hit = PLAYERS.find(function (p) { return p.name === v; });
         if (hit) { S.players[i].race = hit.race; $('race' + n).value = hit.race; }
+        // 올려 둔 선수 사진이 있으면 바로 붙입니다.
+        // 직접 올리신 사진은 건드리지 않습니다 — 등록 사진일 때만 바꿉니다.
+        if (S.players[i].photoFrom !== 'upload') {
+          if (hit && hit.photo) {
+            S.players[i].photo = '../img/players/' + encodeURIComponent(hit.photo);
+            S.players[i].photoFrom = 'lib';
+            S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
+            var z = $('zoom' + n); if (z) z.value = 1;
+          } else if (S.players[i].photoFrom === 'lib') {
+            // 사진이 없는 선수로 바꿨는데 앞 선수 얼굴이 남아 있으면 안 됩니다.
+            S.players[i].photo = null; S.players[i].photoFrom = null;
+          }
+        }
       });
     bind('race' + n, function () { return S.players[i].race; },
       function (v) { S.players[i].race = v; });
@@ -452,11 +467,12 @@ function setupControls() {
       function (v) { S.players[i].zoom = parseFloat(v); });
     bindPhoto('photo' + n, function (d) {
       S.players[i].photo = d;
+      S.players[i].photoFrom = 'upload';       // 직접 올린 사진이 항상 우선입니다
       S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
       $('zoom' + n).value = 1;
     });
     $('photo' + n + 'Clear').addEventListener('click', function () {
-      S.players[i].photo = null; draw();
+      S.players[i].photo = null; S.players[i].photoFrom = null; draw();
     });
   });
 

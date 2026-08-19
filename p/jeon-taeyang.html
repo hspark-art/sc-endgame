@@ -306,12 +306,59 @@ ol.steps li{margin-bottom:4px}
   .cglayout{grid-template-columns:1fr}
   .cgpanel{position:static;max-height:none}
 }
+
+/* ── 상대 전적 ─────────────────────────────────────────────── */
+.h2hpanel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;
+  border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:12px;margin-bottom:12px}
+.h2hside{display:flex;flex-direction:column;gap:6px;flex:1 1 150px;min-width:0}
+.h2hside.wide{flex:1 1 220px}
+.h2hcap{font-size:11px;color:var(--dim)}
+.h2hsel{width:100%;padding:8px 10px;border-radius:8px;font-size:13px;
+  background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+  font-family:inherit;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238a93a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:10px;
+  padding-right:26px}
+.h2hsel:focus{border-color:var(--accent)}
+.h2hvs{flex:0 0 auto;color:var(--dim);font-size:12px;font-weight:700;
+  padding:0 2px 10px;align-self:flex-end}
+.h2hreset{margin-bottom:0}
+.h2hhead{text-align:center}
+.h2hnames{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:8px;font-size:16px;font-weight:700}
+.h2hvs2{color:var(--dim);font-size:12px;font-weight:400}
+.h2hscore{display:flex;align-items:baseline;justify-content:center;gap:4px;
+  margin-top:8px;font-size:26px;font-weight:800}
+.h2hscore .dim{font-size:13px;font-weight:400}
+.h2hdash{color:var(--dim);font-size:16px;margin:0 4px}
+.h2hrate{margin-left:10px;font-size:15px;font-weight:700;color:var(--accent)}
+.h2hbar{max-width:420px;margin:10px auto 4px}
+.h2hbar span:first-child{background:var(--win)}
+.h2hbar span:last-child{background:var(--lose)}
+.h2hquick{justify-content:center;margin-top:8px}
+@media (max-width:520px){
+  .h2hvs{display:none}
+  .h2hside{flex:1 1 100%}
+  .h2hscore{font-size:22px}
+}
+
+/* 관리자(CG 제작) 입구 — 눈에 띄지 않게 맨 아래 구석에 둡니다. */
+.gear{display:block;width:15px;height:15px;margin:14px auto 0;color:var(--line);
+  opacity:.5;transition:opacity .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.gear:hover,.gear:focus-visible{opacity:1;color:var(--dim)}
+
+/* 선수 사진 — img/players/<슬러그>.jpg 를 넣으면 자동으로 붙습니다. */
+.pphoto{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:2px solid var(--line);background:var(--panel2);flex:0 0 auto}
+.rphoto{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:6px}
 </style>
 </head>
 <body>
 <div class="brandbar"></div>
 <div class="wrap">
-<nav class="sitenav"><a class="navlink on" href="../index.html">끝장전</a><a class="navlink" href="../asl/index.html">ASL</a><a class="navlink" href="../admin/">CG 제작</a></nav>
+<nav class="sitenav"><a class="navlink on" href="../index.html">끝장전</a><a class="navlink" href="../asl/index.html">ASL</a></nav>
 <a class="backlink" href="../index.html">← 기록실 홈으로</a>
 <header style="border-bottom:none;padding-bottom:0"><div class="phead"><span class="race T">T</span><span class="pname">전태양</span><span class="ptag">테란</span><span class="ptag streak-l">1연패 중</span></div><div class="stats-strip"><div class="item">매치 전적<b>0승 1패 · 0.0%</b></div><div class="item">세트 전적<b>2승 7패 · 22.2%</b></div><div class="item">출전<b>1경기</b></div><div class="item">최다 연승<b>0연승</b></div><div class="item">활동 기간<b>2024-02-16 ~ 2024-02-16</b></div></div></header>
 <div class="card" style="margin-top:16px"><div class="cardtitle">종족별 세트 전적</div><div class="murow"><div class="mulabel"><span><span class="race T">T</span>테란 <b>2</b></span><span><b>7</b> 프로토스<span class="race P">P</span></span></div><div class="mubar"><span style="width:22.2222%;background:var(--t)">22.2%</span><span style="width:77.7778%;background:var(--p)">77.8%</span></div></div></div>
@@ -326,8 +373,9 @@ ol.steps li{margin-bottom:4px}
 </div>
 <footer>
 데이터 출처: 방송팀이 직접 기록한 구글시트(끝장전 데이터). 표시된 값은 시트의 세트 단위 원본 기록을 그대로 다시 계산한 것입니다.<br>
-마지막 갱신: 2026년 08월 19일 14:49 (KST)
+마지막 갱신: 2026년 08월 19일 15:27 (KST)
 <div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. 이 사이트는 SOOP·유튜브 및 각 선수와 공식적인 관계가 없습니다.</div>
+<a class="gear" href="../admin/" title="관리자" aria-label="관리자"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.6 7.6 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08 .47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/></svg></a>
 </footer>
 </div>
 </body>
