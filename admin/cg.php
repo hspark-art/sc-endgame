@@ -506,9 +506,9 @@ tbody tr.grouphead:first-child td{border-top:none}
 <div class="row2"><div class="fld"><label>왼쪽</label><input type="color" id="bgLeft"></div>
 <div class="fld"><label>오른쪽</label><input type="color" id="bgRight"></div>
 </div>
-<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>
+<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button><button class="btn" id="resetPos" type="button">위치 초기화</button>
 </div>
-<div class="card" data-for="matchup"><div class="cardtitle">상자 1</div>
+<div class="helptxt">미리보기에서 <b>글상자·판을 그대로 끌어</b> 옮길 수 있습니다. 빈 자리를 끌면 선수 사진이 움직입니다. 어긋나면 위치 초기화를 누르세요.</div><div class="card" data-for="matchup"><div class="cardtitle">상자 1</div>
 <div class="fld"><label>제목</label><input type="text" id="boxTitle0"></div>
 <div class="fld"><label>내용 (한 줄에 하나씩)</label><textarea id="boxBody0" rows="5"></textarea></div>
 <div class="helptxt"><code>[글자]</code> 는 테두리 강조 칸, <code>* 글자</code> 는 작은 주석, 빈 줄은 한 칸 띄우기입니다. 상자 높이는 내용에 맞춰 알아서 늘어납니다.</div>
@@ -660,6 +660,7 @@ function defaults() {
     showBg: true,        // 끄면 배경이 투명하게 빠집니다 (루핑백 위에 얹을 때)
     showSponsor: true,
     showRibbon: true,
+    off: {},             // 요소별로 끌어 옮긴 거리 { 이름: {x, y} }
     players: [
       { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
         season: '', zoom: 1, ox: 0, oy: 0, trim: 0,
@@ -837,7 +838,8 @@ function drawBackground() {
 }
 
 function drawTopBar(imgs) {
-  var y = L.topBarY, h = L.topBarH, cx = W / 2;
+  var o = off('topbar'), lo = off('live');
+  var y = L.topBarY + o.y, h = L.topBarH, cx = W / 2 + o.x;
   var st = S.style.title;
   use(st, st.size, 900);
   var titleW = ctx.measureText(S.title).width;
@@ -874,20 +876,37 @@ function drawTopBar(imgs) {
   text(S.title, startX + sponsorW + divW, y + h / 2 + 2, st,
     { weight: 900, baseline: 'middle' });
 
+  reg('topbar', startX - 20, y - 10, sponsorW + divW + titleW + 40, h + 20);
+
   if (imgs.broadcast) {
     var bw = Math.min(imgs.broadcast.width * (78 / imgs.broadcast.height), 260);
-    drawContain(imgs.broadcast, W - 44 - bw / 2, y + h / 2 - 4, bw, 78);
+    drawContain(imgs.broadcast, W - 44 - bw / 2 + o.x, y + h / 2 - 4, bw, 78);
   }
   if (S.liveBadge) {
     setFont(30, 900, 'pretendard');
     var lw = ctx.measureText(S.liveBadge).width + 40;
+    var lx = W - 44 - lw + lo.x, ly2 = L.topBarY + L.topBarH + 12 + lo.y;
     ctx.fillStyle = '#1c8cff';
-    roundRect(ctx, W - 44 - lw, y + h + 12, lw, 50, 8);
+    roundRect(ctx, lx, ly2, lw, 50, 8);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(S.liveBadge, W - 44 - lw / 2, y + h + 38);
+    ctx.fillText(S.liveBadge, lx + lw / 2, ly2 + 26);
+    reg('live', lx, ly2, lw, 50);
   }
+}
+
+/* ── 요소 끌어 옮기기 ──────────────────────────────────────────
+   글상자·판마다 이름을 붙여 두고, 그린 자리를 HIT 에 기록합니다.
+   미리보기에서 그 자리를 끌면 S.off[이름] 에 이동값이 쌓입니다. */
+var HIT = [];
+
+function off(key) {
+  return (S.off && S.off[key]) || { x: 0, y: 0 };
+}
+
+function reg(key, x, y, w, h) {
+  HIT.push({ key: key, x: x, y: y, w: w, h: h });
 }
 
 function photoRect(side) {
@@ -987,11 +1006,13 @@ function boxHeight(box) {
 }
 
 function drawMatchup() {
+  var o = off('boxes');
   var sT = S.style.boxTitle, sL = S.style.boxLine, sN = S.style.boxNote;
-  var x = L.center.x, w = L.center.w, cx = x + w / 2;
+  var x = L.center.x + o.x, w = L.center.w, cx = x + w / 2;
   var hs = S.boxes.map(boxHeight);
   var total = hs.reduce(function (a, b) { return a + b; }, 0) + 22 * (S.boxes.length - 1);
-  var y = Math.max(L.topBarY + L.topBarH + 40, (H - total) / 2);
+  var y = Math.max(L.topBarY + L.topBarH + 40, (H - total) / 2) + o.y;
+  reg('boxes', x, y, w, total);
 
   S.boxes.forEach(function (box, i) {
     var bh = hs[i];
@@ -1039,11 +1060,12 @@ function drawMatchup() {
 
 /* ── ② 선수 전적 / ③ 쉬는 시간 ─────────────────────────────── */
 function drawSidePanel(side, withScore) {
+  var o = off('panel' + side);
   var pl = S.players[side], st = S.stats;
   var panelW = 480;
   var panelH = 210;
-  var x = side === 0 ? 240 : W - 240 - panelW;
-  var y = 268;
+  var x = (side === 0 ? 240 : W - 240 - panelW) + o.x;
+  var y = 268 + o.y;
   // 이름 판
   var g = ctx.createLinearGradient(x, y, x + panelW, y);
   g.addColorStop(0, side === 0 ? '#c0212f' : '#12419c');
@@ -1091,11 +1113,14 @@ function drawSidePanel(side, withScore) {
     text(ln.text, x + panelW / 2, ly - 6, S.style.vsList,
       { align: 'center', maxW: panelW - 30, weight: ln.kind === 'chip' ? 900 : 600 });
   });
+  reg('panel' + side, x, y, panelW, (vy + vh) - y);
 }
 
 function drawStatsCenter() {
-  var st = S.stats, cx = W / 2;
-  var y = 250;
+  var o = off('center');
+  var st = S.stats, cx = W / 2 + o.x;
+  var y = 250 + o.y;
+  var topY = y - 40;
   text(st.heading, cx, y, S.style.heading, { align: 'center', maxW: 420, weight: 700 });
   y += 46;
   text(st.sub, cx, y, S.style.sub, { align: 'center', maxW: 420, weight: 800 });
@@ -1154,22 +1179,30 @@ function drawStatsCenter() {
     });
     y += fh + 16;
   }
+  reg('center', bx, topY, bw, y - topY);
   if (st.timer) {
-    text(st.timer, cx, Math.min(y + S.style.timer.size, H - 40), S.style.timer,
+    var to = off('timer');
+    var ty = Math.min(y + S.style.timer.size, H - 40) + to.y;
+    text(st.timer, W / 2 + to.x, ty, S.style.timer,
       { align: 'center', weight: 900, shadow: 14 });
+    reg('timer', W / 2 + to.x - 160, ty - S.style.timer.size, 320, S.style.timer.size + 16);
   }
 }
 
 /* ── ④ 경기 결과 ───────────────────────────────────────────── */
 function drawWinner() {
   var w = S.winner, cx = W / 2;
-  text(w.vsText, cx, 570, S.style.vsBig, { align: 'center', weight: 900, shadow: 18 });
+  var vo = off('vs');
+  text(w.vsText, cx + vo.x, 570 + vo.y, S.style.vsBig,
+    { align: 'center', weight: 900, shadow: 18 });
+  reg('vs', cx + vo.x - 260, 570 + vo.y - 110, 520, 150);
 
   [0, 1].forEach(function (side) {
     var pl = S.players[side];
+    var po = off('plate' + side);
     var plateW = 560;
-    var x = side === 0 ? 96 : W - 96 - plateW;
-    var y = 668;
+    var x = (side === 0 ? 96 : W - 96 - plateW) + po.x;
+    var y = 668 + po.y;
     ctx.fillStyle = 'rgba(233,237,243,.92)';
     ctx.fillRect(x, y, plateW, 134);
     var inner = x + plateW / 2;
@@ -1184,16 +1217,36 @@ function drawWinner() {
       text(pl.delta, inner, y + 230, S.style.vsBig,
         { align: 'center', maxW: plateW, weight: 800, shadow: 14 });
     }
+    reg('plate' + side, x, y, plateW, pl.delta ? 260 : 134);
     if (side === w.side) {
+      var wo = off('winner');
       var wl = S.style.winnerLabel;
-      var by = y - 24;                                 // 흰 판 바로 위
+      var wx = x + wo.x - po.x;                        // 판과 따로 움직입니다
+      var by = 668 + wo.y - 24;                        // 흰 판 바로 위
       if (w.ribbon && S.showRibbon) {
-        setFont(S.style.ribbon.size, 800, S.style.ribbon.font);
-        var rw = ctx.measureText(w.ribbon).width + 34;
-        ctx.fillStyle = '#e0392b';
-        roundRect(ctx, x + 8, by - wl.size - 64, rw, 44, 8); ctx.fill();
-        text('🔥 ' + w.ribbon, x + 8 + rw / 2 + 8, by - wl.size - 34, S.style.ribbon,
-          { align: 'center', weight: 800 });
+        // 살짝 기울인 빨간 띠 + 불꽃 — WINNER 왼쪽 위에 자연스럽게 겹칩니다.
+        var rb = S.style.ribbon;
+        setFont(rb.size, 900, rb.font);
+        var tw2 = ctx.measureText(w.ribbon).width;
+        var rw = tw2 + rb.size + 44, rh = rb.size + 20;
+        ctx.save();
+        ctx.translate(wx + 30 + rw / 2, by - wl.size - 40);
+        ctx.rotate(-0.07);
+        var rg = ctx.createLinearGradient(-rw / 2, 0, rw / 2, 0);
+        rg.addColorStop(0, '#ff6a3d');
+        rg.addColorStop(1, '#d31f2b');
+        ctx.fillStyle = rg;
+        ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 12;
+        roundRect(ctx, -rw / 2, -rh / 2, rw, rh, rh / 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.font = (rb.size + 2) + 'px ' + FONTS.pretendard;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('🔥', -rw / 2 + 12, 2);
+        setFont(rb.size, 900, rb.font);
+        ctx.fillStyle = rb.color;
+        ctx.fillText(w.ribbon, -rw / 2 + rb.size + 22, 2);
+        ctx.restore();
       }
       // 레퍼런스의 금색 입체 글자 느낌 — 위는 밝고 아래는 진한 금색
       use(wl, wl.size, 900);
@@ -1206,11 +1259,12 @@ function drawWinner() {
       ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 16;
       ctx.fillStyle = gg;
-      ctx.fillText(w.label, x + 12, by);
+      ctx.fillText(w.label, wx + 12, by);
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(122,74,10,.9)';
-      ctx.strokeText(w.label, x + 12, by);
+      ctx.strokeText(w.label, wx + 12, by);
       ctx.restore();
+      reg('winner', wx, by - wl.size - 70, Math.max(gw + 40, 360), wl.size + 86);
     }
   });
 }
@@ -1222,8 +1276,11 @@ function drawNext() {
   var hs = S.style.nextHead;
   var words = String(n.heading || '').split(' ').filter(Boolean);
   if (!words.length) words = [''];
+  var ho = off('nexthead');
   var lineH = hs.size * 1.04;
-  var y0 = 380 - (words.length - 1) * lineH / 2;
+  var y0 = 380 - (words.length - 1) * lineH / 2 + ho.y;
+  cx += ho.x;
+  reg('nexthead', cx - 500, y0 - hs.size, 1000, lineH * words.length + 30);
   words.forEach(function (word, i) {
     use(hs, hs.size, 900);
     var tw = Math.min(ctx.measureText(word).width, 980);
@@ -1242,9 +1299,10 @@ function drawNext() {
   });
 
   [0, 1].forEach(function (side) {
+    var po = off('nplate' + side);
     var plateW = 520;
-    var x = side === 0 ? 100 : W - 100 - plateW;
-    var y = 640;
+    var x = (side === 0 ? 100 : W - 100 - plateW) + po.x;
+    var y = 640 + po.y;
     ctx.fillStyle = 'rgba(226,232,240,.86)';
     ctx.fillRect(x, y, plateW, 118);
     var inner = side === 0 ? x + 26 : x + plateW - 26;
@@ -1255,12 +1313,16 @@ function drawNext() {
     var label = pl.name + (pl.race ? ' ' + pl.race : '');
     text(label, inner, y + 100, S.style.pname,
       { align: align, color: '#12161d', maxW: plateW - 52, weight: 900 });
+    reg('nplate' + side, x, y, plateW, 118);
   });
 
   if (n.when) {
+    var wo2 = off('when');
     ctx.fillStyle = 'rgba(10,13,19,.72)';
-    ctx.fillRect(0, H - 190, W, 120);
-    text(n.when, cx, H - 108, S.style.when, { align: 'center', maxW: W - 200, weight: 800 });
+    ctx.fillRect(0, H - 190 + wo2.y, W, 120);
+    text(n.when, W / 2 + wo2.x, H - 108 + wo2.y, S.style.when,
+      { align: 'center', maxW: W - 200, weight: 800 });
+    reg('when', 0, H - 190 + wo2.y, W, 120);
   }
 }
 
@@ -1275,6 +1337,7 @@ function draw() {
 }
 
 function paint(g) {
+  HIT = [];
   ctx.clearRect(0, 0, W, H);
   // 배경을 끄면 투명하게 남깁니다 — 방송에서 루핑백 위에 그대로 얹을 수 있습니다.
   if (S.showBg) drawBackground();
@@ -1286,13 +1349,15 @@ function paint(g) {
 
   if (S.type === 'matchup') {
     [0, 1].forEach(function (side) {
-      var cx = side === 0 ? 268 : W - 268;
+      var no = off('name' + side);
+      var cx = (side === 0 ? 268 : W - 268) + no.x;
       var g2 = ctx.createLinearGradient(0, 600, 0, H);
       g2.addColorStop(0, 'rgba(0,0,0,0)');
       g2.addColorStop(1, 'rgba(0,0,0,.82)');
       ctx.fillStyle = g2;
       ctx.fillRect(side === 0 ? 0 : W - 536, 600, 536, H - 600);
-      drawNamePlate(side, cx, 738, 'center', 520);
+      drawNamePlate(side, cx, 738 + no.y, 'center', 520);
+      reg('name' + side, cx - 240, 680 + no.y, 480, 210);
     });
     drawMatchup();
   } else if (S.type === 'stats' || S.type === 'score') {
@@ -1518,6 +1583,8 @@ function setupControls() {
     S.winner.side = 1 - S.winner.side;
     fillForm(); draw();
   });
+  var rp = $('resetPos');
+  if (rp) rp.addEventListener('click', function () { S.off = {}; draw(); });
   $('reset').addEventListener('click', function () {
     if (!confirm('처음 상태로 되돌립니다. 올린 사진도 지워집니다.')) return;
     localStorage.removeItem(KEY);
@@ -1587,23 +1654,43 @@ function hitPhoto(pos) {
 }
 
 function setupCanvasDrag() {
-  var dragging = -1, last = null;
+  var drag = null, last = null;
   cv.addEventListener('mousedown', function (e) {
     var pos = canvasPos(e);
-    dragging = hitPhoto(pos);
+    drag = null;
+    // 글상자·판을 먼저 잡고, 빈 자리를 누르면 사진을 잡습니다.
+    for (var k = HIT.length - 1; k >= 0; k--) {
+      var it = HIT[k];
+      if (pos.x >= it.x && pos.x <= it.x + it.w &&
+          pos.y >= it.y && pos.y <= it.y + it.h) {
+        drag = { key: it.key };
+        break;
+      }
+    }
+    if (!drag) {
+      var i = hitPhoto(pos);
+      if (i >= 0) drag = { photo: i };
+    }
     last = pos;
-    if (dragging >= 0) cv.style.cursor = 'grabbing';
+    if (drag) cv.style.cursor = 'grabbing';
   });
   window.addEventListener('mousemove', function (e) {
-    if (dragging < 0) return;
+    if (!drag) return;
     var pos = canvasPos(e);
-    S.players[dragging].ox += pos.x - last.x;
-    S.players[dragging].oy += pos.y - last.y;
+    var dx = pos.x - last.x, dy = pos.y - last.y;
     last = pos;
+    if (drag.photo != null) {
+      S.players[drag.photo].ox += dx;
+      S.players[drag.photo].oy += dy;
+    } else {
+      if (!S.off) S.off = {};
+      var o = S.off[drag.key] || { x: 0, y: 0 };
+      S.off[drag.key] = { x: o.x + dx, y: o.y + dy };
+    }
     draw();
   });
   window.addEventListener('mouseup', function () {
-    dragging = -1; cv.style.cursor = '';
+    drag = null; cv.style.cursor = '';
   });
   cv.addEventListener('wheel', function (e) {
     var i = hitPhoto(canvasPos(e));
@@ -1690,6 +1777,7 @@ function load() {
     S.stats = Object.assign(base.stats, got.stats || {});
     S.winner = Object.assign(base.winner, got.winner || {});
     S.next = Object.assign(base.next, got.next || {});
+    S.off = got.off || {};
   } catch (e) { /* 깨진 값이면 기본값으로 */ }
 }
 

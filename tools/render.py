@@ -727,7 +727,9 @@ def cg_panel(_fld):
     out.append('<div class="card"><div class="cardtitle">배경색</div>\n<div class="row2">')
     out.append(_fld('왼쪽', '<input type="color" id="bgLeft">'))
     out.append(_fld('오른쪽', '<input type="color" id="bgRight">'))
-    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>\n</div>\n')
+    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button><button class="btn" id="resetPos" type="button">위치 초기화</button>\n</div>\n')
+    out.append('<div class="helptxt">미리보기에서 <b>글상자·판을 그대로 끌어</b> 옮길 수 있습니다. '
+               '빈 자리를 끌면 선수 사진이 움직입니다. 어긋나면 위치 초기화를 누르세요.</div>')
 
     hint = ('<code>[글자]</code> 는 테두리 강조 칸, <code>* 글자</code> 는 작은 주석, '
             '빈 줄은 한 칸 띄우기입니다. 상자 높이는 내용에 맞춰 알아서 늘어납니다.')

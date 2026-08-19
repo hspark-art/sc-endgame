@@ -55,6 +55,34 @@ def player_names():
     return names
 
 
+def has_cutout(im):
+    """배경이 이미 빠져 있는지 — 투명 픽셀이 3% 넘으면 누끼로 봅니다."""
+    if 'A' not in im.mode:
+        return False
+    a = im.getchannel('A')
+    hist = a.histogram()
+    transparent = sum(hist[:16])
+    return transparent > a.size[0] * a.size[1] * 0.03
+
+
+_REMBG = None
+
+
+def strip_background(im):
+    """스튜디오 배경을 AI(rembg·U2Net)로 빼서 누끼로 만듭니다.
+
+    CG 에서 인물만 얹으려면 배경이 없어야 하는데, 받은 사진 중 일부(S19·
+    S15 2차 등 JPG)는 배경이 그대로 있습니다. 처음 쓸 때 모델(약 170MB)을
+    한 번 내려받고, 그다음부터는 인터넷 없이 됩니다.
+    """
+    global _REMBG
+    if _REMBG is None:
+        from rembg import new_session
+        _REMBG = new_session('u2net')
+    from rembg import remove
+    return remove(im, session=_REMBG)
+
+
 def content_box(im):
     """투명 배경을 뺀 실제 인물 영역."""
     if 'A' in im.mode:
@@ -140,12 +168,18 @@ def main():
     os.makedirs(body_dir, exist_ok=True)
     face_dir = os.path.join(ROOT, 'img', 'players')
 
-    made_body = made_face = 0
+    made_body = made_face = cut = 0
     for (who, season), info in sorted(best.items()):
         sl = names[who]
         with z.open(info) as f:
             im = Image.open(io.BytesIO(f.read()))
             im.load()
+        # 원본이 아주 커서(장당 2~27MB) 먼저 줄인 뒤에 배경을 뺍니다.
+        if im.height > 1400:
+            im = im.resize((max(1, round(im.width * 1400 / im.height)), 1400), 1)
+        if not has_cutout(im):
+            im = strip_background(im.convert('RGBA'))
+            cut += 1
         out = os.path.join(body_dir, '%s-s%02d.webp' % (sl, season))
         body_image(im).save(out, 'WEBP', quality=82, method=4)
         made_body += 1
@@ -171,8 +205,8 @@ def main():
         json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
 
     print('')
-    print('전신(CG용) %d장 · 얼굴(사이트용) %d장 · 선수 %d명'
-          % (made_body, made_face, len(seasons)))
+    print('전신(CG용) %d장 · 얼굴(사이트용) %d장 · 선수 %d명 · 배경을 새로 뺀 사진 %d장'
+          % (made_body, made_face, len(seasons), cut))
     print('data/player-photos.json 에 시즌 목록을 적었습니다.')
     return 0
 
