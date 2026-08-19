@@ -446,12 +446,33 @@ function renderMatches() {
         (!state.q || m.players.some(function (n) { return n.indexOf(state.q) >= 0; }));
     });
 
-    var body = rows.length ? rows.map(function (m) {
+    // ASL 기록에는 날짜가 없습니다. 그래서 같은 대회·같은 라운드에서 치른
+    // 경기를 한 덩어리로 묶어 보여 줍니다 — 방송 한 회차에 해당하는 단위입니다.
+    var tourAt = {};
+    D.tournaments.forEach(function (t, i) { tourAt[t.name] = i; });
+    rows = rows.slice().sort(function (x, y) {
+      return (tourAt[x.tournament] - tourAt[y.tournament]) ||
+        (D.roundOrder.indexOf(x.round) - D.roundOrder.indexOf(y.round)) ||
+        (x.no - y.no);
+    });
+
+    var body = '', lastKey = null, groups = 0;
+    rows.forEach(function (m) {
+      var key = m.tournament + ' · ' + m.round;
+      if (key !== lastKey) {
+        lastKey = key;
+        groups++;
+        var n = rows.filter(function (z) {
+          return z.tournament === m.tournament && z.round === m.round;
+        }).length;
+        body += '<tr class="grouphead"><td colspan="3">' +
+          '<span class="gtour">' + esc(m.tournament) + '</span>' +
+          '<span class="ground">' + esc(m.round) + '</span>' +
+          '<span class="note">' + n + '매치</span></td></tr>';
+      }
       var a = m.players[0], b = m.players[1];
       var aWin = m.winner === a;
-      return '<tr>' +
-        '<td class="muted hide-mobile">' + esc(m.tournament) + '</td>' +
-        '<td class="muted">' + esc(m.round) + '</td>' +
+      body += '<tr>' +
         '<td>' + nameLink(a, m.race[a]) + ' <span class="muted">vs</span> ' +
         nameLink(b, m.race[b]) + '</td>' +
         '<td class="num score-cell" data-awin="' + (aWin ? 1 : 0) + '">' +
@@ -459,13 +480,16 @@ function renderMatches() {
         '<span class="score-value" hidden>' + m.setWins[a] + ' - ' + m.setWins[b] + '</span></td>' +
         '<td class="hide-mobile muted" style="white-space:normal">' +
         esc((m.maps || []).filter(Boolean).join(', ')) + '</td></tr>';
-    }).join('') : '<tr><td colspan="5"><div class="emptybox">해당 조건의 경기가 없습니다.</div></td></tr>';
+    });
+    if (!rows.length) {
+      body = '<tr><td colspan="3"><div class="emptybox">해당 조건의 경기가 없습니다.</div></td></tr>';
+    }
 
     table.innerHTML = tableHTML([
-      { label: '대회', cls: 'hide-mobile' }, { label: '라운드' }, { label: '대진' },
-      { label: '결과', cls: 'num' }, { label: '맵', cls: 'hide-mobile' }
+      { label: '대진' }, { label: '결과', cls: 'num' }, { label: '맵', cls: 'hide-mobile' }
     ], body) +
-      '<div class="hint">' + rows.length + '매치를 보고 있습니다. ' +
+      '<div class="hint">' + rows.length + '매치를 ' + groups + '개 라운드로 묶어 보고 있습니다. ' +
+      'ASL 기록에는 날짜가 없어 대회·라운드 순서로 정리합니다. ' +
       '한 줄이 매치(시리즈) 하나이고, 맵은 그 시리즈에서 치른 순서대로입니다. ' +
       '"결과 보기"를 눌러야 스코어가 나옵니다.</div>';
 

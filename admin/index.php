@@ -364,6 +364,15 @@ ol.steps li{margin-bottom:4px}
   background-repeat:no-repeat;background-position:right 10px center;background-size:10px;
   padding-right:26px}
 .h2hsel:focus{border-color:var(--accent)}
+/* 경기 기록을 대회·라운드로 묶을 때 그 사이에 끼우는 제목줄 */
+.grouphead td{background:var(--panel2);border-top:2px solid var(--line);
+  padding:9px 10px !important}
+.grouphead .gtour{font-weight:700;color:var(--txt);font-size:13px}
+.grouphead .ground{margin-left:8px;padding:2px 8px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);
+  color:var(--accent);font-size:11px;font-weight:700}
+.grouphead .note{margin-left:8px;color:var(--dim);font-size:11px;font-weight:500}
+tbody tr.grouphead:first-child td{border-top:none}
 /* 선수 칸은 직접 칠 수 있는 입력창입니다 — 목록 화살표 대신 돋보기를 둡니다. */
 .h2hinput{padding-right:26px;
   background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%238a93a6' stroke-width='1.6'%3E%3Ccircle cx='7' cy='7' r='4.2'/%3E%3Cpath d='M10.2 10.2L14 14' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
