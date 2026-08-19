@@ -1,0 +1,13 @@
+{
+ "_note": [
+  "끝장전 기록이 계속 올라오는 구글시트입니다.",
+  "python3 tools/endgame_import.py --write 로 여기서 바로 받아옵니다.",
+  "시트가 '링크가 있는 모든 사용자 — 뷰어'로 열려 있어야 인증 없이 읽힙니다.",
+  "Results 탭의 열 순서(Winner/Race/Loser/Race/Map/Date)를 그대로 씁니다.",
+  "열을 새로 끼워넣으면 endgame_import.py 가 깨집니다.",
+  "시트를 옮기면 sheetId 만 바꾸세요."
+ ],
+ "sheetId": "1kTgQlye20qKemyZ8Bt0REe0MrQ2kaZXiO0mdZEkySmg",
+ "sheet": "Results",
+ "title": "끝장전 데이터_2026년.최종(메인)"
+}

@@ -6,9 +6,10 @@
 
 하는 일
   1. 구글시트에서 ASL 기록을 받아옵니다 (data/asl-source.json 의 주소)
-  2. 지금 데이터와 무엇이 다른지 보여 주고 data/asl.json 을 갱신합니다
-  3. 사이트를 다시 만듭니다
-  4. FTP 로 올립니다 (바뀐 파일만)
+  2. 구글시트에서 끝장전 기록을 받아옵니다 (data/endgame-source.json 의 주소)
+  3. 지금 데이터와 무엇이 다른지 보여 주고 data/asl.json · data/endgame.json 을 갱신합니다
+  4. 사이트를 다시 만듭니다
+  5. FTP 로 올립니다 (바뀐 파일만)
 
 옵션
   --dry-run     아무것도 바꾸지 않고 시트에 무엇이 달라졌는지만 봅니다
@@ -32,6 +33,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import asl_import                                 # noqa: E402
+import endgame_import                             # noqa: E402
 
 # 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
 try:
@@ -79,16 +81,31 @@ def main():
     shrank = _shrank(old, data)
     asl_import.show_diff(old, data)
 
+    print('')
+    print('── 3. 끝장전 시트 받아오기 ' + '─' * 28)
+    eg_sets = endgame_import.fetch_sets(*endgame_import.load_source())
+    print('  세트 %d줄을 읽었습니다.' % len(eg_sets))
+    eg_path = os.path.join(ROOT, 'data', 'endgame.json')
+    eg_old = None
+    if os.path.exists(eg_path):
+        try:
+            eg_old = json.load(io.open(eg_path, encoding='utf-8'))
+        except ValueError:
+            eg_old = None
+    eg_new = endgame_import.build_doc(eg_sets, (eg_old or {}).get('builtAt') or '')
+    eg_lost = endgame_import.summarize(eg_old, eg_new)
+
     if args.dry_run:
         print('\n--dry-run 이라 여기서 멈춥니다. 아무것도 바꾸지 않았습니다.')
         return
 
-    if shrank and not args.force:
+    if (shrank or eg_lost) and not args.force:
         raise SystemExit(
             '\n기록이 줄었습니다. 시트에서 줄이 지워졌을 수 있어 멈춥니다.\n'
             '  시트를 확인해 보시고, 의도한 것이면 --force 를 붙여 다시 실행하세요.')
 
     run('asl_import.py', '--sheet')
+    run('endgame_import.py', *(['--write', '--force'] if args.force else ['--write']))
     run('build.py')
     if args.no_deploy:
         print('\n--no-deploy 라 올리지 않았습니다. '
