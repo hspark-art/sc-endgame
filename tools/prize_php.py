@@ -272,10 +272,22 @@ hr{border-color:#232a38}
 a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}
 a.top:hover{color:#e8ecf3}
 </style></head><body><div class="wrap">
-<h1>🎁 상품 추첨 관제 <span id="liveflag" class="pill">연결 준비…</span>
+<h1>🎁 상품 추첨 관제 <span id="liveflag" class="pill">연결 준비…</span></h1>
+<div class="row" style="margin:0 0 10px">
+<span class="n">채널</span>
+<input id="bjInput" placeholder="talent (우리 방송)" style="width:180px">
+<button class="gray" onclick="goCh(document.getElementById('bjInput').value.trim())">붙기</button>
+<button class="gray" onclick="goCh('')">우리 채널(talent)</button>
+<button class="gray" onclick="goCh('__demo')">연습(가짜 채팅)</button>
+<a class="top" href="prize_overlay.php" target="_blank">📺 방송 장면 열기 ↗</a>
 <a class="top" href="cg.php">CG 제작 →</a>
-<a class="top" href="prize_overlay.php" target="_blank">자막 창 열기 ↗</a>
-<span class="n" style="font-weight:500">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></h1>
+<span class="n">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></div>
+<script>
+function goCh(v){
+  if(v==='__demo'){location.href='prize.php?demo';return;}
+  location.href = v ? ('prize.php?bj='+encodeURIComponent(v)) : 'prize.php';
+}
+</script>
 <div class="grid">
 
 <div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span></div>
@@ -512,10 +524,14 @@ async function refresh(){
   document.getElementById('prizes').innerHTML=ST.prizes.items.map(x=>
     '<div class="row">'+(x.photo?'<img class="thumb" src="'+x.photo+'">':'')+
     '<span style="flex:1">'+esc(x.name)+'</span>'+
+    '<button class="gray" style="padding:3px 9px" data-show="'+x.id+'">📺 보여주기</button>'+
     '<button class="red" style="padding:3px 9px" data-del="'+x.id+'">지우기</button></div>')
     .join('')||'<div class="hint">아직 상품이 없습니다.</div>';
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     await api('prize_del',{id:b.dataset.del});refresh();});
+  document.querySelectorAll('[data-show]').forEach(b=>b.onclick=async()=>{
+    const pz=prizeOf(b.dataset.show)||{};
+    await api('overlay_set',{overlay:{kind:'prize',prize:pz.name||'',photo:pz.photo||''}});});
   const wl=ST.winners.list;
   document.getElementById('wcount').textContent=wl.length+'건';
   document.getElementById('winners').innerHTML='<tbody>'+wl.slice().reverse().map(w=>
@@ -577,7 +593,8 @@ if(location.search.includes('demo')){
     'GG치지마','빌드깎는노인','더블넥좋아','뮤탈짤짤이','벙커링장인'];
   const MSGS=['ㅋㅋㅋㅋ','이걸 막네','오늘 폼 미쳤다','9세트 가자','GG','역전각','지리네요'];
   liveOn=true;liveTitle='(연습)';
-  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅');
+  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 (기록 저장 안 함)');
+  window.IS_TEST_CH=true;
   setInterval(()=>{
     const n=NICKS[Math.floor(Math.random()*NICKS.length)];
     if(Math.random()<0.12)onEvent({t:'balloon',nick:n,at:now(),
@@ -592,52 +609,115 @@ if(location.search.includes('demo')){
 
 # ── 자막 창 ──────────────────────────────────────────────────
 
+
+# ── 방송 장면 (자막 아닌 '한 장면') ──────────────────────────
+#
+# 방송 위에 얹는 투명 자막이 아니라, 그 자체로 방송에 보여 주는 한 장면입니다.
+#   · 꽉 찬 배경 + 상품 사진 + 당첨자 + 핀볼이 페이지 안에서 다 보입니다
+#   · 왼쪽 아래에 '중계진' 자리(PIP) 를 비워 둡니다 — 그 칸을 눌러
+#     테두리 / 초록(크로마키) / 카메라 / 없음 으로 바꿉니다
+
 def prize_overlay():
     return r'''<?php require __DIR__ . '/auth.php'; admin_require_login(); ?>
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
-<title>당첨 자막 — 방송 화면용</title><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;
-background:#00ff00;overflow:hidden;font-family:'Pretendard','Malgun Gothic',sans-serif}
-body.dark{background:#0a0d13}
-#hint{position:absolute;top:10px;left:14px;color:rgba(0,0,0,.55);font-size:13px;
-font-weight:700}body.dark #hint{color:rgba(255,255,255,.4)}
-#banner{position:absolute;left:50%;bottom:6%;transform:translateX(-50%) scale(0);
-display:flex;align-items:center;gap:26px;padding:26px 44px;border-radius:22px;
-background:linear-gradient(135deg,rgba(12,16,26,.96),rgba(20,26,40,.96));
-border:3px solid #ffc63d;box-shadow:0 18px 60px rgba(0,0,0,.6);
-transition:transform .45s cubic-bezier(.2,1.6,.4,1)}
-#banner.show{transform:translateX(-50%) scale(1)}
-#banner img{width:120px;height:120px;object-fit:cover;border-radius:16px}
-#banner .cap{color:#ffc63d;font-weight:900;font-size:28px;letter-spacing:.12em}
-#banner .nick{color:#fff;font-weight:900;font-size:58px;line-height:1.15}
-#banner .prize{color:#cdd6e4;font-weight:700;font-size:32px}
-#board{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none}
-#board.show{display:block}
+<title>상품 추첨 방송 장면</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;
+font-family:'Pretendard','Malgun Gothic',sans-serif;background:#0a0d13}
+#scene{position:absolute;inset:0;background:
+radial-gradient(1200px 800px at 15% 20%,rgba(140,31,42,.55),transparent 60%),
+radial-gradient(1200px 800px at 85% 20%,rgba(18,58,120,.55),transparent 60%),
+linear-gradient(180deg,#0d1017,#080a0f)}
+#scene::before{content:'';position:absolute;inset:0;opacity:.05;
+background:repeating-linear-gradient(115deg,#fff 0 2px,transparent 2px 30px)}
+.chroma #scene{background:#00d000}
+.chroma #scene::before{display:none}
+#title{position:absolute;top:54px;left:0;right:0;text-align:center;color:#fff;
+font-weight:900;font-size:56px;letter-spacing:.02em;text-shadow:0 4px 18px rgba(0,0,0,.5)}
+#title b{color:#ffc63d}
+#hint{position:absolute;top:12px;right:16px;color:rgba(255,255,255,.35);font-size:13px}
+#stage{position:absolute;left:0;right:0;top:150px;bottom:0;display:flex;
+align-items:center;justify-content:center}
+.box{display:none;flex-direction:column;align-items:center;gap:22px;text-align:center;padding:0 60px}
+.box.show{display:flex;animation:pop .5s cubic-bezier(.2,1.5,.4,1)}
+.plabel{color:#ffc63d;font-weight:900;font-size:34px;letter-spacing:.14em}
+.pimg{max-width:620px;max-height:520px;border-radius:22px;object-fit:contain;
+box-shadow:0 20px 60px rgba(0,0,0,.55);background:rgba(255,255,255,.03)}
+.pname{color:#fff;font-weight:900;font-size:60px;line-height:1.15}
+.wcap{color:#ffc63d;font-weight:900;font-size:40px;letter-spacing:.12em}
+.wnick{color:#fff;font-weight:900;font-size:104px;line-height:1.1;text-shadow:0 6px 26px rgba(0,0,0,.6)}
+.wprize{color:#cdd6e4;font-weight:700;font-size:40px}
+.idle{color:rgba(255,255,255,.82);font-weight:800;font-size:48px}
+#board{display:none}#board.show{display:block}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+#pip{position:absolute;left:44px;bottom:44px;width:560px;height:315px;border-radius:16px;
+overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#pip.frame{border:3px solid rgba(255,255,255,.5);background:rgba(0,0,0,.35)}
+#pip.chroma{background:#00d000;border:0}
+#pip.cam{background:#000;border:3px solid rgba(255,255,255,.35)}
+#pip.off{display:none}
+#pip .lab{color:rgba(255,255,255,.7);font-weight:800;font-size:22px;pointer-events:none}
+#pip.chroma .lab{color:rgba(0,0,0,.35)}
+#pip video{width:100%;height:100%;object-fit:cover}
 </style></head><body>
-<div id="hint">이 창을 방송 화면에 잡으세요 · 초록 배경은 크로마키용 — 화면을 누르면 어두운 배경으로 바뀝니다</div>
-<div id="banner"><img id="bimg" hidden>
-<div><div class="cap" id="bcap">🎁 상품 당첨</div>
-<div class="nick" id="bnick"></div><div class="prize" id="bprize"></div></div></div>
-<canvas id="board" width="1200" height="860"></canvas>
+<div id="scene"></div>
+<div id="hint">화면 클릭 = 배경 초록/어둠 · PIP 클릭 = 중계진 자리 바꾸기</div>
+<div id="title">&#127873; <b>&#45001;&#51109;&#51204;</b> &#49345;&#54408; &#52628;&#52628;&#52628;</div>
+<div id="stage">
+  <div class="box" id="idleBox"><div class="idle" id="idleText"></div></div>
+  <div class="box" id="prizeBox"><div class="plabel" id="prizeLbl"></div>
+    <img class="pimg" id="prizeImg" hidden><div class="pname" id="prizeName"></div></div>
+  <div class="box" id="winBox"><div class="wcap" id="winCap"></div>
+    <img class="pimg" id="winImg" hidden style="max-height:300px">
+    <div class="wnick" id="winNick"></div><div class="wprize" id="winPrize"></div></div>
+  <canvas id="board" width="1200" height="820"></canvas>
+</div>
+<div id="pip" class="frame"><span class="lab" id="pipLab"></span>
+  <video id="cam" autoplay muted playsinline hidden></video></div>
 <script>
-document.body.addEventListener('click',()=>document.body.classList.toggle('dark'));
-let seq=-1,anim=null;
+document.getElementById('title').innerHTML='🎁 <b>끝장전</b> 상품 추첨';
+document.getElementById('idleText').textContent='잠시 후, 행운의 주인공을 뽑습니다 🎯';
+document.getElementById('prizeLbl').textContent='이번 상품';
+document.getElementById('winCap').textContent='🎉 축하합니다';
+const PIP_MODES=['frame','chroma','cam','off'];
+const PIP_LAB={frame:'중계진 화면',chroma:'',cam:'',off:''};
+let pipI=0, camStream=null;
+const pip=document.getElementById('pip'), camEl=document.getElementById('cam'), pipLab=document.getElementById('pipLab');
+function setPip(){
+  pip.className=PIP_MODES[pipI];
+  pipLab.textContent=PIP_LAB[PIP_MODES[pipI]];
+  if(PIP_MODES[pipI]==='cam'){
+    camEl.hidden=false;
+    if(!camStream){navigator.mediaDevices.getUserMedia({video:true,audio:false})
+      .then(function(s){camStream=s;camEl.srcObject=s;})
+      .catch(function(){pipLab.textContent='카메라 권한 거부';});}
+  }else{camEl.hidden=true;}
+}
+pip.addEventListener('click',function(e){e.stopPropagation();pipI=(pipI+1)%PIP_MODES.length;setPip();});
+setPip();
+document.body.addEventListener('click',function(){document.body.classList.toggle('chroma');});
+let seq=-1, anim=null;
+function show(id){['idleBox','prizeBox','winBox'].forEach(function(b){
+  document.getElementById(b).classList.toggle('show',b===id);});
+  document.getElementById('board').classList.remove('show');
+  if(anim){cancelAnimationFrame(anim);anim=null;}
+}
+function idle(){show('idleBox');}
+function prize(st){
+  show('prizeBox');
+  const im=document.getElementById('prizeImg');
+  if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
+  document.getElementById('prizeName').textContent=st.prize||'';
+}
+function winner(st){
+  show('winBox');
+  document.getElementById('winCap').textContent=st.how==='핀볼'?'🎯 핀볼 추첨 당첨':'🎉 축하합니다';
+  const im=document.getElementById('winImg');
+  if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
+  document.getElementById('winNick').textContent=st.nick||st.winner||'';
+  document.getElementById('winPrize').textContent=st.prize||'';
+}
 const cv=document.getElementById('board'),cx=cv.getContext('2d');
-function showBanner(nick,prize,photo,cap){
-  const b=document.getElementById('banner');
-  document.getElementById('bnick').textContent=nick;
-  document.getElementById('bprize').textContent=prize||'';
-  document.getElementById('bcap').textContent=cap||'🎁 상품 당첨';
-  const im=document.getElementById('bimg');
-  if(photo){im.src=photo;im.hidden=false}else im.hidden=true;
-  b.classList.add('show');
-}
-function hideAll(){
-  document.getElementById('banner').classList.remove('show');
-  cv.classList.remove('show');
-  if(anim){cancelAnimationFrame(anim);anim=null}
-}
 function plinko(st){
   const slots=st.slots,winIdx=slots.indexOf(st.winner);
   const ROWS=9,T=210,slotW=cv.width/slots.length;
@@ -650,39 +730,38 @@ function plinko(st){
     col=Math.max(0,Math.min(slots.length-1,col+step));path.push(col);
   }
   path[ROWS-1]=winIdx;
-  let t0=null;cv.classList.add('show');
+  ['idleBox','prizeBox','winBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
+  cv.classList.add('show');
+  let t0=null;
   function frame(ts){
-    if(!t0)t0=ts;
-    const el=ts-t0,total=ROWS*T+700;
+    if(!t0)t0=ts;const el=ts-t0,total=ROWS*T+700;
     cx.clearRect(0,0,cv.width,cv.height);
-    cx.fillStyle='rgba(10,13,20,.92)';
+    cx.fillStyle='rgba(10,13,20,.6)';
     cx.beginPath();cx.roundRect(0,0,cv.width,cv.height,26);cx.fill();
     cx.strokeStyle='#ffc63d';cx.lineWidth=4;cx.stroke();
-    cx.fillStyle='#ffc63d';cx.font='900 40px Pretendard';cx.textAlign='center';
-    cx.fillText('🎯 행운의 핀볼 추첨',cv.width/2,62);
+    cx.fillStyle='#ffc63d';cx.font='900 42px Pretendard';cx.textAlign='center';
+    cx.fillText('🎯 행운의 핀볼 추첨',cv.width/2,60);
     cx.fillStyle='#8a93a6';
     for(let r=0;r<ROWS;r++)for(let c=0;c<=slots.length;c++){
       const px=c*slotW+(r%2?slotW/2:0);
-      if(px>10&&px<cv.width-10){cx.beginPath();cx.arc(px,130+r*64,5,0,7);cx.fill()}
+      if(px>10&&px<cv.width-10){cx.beginPath();cx.arc(px,120+r*62,5,0,7);cx.fill();}
     }
-    slots.forEach((s2,i2)=>{
+    slots.forEach(function(s2,i2){
       const hl=el>total-500&&i2===winIdx;
       cx.fillStyle=hl?'#ffc63d':'rgba(27,32,43,.95)';
-      cx.beginPath();cx.roundRect(i2*slotW+5,cv.height-96,slotW-10,86,10);cx.fill();
+      cx.beginPath();cx.roundRect(i2*slotW+5,cv.height-92,slotW-10,82,10);cx.fill();
       cx.fillStyle=hl?'#0b0d11':'#e8ecf3';
       cx.font=(hl?'900 ':'700 ')+Math.min(26,300/Math.max(4,s2.length)+10)+'px Pretendard';
-      cx.fillText(s2,i2*slotW+slotW/2,cv.height-44);
+      cx.fillText(s2,i2*slotW+slotW/2,cv.height-42);
     });
     const step=Math.min(ROWS-1,Math.floor(el/T)),f=Math.min(1,(el-step*T)/T);
     const c0=step?path[step-1]:Math.floor(slots.length/2),c1=path[step];
-    const bx=(c0+(c1-c0)*f+0.5)*slotW;
-    const by=96+step*64+f*64+Math.sin(f*3.14)*-26;
-    const yy=el>ROWS*T?Math.min(cv.height-120,96+ROWS*64+(el-ROWS*T)*.9):by;
+    const bx=(c0+(c1-c0)*f+0.5)*slotW,by=88+step*62+f*62+Math.sin(f*3.14)*-24;
+    const yy=el>ROWS*T?Math.min(cv.height-116,88+ROWS*62+(el-ROWS*T)*.9):by;
     cx.fillStyle='#ff4d5a';
     cx.beginPath();cx.arc(el>ROWS*T?(winIdx+0.5)*slotW:bx,yy,17,0,7);cx.fill();
     if(el<total)anim=requestAnimationFrame(frame);
-    else{cv.classList.remove('show');
-      showBanner(st.winner,st.prize,st.photo,'🎯 핀볼 추첨 당첨');}
+    else{cv.classList.remove('show');winner({nick:st.winner,prize:st.prize,photo:st.photo,how:'핀볼'});}
   }
   anim=requestAnimationFrame(frame);
 }
@@ -690,14 +769,15 @@ async function poll(){
   try{
     const st=await (await fetch('prize_api.php?act=overlay')).json();
     if(st.seq!==seq){
-      seq=st.seq;hideAll();
-      if(st.kind==='winner')showBanner(st.nick,st.prize,st.photo,
-        st.how==='핀볼'?'🎯 핀볼 추첨 당첨':'🎁 상품 당첨');
+      seq=st.seq;
+      if(st.kind==='winner')winner(st);
       else if(st.kind==='plinko')plinko(st);
+      else if(st.kind==='prize')prize(st);
+      else idle();
     }
   }catch(e){}
   setTimeout(poll,900);
 }
-poll();
+idle();poll();
 </script></body></html>
 '''

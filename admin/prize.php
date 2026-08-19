@@ -37,10 +37,22 @@ hr{border-color:#232a38}
 a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}
 a.top:hover{color:#e8ecf3}
 </style></head><body><div class="wrap">
-<h1>🎁 상품 추첨 관제 <span id="liveflag" class="pill">연결 준비…</span>
+<h1>🎁 상품 추첨 관제 <span id="liveflag" class="pill">연결 준비…</span></h1>
+<div class="row" style="margin:0 0 10px">
+<span class="n">채널</span>
+<input id="bjInput" placeholder="talent (우리 방송)" style="width:180px">
+<button class="gray" onclick="goCh(document.getElementById('bjInput').value.trim())">붙기</button>
+<button class="gray" onclick="goCh('')">우리 채널(talent)</button>
+<button class="gray" onclick="goCh('__demo')">연습(가짜 채팅)</button>
+<a class="top" href="prize_overlay.php" target="_blank">📺 방송 장면 열기 ↗</a>
 <a class="top" href="cg.php">CG 제작 →</a>
-<a class="top" href="prize_overlay.php" target="_blank">자막 창 열기 ↗</a>
-<span class="n" style="font-weight:500">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></h1>
+<span class="n">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></div>
+<script>
+function goCh(v){
+  if(v==='__demo'){location.href='prize.php?demo';return;}
+  location.href = v ? ('prize.php?bj='+encodeURIComponent(v)) : 'prize.php';
+}
+</script>
 <div class="grid">
 
 <div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span></div>
@@ -277,10 +289,14 @@ async function refresh(){
   document.getElementById('prizes').innerHTML=ST.prizes.items.map(x=>
     '<div class="row">'+(x.photo?'<img class="thumb" src="'+x.photo+'">':'')+
     '<span style="flex:1">'+esc(x.name)+'</span>'+
+    '<button class="gray" style="padding:3px 9px" data-show="'+x.id+'">📺 보여주기</button>'+
     '<button class="red" style="padding:3px 9px" data-del="'+x.id+'">지우기</button></div>')
     .join('')||'<div class="hint">아직 상품이 없습니다.</div>';
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     await api('prize_del',{id:b.dataset.del});refresh();});
+  document.querySelectorAll('[data-show]').forEach(b=>b.onclick=async()=>{
+    const pz=prizeOf(b.dataset.show)||{};
+    await api('overlay_set',{overlay:{kind:'prize',prize:pz.name||'',photo:pz.photo||''}});});
   const wl=ST.winners.list;
   document.getElementById('wcount').textContent=wl.length+'건';
   document.getElementById('winners').innerHTML='<tbody>'+wl.slice().reverse().map(w=>
@@ -342,7 +358,8 @@ if(location.search.includes('demo')){
     'GG치지마','빌드깎는노인','더블넥좋아','뮤탈짤짤이','벙커링장인'];
   const MSGS=['ㅋㅋㅋㅋ','이걸 막네','오늘 폼 미쳤다','9세트 가자','GG','역전각','지리네요'];
   liveOn=true;liveTitle='(연습)';
-  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅');
+  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 (기록 저장 안 함)');
+  window.IS_TEST_CH=true;
   setInterval(()=>{
     const n=NICKS[Math.floor(Math.random()*NICKS.length)];
     if(Math.random()<0.12)onEvent({t:'balloon',nick:n,at:now(),
