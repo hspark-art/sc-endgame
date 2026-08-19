@@ -160,12 +160,17 @@ def fetch_sheet_csv(source=None):
         if not os.path.exists(path):
             raise SystemExit('data/asl-source.json 이 없습니다. sheetId 와 gid 를 넣어 주세요.')
         src = json.load(io.open(path, encoding='utf-8'))
-    sid, gid = src.get('sheetId'), str(src.get('gid', '0'))
+    sid = src.get('sheetId')
+    gid = src.get('gid')
+    gid = '' if gid in (None, '') else str(gid)
     if not sid:
         raise SystemExit('data/asl-source.json 에 sheetId 가 없습니다.')
-    url = ('https://docs.google.com/spreadsheets/d/%s/export?format=csv&gid=%s'
-           % (sid, gid))
-    print('구글시트에서 받아오는 중 — %s (gid %s)' % (src.get('title') or sid, gid))
+    # gid 를 비워 두면 첫 번째 탭을 받아옵니다. 새로 만든 시트는 첫 탭 gid 가
+    # 0 이 아닐 수 있어서, 탭이 하나뿐이면 그냥 비워 두는 편이 안전합니다.
+    url = ('https://docs.google.com/spreadsheets/d/%s/export?format=csv' % sid
+           + ('&gid=%s' % gid if gid else ''))
+    print('구글시트에서 받아오는 중 — %s (%s)'
+          % (src.get('title') or sid, ('gid %s' % gid) if gid else '첫 번째 탭'))
     req = urllib.request.Request(url, headers={'User-Agent': 'sc-endgame/1.0'})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
