@@ -127,8 +127,12 @@ def connect(cfg):
             ftp.prot_p()
             print('  FTPS(암호화)로 접속했습니다.')
             return ftp
-        except (ftplib.all_errors, ssl.SSLError, OSError) as e:
+        except Exception as e:      # 어떤 이유로든 FTPS 가 안 되면 평문으로 내려갑니다
             print('  FTPS 실패(%s) — 평문 FTP 로 다시 시도합니다.' % type(e).__name__)
+            try:
+                ftp.close()
+            except Exception:
+                pass
     ftp = ftplib.FTP(timeout=30)
     ftp.connect(cfg['host'], cfg['port'])
     ftp.login(cfg['user'], cfg['password'])

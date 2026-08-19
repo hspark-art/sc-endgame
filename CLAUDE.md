@@ -18,6 +18,14 @@
 
 ## 자주 쓰는 명령
 
+새 PC 에서 **처음 한 번만** — FTP 정보를 넣고 전부 잘 되는지 확인합니다.
+
+```bash
+python3 tools/setup.py
+```
+
+그다음부터는 이것만 씁니다.
+
 ```bash
 python3 tools/update.py              # 구글시트 → 데이터 → 사이트 → 업로드 (제일 많이 씀)
 python3 tools/update.py --dry-run    # 아무것도 바꾸지 않고 무엇이 달라지는지만
