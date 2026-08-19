@@ -72,9 +72,9 @@ def main():
             old = None
 
     if fixes:
-        print('  시트에 종족이 엇갈리게 적힌 선수를 최빈 종족으로 맞췄습니다:')
+        print('  여러 종족으로 출전한 선수 (랜덤 출전 — 세트 기록은 그대로 씁니다):')
         for name, best, others in fixes:
-            print('    %s → %s (다르게 적힌 줄: %s)'
+            print('    %s 주 종족 %s · 다른 종족으로 뛴 줄: %s'
                   % (name, best, ', '.join('%s %d줄' % kv for kv in sorted(others.items()))))
 
     print('\n── 2. 지금 데이터와 견주기 ' + '─' * 28)

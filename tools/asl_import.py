@@ -184,12 +184,15 @@ def fetch_sheet_csv(source=None):
     return text
 
 
-def fix_races(sets):
-    """한 선수의 종족은 하나입니다.
+def player_races(sets):
+    """선수마다 '주 종족'을 정합니다. 세트에 적힌 종족은 건드리지 않습니다.
 
-    시트에는 드물게 오타로 같은 선수가 다른 종족으로 적힌 줄이 있습니다.
-    그대로 두면 상성·동족전 집계가 틀어지므로, 가장 많이 적힌 종족으로 맞추고
-    무엇을 바꿨는지 돌려줍니다 (원본 시트는 건드리지 않습니다).
+    랜덤으로 출전하면 한 경기 안에서도 세트마다 종족이 달라집니다 (실제로
+    이영호가 ASL Season 10 에서 그렇게 나왔습니다). 예전에는 이걸 오타로 보고
+    가장 많은 종족으로 덮어썼는데, 그러면 실제로 치른 종족전이 사라집니다.
+    그래서 세트 기록은 그대로 두고, 선수 목록에 표시할 대표 종족만 정합니다.
+
+    돌려주는 값은 (선수 → 주 종족, 여러 종족으로 뛴 선수 목록) 입니다.
     """
     tally = defaultdict(Counter)
     for s in sets:
@@ -202,12 +205,7 @@ def fix_races(sets):
         canon[name] = best
         if len(c) > 1:
             notes.append((name, best, {k: v for k, v in c.items() if k != best}))
-
-    for s in sets:
-        s['aRace'], s['bRace'] = canon[s['a']], canon[s['b']]
-        s['winRace'] = canon[s['winner']]
-        s['loseRace'] = canon[s['loser']]
-    return notes
+    return canon, notes
 
 
 def load_sets(xlsx=None):
@@ -217,7 +215,7 @@ def load_sets(xlsx=None):
     돌려주는 값은 (세트 목록, 종족을 고친 내역) 입니다.
     """
     sets = read_sets(xlsx) if xlsx else read_sets_csv(fetch_sheet_csv())
-    return sets, fix_races(sets)
+    return sets, player_races(sets)[1]
 
 
 def group_matches(sets):
@@ -297,6 +295,9 @@ def build(sets, matches):
     tour_list.reverse()                        # 최신 시즌이 위로
 
     # ── 선수 ──────────────────────────────────────────
+    # 선수 목록에 표시할 종족은 '주 종족'을 씁니다. 랜덤으로 뛴 세트가 섞여도
+    # 목록의 종족이 세트마다 흔들리지 않게 하려는 것입니다.
+    main_race = player_races(sets)[0]
     P = {}
 
     def slot(name, race):
@@ -310,7 +311,8 @@ def build(sets, matches):
         return p
 
     for s in sets:
-        pw, pl = slot(s['winner'], s['winRace']), slot(s['loser'], s['loseRace'])
+        pw = slot(s['winner'], main_race.get(s['winner'], s['winRace']))
+        pl = slot(s['loser'], main_race.get(s['loser'], s['loseRace']))
         pw['setWin'] += 1
         pl['setLoss'] += 1
         pw['vsRace'][s['loseRace']]['w'] += 1
@@ -565,10 +567,11 @@ def main():
     print('  우승 기록이 있는 대회 %d개 / 결승 미확정 %d개'
           % (len(champs), g['totalTournaments'] - len(champs)))
     if fixes:
-        print('\n  ! 시트에 종족이 엇갈리게 적힌 선수가 있어 최빈 종족으로 맞췄습니다.')
-        print('    (원본 엑셀은 그대로입니다 — 시트를 고치시면 이 줄이 사라집니다)')
+        print('\n  여러 종족으로 출전한 선수 (랜덤 출전)')
+        print('    세트에 적힌 종족을 그대로 씁니다. 선수 목록에 보이는 종족만'
+              ' 주 종족으로 표시합니다.')
         for name, best, others in fixes:
-            print('      %s → %s 로 통일 (다르게 적힌 줄: %s)'
+            print('      %s 주 종족 %s · 다른 종족으로 뛴 줄: %s'
                   % (name, best,
                      ', '.join('%s %d줄' % (k, v) for k, v in sorted(others.items()))))
 
