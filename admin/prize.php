@@ -59,7 +59,7 @@ function goCh(v){
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
 <div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span></div>
-<div class="scroll"><table id="users"><thead><tr><th>닉네임</th>
+<div class="scroll"><table id="users"><thead><tr><th class="num">#</th><th>닉네임</th>
 <th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
 <th>당첨</th><th></th></tr></thead><tbody></tbody></table></div>
 <hr><div class="ct">지난 방송 <span class="n">저절로 저장됩니다</span></div>
@@ -321,16 +321,23 @@ function paint(){
     +Object.keys(users).length+' · 채팅 '
     +Object.values(users).reduce((a,u)=>a+u.c,0)+' · 별풍선 '
     +Object.values(users).reduce((a,u)=>a+u.b,0);
-  document.getElementById('chat').innerHTML=recent.slice().reverse().slice(0,60).map(e=>
+  const chatEl=document.getElementById('chat');
+  // 이미 맨 아래를 보고 있으면 새 글에 맞춰 따라 내려갑니다 (위로 올려 읽는 중이면 안 건드림)
+  const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
+  chatEl.innerHTML=recent.slice(-80).map(e=>
     e.t==='balloon'
     ?'<div class="chatline">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
       +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
-    :'<div class="chatline"><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
+    :'<div class="chatline"><span class="pill" style="margin-right:5px">'+e.at
+      +'</span><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
+  if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
   const rows=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,
     w:weight(nick),wins:winCount(nick)[0]}));
-  rows.sort((a,b)=>b.b-a.b||b.c-a.c);
-  document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map(u=>
-    '<tr><td>'+esc(u.nick)+'</td><td class="num">'+u.c+'</td>'+
+  // 당첨 확률(가중치) 높은 순 — 같으면 별풍선·채팅 순
+  rows.sort((a,b)=>b.w-a.w||b.b-a.b||b.c-a.c);
+  document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map((u,i)=>
+    '<tr><td class="num" style="color:#8a93a6">'+(i+1)+'</td>'+
+    '<td>'+esc(u.nick)+'</td><td class="num">'+u.c+'</td>'+
     '<td class="num balloon">'+(u.b||'')+'</td><td class="num">x'+u.w.toFixed(2)+
     '</td><td>'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
     '<td><button class="gray" style="padding:2px 8px" data-pick="'
