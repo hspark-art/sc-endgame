@@ -26,6 +26,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import admin_php                                 # noqa: E402
+import prize_php                                 # noqa: E402
 import audit                                     # noqa: E402
 import render                                    # noqa: E402
 import stats                                     # noqa: E402
@@ -472,6 +473,9 @@ def main():
     write('admin/.htaccess', admin_php.HTACCESS)
     write('admin/config.sample.php', admin_php.CONFIG_SAMPLE)
     write('admin/index.php', admin_php.index_php(css, render.SITE_NAME))
+    write('admin/prize_api.php', prize_php.PRIZE_API)
+    write('admin/prize.php', prize_php.prize_page())
+    write('admin/prize_overlay.php', prize_php.prize_overlay())
     # 예전 빌드가 남긴 무방비 파일이 있으면 치웁니다.
     old = os.path.join(ROOT, 'admin', 'cg.html')
     if os.path.exists(old):
