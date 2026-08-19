@@ -360,7 +360,7 @@ ol.steps li{margin-bottom:4px}
 <body>
 <div class="brandbar"></div>
 <div class="wrap cgwrap">
-<nav class="sitenav"><a class="navlink" href="../index.html">끝장전</a><a class="navlink" href="../asl/index.html">ASL</a></nav>
+<nav class="sitenav"><a class="navlink" href="../index.html">← 사이트로 돌아가기</a></nav>
 <header style="border-bottom:none;padding-bottom:6px"><div class="headrow"><div><h1>CG 제작 툴</h1><div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. 입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div><div style="margin-left:auto;text-align:right"><div class="helptxt" style="margin:0"><?= htmlspecialchars(admin_user(), ENT_QUOTES) ?> 님</div><a class="dlbtn" href="logout.php" style="margin-top:6px;display:inline-block">로그아웃</a></div></div></header>
 <div class="cglayout">
 <div class="cgpanel">

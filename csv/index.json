@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-08-19T08:51:36.803Z",
-  "updatedAtKo": "2026년 08월 19일 17:51 (KST)",
+  "updatedAt": "2026-08-19T10:03:58.953Z",
+  "updatedAtKo": "2026년 08월 19일 19:03 (KST)",
   "base": "https://pubgin.com/endgame",
   "xlsx": "https://pubgin.com/endgame/xlsx/sc-endgame.xlsx",
   "aslXlsx": "https://pubgin.com/endgame/xlsx/asl.xlsx",
@@ -76,7 +76,7 @@
       "desc": "매치(시리즈) 한 줄씩 — 대회·라운드·대진·스코어",
       "file": "asl-matches.csv",
       "group": "ASL",
-      "rows": 1299,
+      "rows": 1304,
       "url": "https://pubgin.com/endgame/csv/asl-matches.csv"
     },
     {
@@ -84,7 +84,7 @@
       "desc": "세트 한 줄씩 — 어떤 맵에서 누가 이겼는지",
       "file": "asl-sets.csv",
       "group": "ASL",
-      "rows": 2177,
+      "rows": 2182,
       "url": "https://pubgin.com/endgame/csv/asl-sets.csv"
     },
     {
@@ -100,7 +100,7 @@
       "desc": "선수 대 선수 맞대결 기록",
       "file": "asl-headtohead.csv",
       "group": "ASL",
-      "rows": 720,
+      "rows": 723,
       "url": "https://pubgin.com/endgame/csv/asl-headtohead.csv"
     }
   ]

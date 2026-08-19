@@ -107,10 +107,15 @@ def gear(depth=0):
 def nav(active, depth=0):
     """모든 페이지 맨 위에 붙는 사이트 전환 바."""
     up = '../' * depth
-    items = ''.join(
-        '<a class="navlink%s" href="%s%s">%s</a>'
-        % (' on' if key == active else '', up, href, label)
-        for key, label, _dir, href in SITES)
+    if active == 'cg':
+        # CG 제작 툴에는 사이트로 나가는 길 하나만 둡니다.
+        # ASL 은 메인 메뉴에 이미 있어서 여기서는 뺐습니다.
+        items = '<a class="navlink" href="%sindex.html">← 사이트로 돌아가기</a>' % up
+    else:
+        items = ''.join(
+            '<a class="navlink%s" href="%s%s">%s</a>'
+            % (' on' if key == active else '', up, href, label)
+            for key, label, _dir, href in SITES)
     return '<nav class="sitenav">%s</nav>\n' % items
 
 

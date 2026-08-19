@@ -6,6 +6,7 @@
     python3 tools/fetch_videos.py             # 매칭 결과만 보여주고 끝
     python3 tools/fetch_videos.py --write     # data/videos.json 에 실제로 기록
     python3 tools/fetch_videos.py --write --min-score 3   # 더 엄격하게
+    python3 tools/fetch_videos.py --write --replace       # 앞서 넣은 것도 새로 덮어쓰기
 
 무엇을 하나요
   1. 채널(@ETALENT-SC, @ETALENT-TV)의 업로드 목록을 전부 받아옵니다.
@@ -19,6 +20,7 @@
 """
 
 import argparse
+import bisect
 import io
 import json
 import os
@@ -26,7 +28,6 @@ import re
 import sys
 import urllib.parse
 import urllib.request
-from collections import defaultdict
 from datetime import date, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -112,15 +113,34 @@ def dates_in(text, fallback_year=None):
     return found
 
 
+# 여러 경기를 한 편에 몰아 담은 편집본입니다 — 특정 경기의 다시보기가 아닙니다.
+COMPILATION_RE = re.compile(r'몰아보기|모아보기|명경기 모음|\d+\s*[~∼-]\s*\d+\s*화')
+
+
+def is_compilation(video):
+    return bool(COMPILATION_RE.search(video['title']))
+
+
+# 제목 끝의 방송 회차 — 'SC1-14', 'Sc1- 221' 처럼 적혀 있습니다.
+EPISODE_RE = re.compile('[Ss][Cc]1[- –] *([0-9]{1,3})')
+
+
+def episode_of(video):
+    m = EPISODE_RE.search(video['title'])
+    return int(m.group(1)) if m else None
+
+
 def score(match, video):
     """경기와 영상이 얼마나 맞는지 점수. 3점 이상이면 꽤 믿을 만합니다."""
     a, b = match['players']
-    text = video['title'] + ' ' + video['desc']
-    hit_a, hit_b = a in text, b in text
-    if not (hit_a and hit_b):
+    title = video['title']
+    text = title + ' ' + video['desc']
+    # 두 이름이 '제목'에 다 나와야 합니다. 설명글에는 그날 방송의 다른 경기까지
+    # 적혀 있어서, 설명만 보고 맞추면 엉뚱한 경기에 붙습니다.
+    if not (a in title and b in title):
         return 0
 
-    s = 2                                        # 두 선수 이름이 다 나옴
+    s = 4                                        # 제목에 두 선수 이름이 다 나옴
     mdate = date(*map(int, match['date'].split('-')))
     pub = video['published']
     pubd = date(*map(int, pub.split('-'))) if pub else None
@@ -160,6 +180,8 @@ def main():
     ap.add_argument('--cache', default=os.path.join(HERE, '.yt-cache.json'),
                     help='받아온 영상 목록을 저장해 두는 곳 (할당량 절약)')
     ap.add_argument('--refresh', action='store_true', help='캐시를 무시하고 다시 받기')
+    ap.add_argument('--replace', action='store_true',
+                    help='앞서 자동으로 넣은 항목도 새 결과로 덮어쓰기')
     args = ap.parse_args()
 
     videos = []
@@ -189,29 +211,79 @@ def main():
 
     # 선수 이름이 하나라도 들어간 영상만 추려서 비교 횟수를 줄입니다.
     names = {p['name'] for p in data['players']}
-    cand = [v for v in videos
-            if any(n in (v['title'] + v['desc']) for n in names)]
+    named = [v for v in videos
+             if any(n in (v['title'] + v['desc']) for n in names)]
+    cand = [v for v in named if not is_compilation(v)]
     print('선수 이름이 들어간 영상 %d개를 대상으로 맞춰 봅니다.' % len(cand))
+    if len(named) != len(cand):
+        print('  여러 경기를 묶은 편집본 %d개는 뺐습니다.' % (len(named) - len(cand)))
 
-    best = {}
-    used = defaultdict(list)
-    for m in matches:
-        top_s, top_v = 0, None
+    # 짝이 될 만한 것을 전부 모은 뒤 점수가 높은 쪽부터 확정합니다.
+    # 영상 하나는 경기 하나에만 붙습니다 — 예전에는 경기마다 따로 고르느라
+    # 같은 영상이 여러 경기에 중복으로 걸렸습니다.
+    pairs = []
+    for mi, m in enumerate(matches):
+        mdate = date(*map(int, m['date'].split('-')))
         for v in cand:
             s = score(m, v)
-            if s > top_s:
-                top_s, top_v = s, v
-        if top_v and top_s >= args.min_score:
-            best[stats.match_key(m)] = 'https://www.youtube.com/watch?v=' + top_v['id']
-            used[top_v['id']].append(m['date'])
+            if s < args.min_score:
+                continue
+            gap = (abs((date(*map(int, v['published'].split('-'))) - mdate).days)
+                   if v['published'] else 999)
+            pairs.append((-s, gap, mi, v))
+    pairs.sort(key=lambda x: x[:3])               # 점수 높은 순 → 날짜 가까운 순
 
-    dupes = {k: v for k, v in used.items() if len(v) > 1}
-    print('\n%d/%d 경기에 영상을 붙였습니다 (기준 점수 %d 이상).'
+    best, taken_m, taken_v = {}, set(), set()
+    for _s, _gap, mi, v in pairs:
+        if mi in taken_m or v['id'] in taken_v:
+            continue
+        taken_m.add(mi)
+        taken_v.add(v['id'])
+        best[stats.match_key(matches[mi])] = 'https://www.youtube.com/watch?v=' + v['id']
+
+    # 2차 — 한참 뒤에 올라온 재업로드를 회차 번호로 찾아 붙입니다.
+    # 방송 직후 올라온 영상으로 맞춘 경기들이 (회차 → 경기날짜) 기준점이 되고,
+    # '회차가 커지면 날짜도 커진다'는 성질로 후보 구간을 좁힙니다.
+    # 같은 두 선수가 여러 번 붙었어도 회차가 있으면 어느 경기인지 가려집니다.
+    by_id = {v['id']: v for v in cand}
+    anchors = {}
+    for k, url in best.items():
+        v = by_id.get(url.rsplit('=', 1)[-1])
+        n = episode_of(v) if v else None
+        if n:
+            anchors[n] = k.split('|')[0]
+    ns = sorted(anchors)
+    pair_dates = {}
+    for m in matches:
+        pair_dates.setdefault(tuple(sorted(m['players'])), []).append(m['date'])
+
+    late = 0
+    for mi, m in enumerate(matches):
+        if mi in taken_m:
+            continue
+        pair = tuple(sorted(m['players']))
+        for v in cand:
+            if v['id'] in taken_v:
+                continue
+            n = episode_of(v)
+            if not n or not all(x in v['title'] for x in pair):
+                continue
+            i = bisect.bisect_left(ns, n)
+            lo = anchors[ns[i - 1]] if i > 0 else ''
+            hi = anchors[ns[i]] if i < len(ns) else '9999-99-99'
+            fits = [dt for dt in pair_dates[pair] if lo <= dt <= hi]
+            if len(fits) == 1 and fits[0] == m['date']:
+                taken_m.add(mi)
+                taken_v.add(v['id'])
+                best[stats.match_key(m)] = 'https://www.youtube.com/watch?v=' + v['id']
+                late += 1
+                break
+
+    print('')
+    print('%d/%d 경기에 영상을 붙였습니다 (기준 점수 %d 이상).'
           % (len(best), len(matches), args.min_score))
-    if dupes:
-        print('한 영상이 여러 경기에 걸린 경우 %d건 — 확인이 필요합니다:' % len(dupes))
-        for vid, dates in list(dupes.items())[:10]:
-            print('   %s → %s' % (vid, ', '.join(dates)))
+    if late:
+        print('  그중 %d건은 한참 뒤에 올라온 재업로드를 회차 번호로 찾은 것입니다.' % late)
 
     if not args.write:
         for k in list(best)[:10]:
@@ -222,12 +294,17 @@ def main():
     path = os.path.join(ROOT, 'data', 'videos.json')
     doc = json.load(io.open(path, encoding='utf-8'))
     doc.setdefault('matches', {})
-    added = 0
-    for k, v in best.items():
-        if k not in doc['matches']:              # 손으로 넣은 항목은 건드리지 않습니다
-            doc['matches'][k] = v
-            added += 1
-    print('새로 추가 %d건, 기존 유지 %d건.' % (added, len(doc['matches']) - added))
+    if args.replace:                             # 잘못 걸린 항목을 걷어내고 다시 채웁니다
+        before = len(doc['matches'])
+        doc['matches'] = dict(best)
+        print('%d건 → %d건으로 새로 채웠습니다 (--replace).' % (before, len(best)))
+    else:
+        added = 0
+        for k, v in best.items():
+            if k not in doc['matches']:          # 손으로 넣은 항목은 건드리지 않습니다
+                doc['matches'][k] = v
+                added += 1
+        print('새로 추가 %d건, 기존 유지 %d건.' % (added, len(doc['matches']) - added))
     doc['matches'] = dict(sorted(doc['matches'].items(), reverse=True))
     io.open(path, 'w', encoding='utf-8').write(
         json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
