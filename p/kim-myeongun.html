@@ -320,6 +320,11 @@ ol.steps li{margin-bottom:4px}
   background-repeat:no-repeat;background-position:right 10px center;background-size:10px;
   padding-right:26px}
 .h2hsel:focus{border-color:var(--accent)}
+/* 선수 칸은 직접 칠 수 있는 입력창입니다 — 목록 화살표 대신 돋보기를 둡니다. */
+.h2hinput{padding-right:26px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%238a93a6' stroke-width='1.6'%3E%3Ccircle cx='7' cy='7' r='4.2'/%3E%3Cpath d='M10.2 10.2L14 14' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:13px}
+.h2hinput::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer}
 .h2hvs{flex:0 0 auto;color:var(--dim);font-size:12px;font-weight:700;
   padding:0 2px 10px;align-self:flex-end}
 .h2hreset{margin-bottom:0}
@@ -372,7 +377,7 @@ ol.steps li{margin-bottom:4px}
 </div>
 <footer>
 데이터 출처: 방송팀이 직접 기록한 구글시트(끝장전 데이터). 표시된 값은 시트의 세트 단위 원본 기록을 그대로 다시 계산한 것입니다.<br>
-마지막 갱신: 2026년 08월 19일 20:54 (KST)
+마지막 갱신: 2026년 08월 19일 21:22 (KST)
 <a class="gear" href="../admin/" title="관리자" aria-label="관리자"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.6 7.6 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08 .47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/></svg></a>
 </footer>
 </div>

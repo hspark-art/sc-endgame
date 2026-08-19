@@ -549,10 +549,9 @@ function renderRecords() {
    winner 는 0 이면 a 가, 1 이면 b 가 이긴 세트입니다. */
 var SL = D.setList || { races: ['T', 'P', 'Z'], rounds: [], rows: [] };
 
-// 선수 고르는 목록은 세트를 많이 치른 순으로 — 자주 찾는 선수가 위에 옵니다.
+// 선수 고르는 목록은 가나다순 — 95명이라 이름 순서로 놓아야 찾기 쉽습니다.
 var H2H_ORDER = D.players.map(function (p, i) { return i; }).sort(function (x, y) {
-  var a = D.players[x], b = D.players[y];
-  return (b.setWin + b.setLoss) - (a.setWin + a.setLoss);
+  return D.players[x].name.localeCompare(D.players[y].name, 'ko');
 });
 
 function h2hSel(name, value, opts, placeholder) {
@@ -569,6 +568,43 @@ function h2hPlayerOpts() {
     var p = D.players[i];
     return [i, p.name + ' (' + p.race + ')'];
   });
+}
+
+/* 선수는 목록에서 골라도 되고 이름을 직접 쳐도 되게 합니다.
+   95명이나 되어 목록을 훑는 것보다 이름을 아는 쪽이 훨씬 빠릅니다.
+   <input list=...> 를 쓰면 글자를 칠수록 목록이 저절로 좁혀집니다. */
+function h2hPlayerLabel(i) {
+  var p = D.players[i];
+  return p ? p.name + ' (' + p.race + ')' : '';
+}
+
+function h2hPlayerInput(name, value) {
+  return '<input class="h2hsel h2hinput" type="text" list="h2hplayers"' +
+    ' data-f="' + name + '" autocomplete="off" placeholder="선수 전체 — 이름 입력"' +
+    ' value="' + esc(value === '' ? '' : h2hPlayerLabel(+value)) + '">';
+}
+
+function h2hPlayerList() {
+  return '<datalist id="h2hplayers">' + H2H_ORDER.map(function (i) {
+    return '<option value="' + esc(h2hPlayerLabel(i)) + '"></option>';
+  }).join('') + '</datalist>';
+}
+
+/** 입력한 글자를 선수 번호로 바꿉니다. 못 찾으면 '' (= 선수 전체).
+    '김택용 (P)' 처럼 그대로 골라도, '김택용' 만 쳐도, 성 없이 일부만 쳐도
+    딱 한 명만 걸리면 그 선수로 잡습니다. */
+function h2hFindPlayer(text) {
+  var t = (text || '').trim();
+  if (!t) return '';
+  var i;
+  for (i = 0; i < D.players.length; i++) {
+    if (t === h2hPlayerLabel(i) || t === D.players[i].name) return String(i);
+  }
+  var hit = [];
+  for (i = 0; i < D.players.length; i++) {
+    if (D.players[i].name.indexOf(t) >= 0) hit.push(i);
+  }
+  return hit.length === 1 ? String(hit[0]) : '';
 }
 
 function h2hSideMatch(pIdx, rIdx, wantP, wantR) {
@@ -668,12 +704,13 @@ function renderH2H() {
   panel.className = 'h2hpanel';
   var raceOpts = RACE_ORDER.map(function (r) { return [r, RACE_LABEL[r]]; });
   panel.innerHTML =
+    h2hPlayerList() +
     '<div class="h2hside"><span class="h2hcap">한쪽</span>' +
-    h2hSel('pa', f.pa, h2hPlayerOpts(), '선수 전체') +
+    h2hPlayerInput('pa', f.pa) +
     h2hSel('ra', f.ra, raceOpts, '종족 전체') + '</div>' +
     '<div class="h2hvs">VS</div>' +
     '<div class="h2hside"><span class="h2hcap">상대</span>' +
-    h2hSel('pb', f.pb, h2hPlayerOpts(), '선수 전체') +
+    h2hPlayerInput('pb', f.pb) +
     h2hSel('rb', f.rb, raceOpts, '종족 전체') + '</div>' +
     '<div class="h2hside wide"><span class="h2hcap">맵 · 대회</span>' +
     h2hSel('map', f.map, D.maps.map(function (m, i) {
@@ -686,6 +723,15 @@ function renderH2H() {
   panel.querySelectorAll('select').forEach(function (el) {
     el.addEventListener('change', function () {
       state.h2h[el.dataset.f] = el.value;
+      render();
+    });
+  });
+  panel.querySelectorAll('input.h2hinput').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var idx = h2hFindPlayer(el.value);
+      // 고른 뒤에는 정확한 이름으로 정리해 둡니다 (못 찾으면 비워서 '전체'로).
+      el.value = idx === '' ? '' : h2hPlayerLabel(+idx);
+      state.h2h[el.dataset.f] = idx;
       render();
     });
   });
