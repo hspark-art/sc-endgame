@@ -450,7 +450,7 @@ tbody tr.grouphead:first-child td{border-top:none}
 <body>
 <div class="brandbar"></div>
 <div class="wrap cgwrap">
-<nav class="sitenav"><a class="navlink" href="../index.html">← 사이트로 돌아가기</a></nav>
+<nav class="sitenav"><a class="navlink" href="../index.html">← 사이트로 돌아가기</a><a class="navlink" href="http://localhost:8144" target="_blank" rel="noopener" title="방송 PC에서 7_상품추첨.bat 을 먼저 실행해야 열립니다">🎁 상품 추첨 (방송 PC)</a></nav>
 <header style="border-bottom:none;padding-bottom:6px"><div class="headrow"><div><h1>CG 제작 툴</h1><div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. 입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div><div style="margin-left:auto;text-align:right"><div class="helptxt" style="margin:0"><?= htmlspecialchars(admin_user(), ENT_QUOTES) ?> 님</div><a class="dlbtn" href="logout.php" style="margin-top:6px;display:inline-block">로그아웃</a></div></div></header>
 <link rel="stylesheet" href="https://webfontworld.github.io/goodchoice/Jalnan.css"><link rel="stylesheet" href="https://webfontworld.github.io/gmarket/GmarketSans.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap"><div class="cglayout">
 <div class="cgpanel">

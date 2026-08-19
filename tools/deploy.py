@@ -104,7 +104,8 @@ def local_files():
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, ROOT).replace(os.sep, '/')
             if (name in SKIP_FILES or name.endswith(SKIP_EXTS)
-                    or rel in NEVER_UPLOAD or rel.startswith('data/.')):
+                    or rel in NEVER_UPLOAD or rel.startswith('data/.')
+                    or rel.startswith('data/chat/') or rel.startswith('data/prizes/')):
                 continue
             h = hashlib.sha1()
             with open(full, 'rb') as f:

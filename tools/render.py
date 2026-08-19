@@ -106,9 +106,13 @@ def nav(active, depth=0):
     """모든 페이지 맨 위에 붙는 사이트 전환 바."""
     up = '../' * depth
     if active == 'cg':
-        # CG 제작 툴에는 사이트로 나가는 길 하나만 둡니다.
-        # ASL 은 메인 메뉴에 이미 있어서 여기서는 뺐습니다.
-        items = '<a class="navlink" href="%sindex.html">← 사이트로 돌아가기</a>' % up
+        # CG 제작 툴에는 사이트로 나가는 길 + 상품 추첨 입구를 둡니다.
+        # 상품 추첨은 방송 PC 에서 도는 프로그램(localhost)이라, 다른 PC 에서
+        # 누르면 열리지 않는 게 정상입니다 — 제목에 그렇게 적어 둡니다.
+        items = ('<a class="navlink" href="%sindex.html">← 사이트로 돌아가기</a>'
+                 '<a class="navlink" href="http://localhost:8144" target="_blank" '
+                 'rel="noopener" title="방송 PC에서 7_상품추첨.bat 을 먼저 실행해야 열립니다">'
+                 '🎁 상품 추첨 (방송 PC)</a>') % up
     else:
         items = ''.join(
             '<a class="navlink%s" href="%s%s">%s</a>'
