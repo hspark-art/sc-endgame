@@ -311,11 +311,31 @@ ol.steps li{margin-bottom:4px}
   color:var(--accent);font-size:11px;font-weight:700}
 .grouphead .note{margin-left:8px;color:var(--dim);font-size:11px;font-weight:500}
 tbody tr.grouphead:first-child td{border-top:none}
-/* 선수 칸은 직접 칠 수 있는 입력창입니다 — 목록 화살표 대신 돋보기를 둡니다. */
-.h2hinput{padding-right:26px;
+/* 선수 칸 — 직접 치면 아래로 목록이 펼쳐집니다 (목록을 직접 그립니다). */
+.h2hpick{position:relative}
+.h2hinput{padding-right:30px;
   background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%238a93a6' stroke-width='1.6'%3E%3Ccircle cx='7' cy='7' r='4.2'/%3E%3Cpath d='M10.2 10.2L14 14' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
   background-size:13px}
-.h2hinput::-webkit-calendar-picker-indicator{opacity:0;cursor:pointer}
+.h2hclear{position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;line-height:1;border:0;border-radius:6px;cursor:pointer;
+  background:transparent;color:var(--dim);font-size:16px;font-family:inherit}
+.h2hclear:hover{background:var(--panel);color:var(--txt)}
+.h2hdrop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;
+  max-height:264px;overflow-y:auto;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line);
+  box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.h2hopt{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;
+  font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+.h2hopt:last-child{border-bottom:0}
+.h2hopt:hover,.h2hopt.on{background:var(--panel)}
+.h2hoptname{font-weight:600;color:var(--txt)}
+.h2hoptrace{flex:0 0 auto;width:17px;height:17px;line-height:17px;text-align:center;
+  border-radius:5px;font-size:10px;font-weight:800;color:#0b0d11}
+.h2hoptrace.r-T{background:#7cc0ff}
+.h2hoptrace.r-P{background:#ffd166}
+.h2hoptrace.r-Z{background:#ff8fa3}
+.h2hoptnum{margin-left:auto;color:var(--dim);font-size:11px}
+.h2hempty{padding:12px 10px;color:var(--dim);font-size:12px;text-align:center}
 .h2hvs{flex:0 0 auto;color:var(--dim);font-size:12px;font-weight:700;
   padding:0 2px 10px;align-self:flex-end}
 .h2hreset{margin-bottom:0}

@@ -594,41 +594,130 @@ function h2hPlayerOpts() {
   });
 }
 
-/* 선수는 목록에서 골라도 되고 이름을 직접 쳐도 되게 합니다.
-   95명이나 되어 목록을 훑는 것보다 이름을 아는 쪽이 훨씬 빠릅니다.
-   <input list=...> 를 쓰면 글자를 칠수록 목록이 저절로 좁혀집니다. */
+/* 선수 고르는 칸.
+   브라우저 기본 <datalist> 를 쓰다가 한글 입력에서 말썽이 났습니다 — 한글은
+   글자를 조합하는 동안(ㄱ→기→김) 값이 계속 바뀌는데, 크롬의 기본 목록이 그
+   조합 중인 값과 잘 안 맞아 이름을 다 쳐도 목록이 비는 일이 있었습니다.
+   그래서 목록을 직접 그립니다. 조합이 끝나는 순간까지 챙겨서 다시 거릅니다. */
+
+var CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ',
+           'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+/** '김택용' → 'ㄱㅌㅇ'. 초성만 쳐도 찾히게 하려는 것입니다. */
+function chosung(s) {
+  var out = '', i, c;
+  for (i = 0; i < s.length; i++) {
+    c = s.charCodeAt(i);
+    out += (c >= 0xAC00 && c <= 0xD7A3) ? CHO[Math.floor((c - 0xAC00) / 588)] : s.charAt(i);
+  }
+  return out;
+}
+
 function h2hPlayerLabel(i) {
   var p = D.players[i];
   return p ? p.name + ' (' + p.race + ')' : '';
 }
 
-function h2hPlayerInput(name, value) {
-  return '<input class="h2hsel h2hinput" type="text" list="h2hplayers"' +
-    ' data-f="' + name + '" autocomplete="off" placeholder="선수 전체 — 이름 입력"' +
-    ' value="' + esc(value === '' ? '' : h2hPlayerLabel(+value)) + '">';
+/** 친 글자에 맞는 선수 번호들. 빈 칸이면 전체(가나다순). */
+function h2hMatches(q) {
+  var t = (q || '').trim();
+  if (!t) return H2H_ORDER.slice();
+  var onlyCho = /^[ㄱ-ㅎ]+$/.test(t);
+  return H2H_ORDER.filter(function (i) {
+    var name = D.players[i].name;
+    if (name.indexOf(t) >= 0) return true;
+    if (onlyCho && chosung(name).indexOf(t) >= 0) return true;
+    return false;
+  });
 }
 
-function h2hPlayerList() {
-  return '<datalist id="h2hplayers">' + H2H_ORDER.map(function (i) {
-    return '<option value="' + esc(h2hPlayerLabel(i)) + '"></option>';
-  }).join('') + '</datalist>';
+function h2hPlayerBox(name, value) {
+  var has = value !== '';
+  return '<div class="h2hpick" data-f="' + name + '">' +
+    '<input class="h2hsel h2hinput" type="text" autocomplete="off"' +
+    ' placeholder="선수 이름 · 초성(ㄱㅌㅇ)도 됩니다"' +
+    ' value="' + esc(has ? h2hPlayerLabel(+value) : '') + '">' +
+    (has ? '<button class="h2hclear" type="button" title="지우기">×</button>' : '') +
+    '<div class="h2hdrop" hidden></div></div>';
 }
 
-/** 입력한 글자를 선수 번호로 바꿉니다. 못 찾으면 '' (= 선수 전체).
-    '김택용 (P)' 처럼 그대로 골라도, '김택용' 만 쳐도, 성 없이 일부만 쳐도
-    딱 한 명만 걸리면 그 선수로 잡습니다. */
-function h2hFindPlayer(text) {
-  var t = (text || '').trim();
-  if (!t) return '';
-  var i;
-  for (i = 0; i < D.players.length; i++) {
-    if (t === h2hPlayerLabel(i) || t === D.players[i].name) return String(i);
+/** 선수 칸에 동작을 붙입니다. 고를 때만 화면을 다시 그립니다 —
+    글자를 칠 때마다 다시 그리면 입력칸에서 커서가 튕겨 나갑니다. */
+function wireH2HPick(box, onPick) {
+  var input = box.querySelector('.h2hinput');
+  var drop = box.querySelector('.h2hdrop');
+  var clear = box.querySelector('.h2hclear');
+  var hits = [], cur = -1, composing = false;
+
+  function close() { drop.hidden = true; cur = -1; }
+
+  function paint() {
+    hits = h2hMatches(input.value);
+    if (!hits.length) {
+      drop.innerHTML = '<div class="h2hempty">일치하는 선수가 없습니다</div>';
+    } else {
+      drop.innerHTML = hits.map(function (i, n) {
+        var p = D.players[i];
+        return '<div class="h2hopt' + (n === cur ? ' on' : '') + '" data-i="' + i + '">' +
+          '<span class="h2hoptname">' + esc(p.name) + '</span>' +
+          '<span class="h2hoptrace r-' + p.race + '">' + p.race + '</span>' +
+          '<span class="h2hoptnum">' + (p.setWin + p.setLoss) + '세트</span></div>';
+      }).join('');
+    }
+    drop.hidden = false;
   }
-  var hit = [];
-  for (i = 0; i < D.players.length; i++) {
-    if (D.players[i].name.indexOf(t) >= 0) hit.push(i);
+
+  function pick(i) {
+    input.value = h2hPlayerLabel(i);
+    close();
+    onPick(String(i));
   }
-  return hit.length === 1 ? String(hit[0]) : '';
+
+  function move(step) {
+    if (drop.hidden) { paint(); return; }
+    if (!hits.length) return;
+    cur = (cur + step + hits.length) % hits.length;
+    paint();
+    var on = drop.querySelector('.h2hopt.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('focus', function () { cur = -1; paint(); });
+  input.addEventListener('input', function () { if (!composing) { cur = -1; paint(); } });
+  input.addEventListener('compositionstart', function () { composing = true; });
+  input.addEventListener('compositionend', function () {
+    composing = false; cur = -1; paint();          // 한글 조합이 끝나면 다시 거릅니다
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Escape') { close(); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (composing) return;                        // 한글 확정용 엔터는 넘깁니다
+      if (!drop.hidden && hits.length) pick(hits[cur >= 0 ? cur : 0]);
+    }
+  });
+  drop.addEventListener('mousedown', function (e) {   // blur 보다 먼저 잡습니다
+    var opt = e.target.closest ? e.target.closest('.h2hopt') : null;
+    if (opt) { e.preventDefault(); pick(+opt.dataset.i); }
+  });
+  input.addEventListener('blur', function () {
+    setTimeout(function () {
+      close();
+      // 칸에 남은 글자가 어느 선수도 가리키지 않으면 지워서 '전체'로 돌립니다.
+      var m = h2hMatches(input.value);
+      if (input.value.trim() && m.length === 1) pick(m[0]);
+      else if (!m.length || input.value.trim() === '') input.value = '';
+    }, 120);
+  });
+  if (clear) {
+    clear.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      input.value = '';
+      onPick('');
+    });
+  }
 }
 
 function h2hSideMatch(pIdx, rIdx, wantP, wantR) {
@@ -728,13 +817,12 @@ function renderH2H() {
   panel.className = 'h2hpanel';
   var raceOpts = RACE_ORDER.map(function (r) { return [r, RACE_LABEL[r]]; });
   panel.innerHTML =
-    h2hPlayerList() +
     '<div class="h2hside"><span class="h2hcap">한쪽</span>' +
-    h2hPlayerInput('pa', f.pa) +
+    h2hPlayerBox('pa', f.pa) +
     h2hSel('ra', f.ra, raceOpts, '종족 전체') + '</div>' +
     '<div class="h2hvs">VS</div>' +
     '<div class="h2hside"><span class="h2hcap">상대</span>' +
-    h2hPlayerInput('pb', f.pb) +
+    h2hPlayerBox('pb', f.pb) +
     h2hSel('rb', f.rb, raceOpts, '종족 전체') + '</div>' +
     '<div class="h2hside wide"><span class="h2hcap">맵 · 대회</span>' +
     h2hSel('map', f.map, D.maps.map(function (m, i) {
@@ -750,12 +838,10 @@ function renderH2H() {
       render();
     });
   });
-  panel.querySelectorAll('input.h2hinput').forEach(function (el) {
-    el.addEventListener('change', function () {
-      var idx = h2hFindPlayer(el.value);
-      // 고른 뒤에는 정확한 이름으로 정리해 둡니다 (못 찾으면 비워서 '전체'로).
-      el.value = idx === '' ? '' : h2hPlayerLabel(+idx);
-      state.h2h[el.dataset.f] = idx;
+  panel.querySelectorAll('.h2hpick').forEach(function (box) {
+    wireH2HPick(box, function (idx) {
+      if (String(state.h2h[box.dataset.f]) === String(idx)) return;
+      state.h2h[box.dataset.f] = idx;
       render();
     });
   });
