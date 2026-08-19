@@ -21,9 +21,12 @@ var RACE_COLOR = { T: '#4a9eff', P: '#f5c518', Z: '#ff6b6b' };
 
 var FONTS = {
   pretendard: "'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif",
+  jalnan: "'Jalnan','Pretendard','Malgun Gothic',sans-serif",
+  gmarket: "'GmarketSans','Pretendard','Malgun Gothic',sans-serif",
   gothic: "'Malgun Gothic','맑은 고딕',sans-serif",
   nanum: "'NanumGothic','나눔고딕','Malgun Gothic',sans-serif",
   black: "'Arial Black','Pretendard','Malgun Gothic',sans-serif",
+  digital: "'Orbitron','Arial Black',sans-serif",
   serif: "'Batang','바탕',serif",
   script: "'Segoe Script','Brush Script MT','Pretendard',cursive"
 };
@@ -104,7 +107,7 @@ function defaults() {
       when: '2026년 8월 20일 목요일 오후 9시'
     },
     style: {
-      title: { size: 58, color: '#4aa8ff', font: 'pretendard' },
+      title: { size: 58, color: '#4aa8ff', font: 'jalnan' },
       nick: { size: 52, color: '#e9edf5', font: 'pretendard' },
       pname: { size: 86, color: '#ffffff', font: 'pretendard' },
       boxTitle: { size: 46, color: '#ffd166', font: 'pretendard' },
@@ -118,11 +121,11 @@ function defaults() {
       prize: { size: 30, color: '#ffffff', font: 'pretendard' },
       vsList: { size: 23, color: '#e8ecf3', font: 'pretendard' },
       foot: { size: 22, color: '#0b0d11', font: 'pretendard' },
-      timer: { size: 74, color: '#ffffff', font: 'black' },
+      timer: { size: 74, color: '#ffffff', font: 'digital' },
       score: { size: 96, color: '#ffffff', font: 'pretendard' },
       winnerLabel: { size: 78, color: '#ffd166', font: 'black' },
       ribbon: { size: 26, color: '#ffffff', font: 'pretendard' },
-      vsBig: { size: 74, color: '#ffffff', font: 'pretendard' },
+      vsBig: { size: 104, color: '#ffffff', font: 'pretendard' },
       nextHead: { size: 150, color: '#ff4d5a', font: 'black' },
       when: { size: 46, color: '#ffffff', font: 'pretendard' }
     }
@@ -424,28 +427,32 @@ function drawMatchup() {
 /* ── ② 선수 전적 / ③ 쉬는 시간 ─────────────────────────────── */
 function drawSidePanel(side, withScore) {
   var pl = S.players[side], st = S.stats;
-  var panelW = 430;
-  var x = side === 0 ? 300 : W - 300 - panelW;
+  var panelW = 480;
+  var panelH = 210;
+  var x = side === 0 ? 240 : W - 240 - panelW;
   var y = 268;
   // 이름 판
   var g = ctx.createLinearGradient(x, y, x + panelW, y);
   g.addColorStop(0, side === 0 ? '#c0212f' : '#12419c');
   g.addColorStop(1, side === 0 ? '#8c1f2a' : '#0d2f75');
   ctx.fillStyle = g;
-  roundRect(ctx, x, y, panelW, 150, 14);
+  roundRect(ctx, x, y, panelW, panelH, 16);
   ctx.fill();
-  var tx = side === 0 ? x + panelW - 22 : x + 22;
+  // 스코어가 있으면 이름을 조금 바깥으로 밀고, 스코어를 판 안쪽 끝에 둡니다.
+  var inset = withScore ? 160 : 28;
+  var tx = side === 0 ? x + panelW - inset : x + inset;
   var align = side === 0 ? 'right' : 'left';
-  drawNamePlate(side, tx, y + 46, align, panelW - 44);
+  drawNamePlate(side, tx, y + 58, align, panelW - inset - 40);
 
   if (withScore) {
     var ss = S.style.score;
-    var sx = side === 0 ? x + panelW + 60 : x - 60;
-    text(pl.score || '0', sx, y + 122, ss, { align: 'center', weight: 900, shadow: 16 });
+    var sx = side === 0 ? x + panelW - 80 : x + 80;
+    text(pl.score || '0', sx, y + panelH / 2 + 34, ss,
+      { align: 'center', weight: 900, shadow: 16 });
   }
 
   // 누적상금
-  var py = y + 168;
+  var py = y + panelH + 16;
   ctx.fillStyle = 'rgba(226,232,240,.92)';
   roundRect(ctx, x, py, panelW, 46, 8);
   ctx.fill();
@@ -543,40 +550,54 @@ function drawStatsCenter() {
 /* ── ④ 경기 결과 ───────────────────────────────────────────── */
 function drawWinner() {
   var w = S.winner, cx = W / 2;
-  text(w.vsText, cx, 560, S.style.vsBig, { align: 'center', weight: 800, shadow: 16 });
+  text(w.vsText, cx, 570, S.style.vsBig, { align: 'center', weight: 900, shadow: 18 });
 
   [0, 1].forEach(function (side) {
     var pl = S.players[side];
-    var plateW = 520;
-    var x = side === 0 ? 120 : W - 120 - plateW;
-    var y = 690;
-    ctx.fillStyle = 'rgba(226,232,240,.86)';
-    ctx.fillRect(x, y, plateW, 96);
-    var inner = side === 0 ? x + 24 : x + plateW - 24;
-    var align = side === 0 ? 'left' : 'right';
-    // 닉네임 + 이름을 한 줄로
+    var plateW = 560;
+    var x = side === 0 ? 96 : W - 96 - plateW;
+    var y = 668;
+    ctx.fillStyle = 'rgba(233,237,243,.92)';
+    ctx.fillRect(x, y, plateW, 134);
+    var inner = x + plateW / 2;
+    // 닉네임 + 이름을 한 줄로, 아래에 누적상금 — 레퍼런스 배치입니다.
     var label = pl.nick + '  ' + pl.name + (pl.race ? ' ' + pl.race : '');
-    text(label, inner, y + 46, S.style.pname,
-      { align: align, color: '#12161d', maxW: plateW - 48, weight: 900 });
-    text(pl.prize || '', inner, y + 84, S.style.prize,
-      { align: align, color: side === 0 ? '#d92d3c' : '#1552d0',
+    text(label, inner, y + 58, S.style.pname,
+      { align: 'center', color: '#12161d', maxW: plateW - 48, weight: 900 });
+    text(pl.prize || '', inner, y + 112, S.style.prize,
+      { align: 'center', color: side === 0 ? '#d92d3c' : '#1552d0',
         maxW: plateW - 48, weight: 900 });
     if (pl.delta) {
-      text(pl.delta, x + plateW / 2, y + 190, S.style.vsBig,
+      text(pl.delta, inner, y + 230, S.style.vsBig,
         { align: 'center', maxW: plateW, weight: 800, shadow: 14 });
     }
     if (side === w.side) {
-      var by = 420;
+      var wl = S.style.winnerLabel;
+      var by = y - 24;                                 // 흰 판 바로 위
       if (w.ribbon && S.showRibbon) {
         setFont(S.style.ribbon.size, 800, S.style.ribbon.font);
         var rw = ctx.measureText(w.ribbon).width + 34;
         ctx.fillStyle = '#e0392b';
-        roundRect(ctx, x + 8, by - 40, rw, 44, 8); ctx.fill();
-        text(w.ribbon, x + 8 + rw / 2, by - 10, S.style.ribbon,
+        roundRect(ctx, x + 8, by - wl.size - 64, rw, 44, 8); ctx.fill();
+        text('🔥 ' + w.ribbon, x + 8 + rw / 2 + 8, by - wl.size - 34, S.style.ribbon,
           { align: 'center', weight: 800 });
       }
-      text(w.label, x + 12, by + S.style.winnerLabel.size, S.style.winnerLabel,
-        { align: 'left', maxW: plateW, weight: 900, shadow: 18 });
+      // 레퍼런스의 금색 입체 글자 느낌 — 위는 밝고 아래는 진한 금색
+      use(wl, wl.size, 900);
+      var gw = ctx.measureText(w.label).width;
+      var gg = ctx.createLinearGradient(0, by - wl.size, 0, by);
+      gg.addColorStop(0, '#ffe9a8');
+      gg.addColorStop(0.5, '#ffc63d');
+      gg.addColorStop(1, '#b97b12');
+      ctx.save();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 16;
+      ctx.fillStyle = gg;
+      ctx.fillText(w.label, x + 12, by);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(122,74,10,.9)';
+      ctx.strokeText(w.label, x + 12, by);
+      ctx.restore();
     }
   });
 }
@@ -584,8 +605,28 @@ function drawWinner() {
 /* ── ⑤ 다음 경기 ───────────────────────────────────────────── */
 function drawNext() {
   var n = S.next, cx = W / 2;
-  text(n.heading, cx, 470, S.style.nextHead,
-    { align: 'center', maxW: 900, weight: 900, shadow: 20 });
+  // 레퍼런스처럼 낱말을 줄로 쌓고, 왼쪽 빨강에서 오른쪽 파랑으로 물들입니다.
+  var hs = S.style.nextHead;
+  var words = String(n.heading || '').split(' ').filter(Boolean);
+  if (!words.length) words = [''];
+  var lineH = hs.size * 1.04;
+  var y0 = 380 - (words.length - 1) * lineH / 2;
+  words.forEach(function (word, i) {
+    use(hs, hs.size, 900);
+    var tw = Math.min(ctx.measureText(word).width, 980);
+    var gg = ctx.createLinearGradient(cx - tw / 2, 0, cx + tw / 2, 0);
+    gg.addColorStop(0, '#ff3a3a');
+    gg.addColorStop(1, '#3aa0ff');
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 22;
+    ctx.fillStyle = gg;
+    var size = fitSize(word, hs, 980, 900);
+    use(hs, size, 900);
+    ctx.fillStyle = gg;
+    ctx.fillText(word, cx, y0 + i * lineH);
+    ctx.restore();
+  });
 
   [0, 1].forEach(function (side) {
     var plateW = 520;
@@ -633,12 +674,12 @@ function paint(g) {
   if (S.type === 'matchup') {
     [0, 1].forEach(function (side) {
       var cx = side === 0 ? 268 : W - 268;
-      var g2 = ctx.createLinearGradient(0, 700, 0, H);
+      var g2 = ctx.createLinearGradient(0, 600, 0, H);
       g2.addColorStop(0, 'rgba(0,0,0,0)');
-      g2.addColorStop(1, 'rgba(0,0,0,.78)');
+      g2.addColorStop(1, 'rgba(0,0,0,.82)');
       ctx.fillStyle = g2;
-      ctx.fillRect(side === 0 ? 0 : W - 536, 700, 536, H - 700);
-      drawNamePlate(side, cx, 872, 'center', 520);
+      ctx.fillRect(side === 0 ? 0 : W - 536, 600, 536, H - 600);
+      drawNamePlate(side, cx, 738, 'center', 520);
     });
     drawMatchup();
   } else if (S.type === 'stats' || S.type === 'score') {
@@ -1042,3 +1083,7 @@ fillForm();
 showTypeFields();
 setupCanvasDrag();
 draw();
+// 웹폰트(잘난체 등)가 늦게 도착하면 그 글꼴로 다시 그립니다.
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(function () { draw(); });
+}

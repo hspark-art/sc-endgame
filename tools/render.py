@@ -849,6 +849,10 @@ def cg_page(css, app_js, players):
         '로그아웃</a></div>'
         '</div></header>\n')
 
+    # 레퍼런스와 같은 느낌의 표시용 웹폰트 — 없으면 Pretendard 로 대신 그립니다.
+    out.append('<link rel="stylesheet" href="https://webfontworld.github.io/goodchoice/Jalnan.css">')
+    out.append('<link rel="stylesheet" href="https://webfontworld.github.io/gmarket/GmarketSans.css">')
+    out.append('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap">')
     out.append('<div class="cglayout">\n<div class="cgpanel">\n')
     out.append(cg_panel(_fld))
     out.append('</div>\n')                                  # cgpanel
