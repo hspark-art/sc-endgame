@@ -46,9 +46,12 @@ ROOT = os.path.dirname(HERE)
 
 STATE = os.path.join(ROOT, 'data', '.deploy-state.json')
 
-# 웹서버에 올릴 것 / 올리지 않을 것
-SKIP_DIRS = {'.git', 'tools', 'node_modules', '__pycache__'}
-SKIP_FILES = {'.gitignore', 'README.md', '.deploy-state.json', 'deploy.json'}
+# 웹서버에 올릴 것 / 올리지 않을 것.
+# 점으로 시작하는 폴더(.git, .claude 등)는 전부 건너뜁니다.
+# 점으로 시작하는 '파일' 중 .nojekyll 과 admin/.htaccess 는 사이트에 필요해서 올립니다.
+SKIP_DIRS = {'tools', 'node_modules', '__pycache__'}
+SKIP_FILES = {'.gitignore', 'README.md', 'CLAUDE.md',
+              '.deploy-state.json', 'deploy.json'}
 # 서버에만 있어야 하는 것 — 실수로도 덮어쓰지 않습니다
 NEVER_UPLOAD = {'admin/config.php'}
 
@@ -80,7 +83,8 @@ def local_files():
     """올릴 파일 목록 → {상대경로: 내용해시}"""
     out = {}
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        dirnames[:] = [d for d in dirnames
+                       if d not in SKIP_DIRS and not d.startswith('.')]
         for name in filenames:
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, ROOT).replace(os.sep, '/')
