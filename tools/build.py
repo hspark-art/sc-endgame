@@ -441,13 +441,26 @@ def main():
 
     # CG 제작 툴 — 자동완성용 선수 목록은 두 기록실을 합쳐서 넣습니다.
     roster, seen = [], set()
+    # 시즌별 프로필 사진 목록 (tools/import_photos.py 가 만듭니다).
+    # CG 제작 툴에서 '이 선수의 S19 사진' 처럼 골라 쓰기 위한 것입니다.
+    season_photos = {}
+    pp = os.path.join(ROOT, 'data', 'player-photos.json')
+    if os.path.exists(pp):
+        try:
+            doc = read_json(pp) or {}
+            season_photos = {k: v.get('seasons', [])
+                             for k, v in (doc.get('players') or {}).items()}
+        except ValueError:
+            season_photos = {}
+
     for src, tag in ((data['players'], '끝장전'), ((asl or {}).get('players', []), 'ASL')):
         for p in src:
             if p['name'] in seen:
                 continue
             seen.add(p['name'])
             roster.append({'name': p['name'], 'race': p['race'], 'from': tag,
-                           'slug': p['slug'], 'photo': photos.get(p['slug'], '')})
+                           'slug': p['slug'], 'photo': photos.get(p['slug'], ''),
+                           'seasons': season_photos.get(p['slug'], [])})
     roster.sort(key=lambda x: x['name'])
     have = write_photo_guide(roster, photos)
     print('  img/players/          사진 %d/%d명 · 넣을 이름은 _사진목록.txt 에'

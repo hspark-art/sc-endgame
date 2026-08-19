@@ -1,0 +1,281 @@
+{
+ "_note": [
+  "선수별로 어느 시즌 프로필 사진이 있는지 적어 둔 파일입니다.",
+  "tools/import_photos.py 가 만듭니다. 손으로 고치지 마세요.",
+  "사이트는 가장 최근 시즌 얼굴을 쓰고, CG 제작 툴에서는 시즌을 고를 수 있습니다."
+ ],
+ "players": {
+  "kim-myeongun": {
+   "name": "김명운",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20
+   ]
+  },
+  "kim-mincheol": {
+   "name": "김민철",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20
+   ]
+  },
+  "kim-seongdae": {
+   "name": "김성대",
+   "seasons": [
+    9,
+    14,
+    15,
+    19
+   ]
+  },
+  "kim-jeongu": {
+   "name": "김정우",
+   "seasons": [
+    20
+   ]
+  },
+  "kim-jiseong": {
+   "name": "김지성",
+   "seasons": [
+    14,
+    15,
+    21
+   ]
+  },
+  "kim-taeyeong": {
+   "name": "김태영",
+   "seasons": [
+    21
+   ]
+  },
+  "kim-taekyong": {
+   "name": "김택용",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20,
+    21
+   ]
+  },
+  "do-jaeuk": {
+   "name": "도재욱",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20
+   ]
+  },
+  "park-sanghyeon": {
+   "name": "박상현",
+   "seasons": [
+    9,
+    14,
+    20,
+    21
+   ]
+  },
+  "park-seonggyun": {
+   "name": "박성균",
+   "seasons": [
+    15
+   ]
+  },
+  "park-juno": {
+   "name": "박준오",
+   "seasons": [
+    16
+   ]
+  },
+  "bang-taesu": {
+   "name": "방태수",
+   "seasons": [
+    20
+   ]
+  },
+  "byun-hyeonje": {
+   "name": "변현제",
+   "seasons": [
+    14,
+    19,
+    20
+   ]
+  },
+  "son-gyeonghun": {
+   "name": "손경훈",
+   "seasons": [
+    9
+   ]
+  },
+  "song-byeonggu": {
+   "name": "송병구",
+   "seasons": [
+    9
+   ]
+  },
+  "shin-sangmun": {
+   "name": "신상문",
+   "seasons": [
+    21
+   ]
+  },
+  "yoo-seunggon": {
+   "name": "유승곤",
+   "seasons": [
+    19
+   ]
+  },
+  "yoo-yeongjin": {
+   "name": "유영진",
+   "seasons": [
+    14,
+    15,
+    19,
+    20
+   ]
+  },
+  "yoon-sucheol": {
+   "name": "윤수철",
+   "seasons": [
+    21
+   ]
+  },
+  "yoon-chanhui": {
+   "name": "윤찬희",
+   "seasons": [
+    9,
+    14
+   ]
+  },
+  "lee-gyeongmin": {
+   "name": "이경민",
+   "seasons": [
+    9
+   ]
+  },
+  "lee-yeongung": {
+   "name": "이영웅",
+   "seasons": [
+    19,
+    20
+   ]
+  },
+  "lee-yeonghan": {
+   "name": "이영한",
+   "seasons": [
+    14,
+    15
+   ]
+  },
+  "lee-yeongho": {
+   "name": "이영호",
+   "seasons": [
+    9,
+    21
+   ]
+  },
+  "lee-jaeho": {
+   "name": "이재호",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20,
+    21
+   ]
+  },
+  "lee-jedong": {
+   "name": "이제동",
+   "seasons": [
+    15,
+    19,
+    20,
+    21
+   ]
+  },
+  "lim-jinmuk": {
+   "name": "임진묵",
+   "seasons": [
+    21
+   ]
+  },
+  "lim-honggyu": {
+   "name": "임홍규",
+   "seasons": [
+    9,
+    20
+   ]
+  },
+  "jang-yuncheol": {
+   "name": "장윤철",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20,
+    21
+   ]
+  },
+  "jung-yeongjae": {
+   "name": "정영재",
+   "seasons": [
+    15
+   ]
+  },
+  "jung-yunjong": {
+   "name": "정윤종",
+   "seasons": [
+    19,
+    21
+   ]
+  },
+  "cho-giseok": {
+   "name": "조기석",
+   "seasons": [
+    9,
+    19,
+    20,
+    21
+   ]
+  },
+  "cho-iljang": {
+   "name": "조일장",
+   "seasons": [
+    14,
+    15,
+    19,
+    21
+   ]
+  },
+  "choi-hoseon": {
+   "name": "최호선",
+   "seasons": [
+    14,
+    15,
+    21
+   ]
+  },
+  "hwang-byeongyeong": {
+   "name": "황병영",
+   "seasons": [
+    9,
+    14,
+    15,
+    19,
+    20,
+    21
+   ]
+  }
+ }
+}

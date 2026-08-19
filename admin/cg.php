@@ -406,10 +406,11 @@ tbody tr.grouphead:first-child td{border-top:none}
 .gear:hover,.gear:focus-visible{opacity:1;color:var(--dim)}
 
 /* 선수 사진 — img/players/<슬러그>.jpg 를 넣으면 자동으로 붙습니다. */
-.pphoto{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:center top;
-  border:2px solid var(--line);background:var(--panel2);flex:0 0 auto}
-.rphoto{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:center top;
-  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:6px}
+.pphoto{width:104px;height:104px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:3px solid var(--line);background:var(--panel2);flex:0 0 auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.rphoto{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:8px}
 
 /* ── 모바일 터치 크기 ─────────────────────────────────
    손가락으로 누르는 화면입니다. 글자만 한 크기로 두면 잘 안 눌립니다.
@@ -431,6 +432,12 @@ tbody tr.grouphead:first-child td{border-top:none}
   .h2hopt{padding:12px 10px}
   .h2hclear{width:34px;height:34px;font-size:19px}
   .h2hdrop{max-height:min(300px,46vh)}
+}
+
+/* 선수 사진은 얼굴이 보여야 하므로 큼직하게. 좁은 화면에서만 조금 줄입니다. */
+@media (max-width:640px){
+  .pphoto{width:78px;height:78px;border-width:2px}
+  .rphoto{width:32px;height:32px}
 }
 </style>
 </head>
@@ -457,6 +464,7 @@ tbody tr.grouphead:first-child td{border-top:none}
 <div class="fld"><label>종족</label><select id="race1"><option value="T">테란 (T)</option><option value="P">프로토스 (P)</option><option value="Z">저그 (Z)</option><option value="">없음</option></select></div>
 </div>
 <div class="fld"><label>사진</label><div class="row-inline"><label class="filebtn">파일 선택<input type="file" id="photo1" accept="image/*"></label><button class="btn danger" id="photo1Clear" type="button">지우기</button></div></div>
+<div class="fld"><label>시즌 사진 (같은 선수의 다른 시즌 사진을 고를 수 있습니다)</label><select id="season1"><option value="">사진 없음</option></select></div>
 <div class="fld"><label>사진 크기</label><input type="range" id="zoom1" min="0.4" max="4" step="0.02"></div>
 <div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 <b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 끌어다 놓아도 바로 들어갑니다.</div>
 <div data-for="stats score winner"><div class="fld"><label>누적상금</label><input type="text" id="prize1" placeholder="KRW 25,900,000"></div>
@@ -474,6 +482,7 @@ tbody tr.grouphead:first-child td{border-top:none}
 <div class="fld"><label>종족</label><select id="race2"><option value="T">테란 (T)</option><option value="P">프로토스 (P)</option><option value="Z">저그 (Z)</option><option value="">없음</option></select></div>
 </div>
 <div class="fld"><label>사진</label><div class="row-inline"><label class="filebtn">파일 선택<input type="file" id="photo2" accept="image/*"></label><button class="btn danger" id="photo2Clear" type="button">지우기</button></div></div>
+<div class="fld"><label>시즌 사진 (같은 선수의 다른 시즌 사진을 고를 수 있습니다)</label><select id="season2"><option value="">사진 없음</option></select></div>
 <div class="fld"><label>사진 크기</label><input type="range" id="zoom2" min="0.4" max="4" step="0.02"></div>
 <div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 <b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 끌어다 놓아도 바로 들어갑니다.</div>
 <div data-for="stats score winner"><div class="fld"><label>누적상금</label><input type="text" id="prize2" placeholder="KRW 25,900,000"></div>
@@ -579,7 +588,7 @@ tbody tr.grouphead:first-child td{border-top:none}
 <footer>이 도구는 브라우저 안에서만 동작합니다 — 올린 사진은 어디에도 올라가지 않고 이 컴퓨터를 벗어나지 않습니다.<br>선수 자동완성 목록은 끝장전·ASL 기록실 데이터에서 가져온 95명입니다.</footer>
 </div>
 <script>
-const PLAYERS = [{"name":"강정우","race":"T","from":"ASL","slug":"kang-jeongu","photo":""},{"name":"강태완","race":"T","from":"ASL","slug":"kang-taewan","photo":""},{"name":"고석현","race":"Z","from":"ASL","slug":"ko-seokhyeon","photo":""},{"name":"구성훈","race":"T","from":"ASL","slug":"koo-seonghun","photo":""},{"name":"김건욱","race":"Z","from":"ASL","slug":"kim-geonuk","photo":""},{"name":"김경모","race":"Z","from":"ASL","slug":"kim-gyeongmo","photo":""},{"name":"김규회","race":"P","from":"ASL","slug":"kim-gyuhoe","photo":""},{"name":"김기훈","race":"P","from":"ASL","slug":"kim-gihun","photo":""},{"name":"김명운","race":"Z","from":"끝장전","slug":"kim-myeongun","photo":""},{"name":"김민철","race":"Z","from":"끝장전","slug":"kim-mincheol","photo":""},{"name":"김범성","race":"Z","from":"ASL","slug":"kim-beomseong","photo":""},{"name":"김범수","race":"P","from":"ASL","slug":"kim-beomsu","photo":""},{"name":"김봉준","race":"P","from":"ASL","slug":"kim-bongjun","photo":""},{"name":"김상곤","race":"Z","from":"ASL","slug":"kim-sanggon","photo":""},{"name":"김성대","race":"Z","from":"끝장전","slug":"kim-seongdae","photo":""},{"name":"김성현","race":"T","from":"끝장전","slug":"kim-seonghyeon","photo":""},{"name":"김승현","race":"P","from":"끝장전","slug":"kim-seunghyeon","photo":""},{"name":"김영진","race":"T","from":"ASL","slug":"kim-yeongjin","photo":""},{"name":"김윤중","race":"P","from":"끝장전","slug":"kim-yunjung","photo":""},{"name":"김윤환","race":"Z","from":"끝장전","slug":"kim-yunhwan","photo":""},{"name":"김재현","race":"T","from":"ASL","slug":"kim-jaehyeon","photo":""},{"name":"김재훈","race":"P","from":"ASL","slug":"kim-jaehun","photo":""},{"name":"김정우","race":"Z","from":"끝장전","slug":"kim-jeongu","photo":""},{"name":"김지성","race":"T","from":"끝장전","slug":"kim-jiseong","photo":""},{"name":"김태영","race":"T","from":"ASL","slug":"kim-taeyeong","photo":""},{"name":"김택용","race":"P","from":"끝장전","slug":"kim-taekyong","photo":""},{"name":"김현우","race":"Z","from":"ASL","slug":"kim-hyeonu","photo":""},{"name":"도재욱","race":"P","from":"끝장전","slug":"do-jaeuk","photo":""},{"name":"문기호","race":"Z","from":"ASL","slug":"moon-giho","photo":""},{"name":"문태호","race":"T","from":"ASL","slug":"moon-taeho","photo":""},{"name":"박상현","race":"Z","from":"끝장전","slug":"park-sanghyeon","photo":""},{"name":"박성균","race":"T","from":"끝장전","slug":"park-seonggyun","photo":""},{"name":"박성준","race":"Z","from":"ASL","slug":"park-seongjun","photo":""},{"name":"박세정","race":"P","from":"ASL","slug":"park-sejeong","photo":""},{"name":"박재혁","race":"Z","from":"ASL","slug":"park-jaehyeok","photo":""},{"name":"박재현","race":"P","from":"ASL","slug":"park-jaehyeon","photo":""},{"name":"박준오","race":"Z","from":"끝장전","slug":"park-juno","photo":""},{"name":"박지수","race":"T","from":"ASL","slug":"park-jisu","photo":""},{"name":"박지호","race":"P","from":"ASL","slug":"park-jiho","photo":""},{"name":"박지훈","race":"P","from":"ASL","slug":"park-jihun","photo":""},{"name":"방태수","race":"Z","from":"ASL","slug":"bang-taesu","photo":""},{"name":"배병우","race":"Z","from":"ASL","slug":"bae-byeongu","photo":""},{"name":"배성흠","race":"Z","from":"ASL","slug":"bae-seongheum","photo":""},{"name":"배호연","race":"T","from":"ASL","slug":"bae-hoyeon","photo":""},{"name":"변현제","race":"P","from":"끝장전","slug":"byun-hyeonje","photo":""},{"name":"변형태","race":"T","from":"ASL","slug":"byun-hyeongtae","photo":""},{"name":"서문지훈","race":"Z","from":"ASL","slug":"seo-munjihun","photo":""},{"name":"손경훈","race":"P","from":"ASL","slug":"son-gyeonghun","photo":""},{"name":"송병구","race":"P","from":"끝장전","slug":"song-byeonggu","photo":""},{"name":"신상문","race":"T","from":"ASL","slug":"shin-sangmun","photo":""},{"name":"심대성","race":"Z","from":"ASL","slug":"shim-daeseong","photo":""},{"name":"염보성","race":"T","from":"끝장전","slug":"yeom-boseong","photo":""},{"name":"오진식","race":"Z","from":"ASL","slug":"oh-jinsik","photo":""},{"name":"원선재","race":"P","from":"ASL","slug":"won-seonjae","photo":""},{"name":"원지훈","race":"P","from":"ASL","slug":"won-jihun","photo":""},{"name":"유승곤","race":"T","from":"ASL","slug":"yoo-seunggon","photo":""},{"name":"유영진","race":"T","from":"끝장전","slug":"yoo-yeongjin","photo":""},{"name":"유진우","race":"Z","from":"ASL","slug":"yoo-jinu","photo":""},{"name":"윤수철","race":"P","from":"ASL","slug":"yoon-sucheol","photo":""},{"name":"윤용태","race":"P","from":"끝장전","slug":"yoon-yongtae","photo":""},{"name":"윤종현","race":"T","from":"ASL","slug":"yoon-jonghyeon","photo":""},{"name":"윤진규","race":"Z","from":"ASL","slug":"yoon-jingyu","photo":""},{"name":"윤찬희","race":"T","from":"끝장전","slug":"yoon-chanhui","photo":""},{"name":"이경민","race":"T","from":"끝장전","slug":"lee-gyeongmin","photo":""},{"name":"이성은","race":"T","from":"ASL","slug":"lee-seongeun","photo":""},{"name":"이영웅","race":"T","from":"끝장전","slug":"lee-yeongung","photo":""},{"name":"이영한","race":"Z","from":"끝장전","slug":"lee-yeonghan","photo":""},{"name":"이영호","race":"T","from":"끝장전","slug":"lee-yeongho","photo":""},{"name":"이예준","race":"Z","from":"ASL","slug":"lee-yejun","photo":""},{"name":"이예훈","race":"Z","from":"ASL","slug":"lee-yehun","photo":""},{"name":"이윤열","race":"T","from":"ASL","slug":"lee-yunyeol","photo":""},{"name":"이재호","race":"T","from":"끝장전","slug":"lee-jaeho","photo":""},{"name":"이제동","race":"Z","from":"끝장전","slug":"lee-jedong","photo":""},{"name":"이창우","race":"Z","from":"ASL","slug":"lee-changu","photo":""},{"name":"인치호","race":"Z","from":"ASL","slug":"in-chiho","photo":""},{"name":"임진묵","race":"T","from":"끝장전","slug":"lim-jinmuk","photo":""},{"name":"임홍규","race":"Z","from":"끝장전","slug":"lim-honggyu","photo":""},{"name":"장윤철","race":"P","from":"끝장전","slug":"jang-yuncheol","photo":""},{"name":"전태양","race":"T","from":"끝장전","slug":"jeon-taeyang","photo":""},{"name":"정경두","race":"P","from":"ASL","slug":"jung-gyeongdu","photo":""},{"name":"정민기","race":"T","from":"ASL","slug":"jung-mingi","photo":""},{"name":"정영재","race":"T","from":"끝장전","slug":"jung-yeongjae","photo":""},{"name":"정윤성","race":"P","from":"ASL","slug":"jung-yunseong","photo":""},{"name":"정윤종","race":"P","from":"ASL","slug":"jung-yunjong","photo":""},{"name":"조기석","race":"T","from":"끝장전","slug":"cho-giseok","photo":""},{"name":"조일장","race":"Z","from":"끝장전","slug":"cho-iljang","photo":""},{"name":"진영화","race":"P","from":"ASL","slug":"jin-yeonghwa","photo":""},{"name":"최영현","race":"P","from":"ASL","slug":"choi-yeonghyeon","photo":""},{"name":"최호선","race":"T","from":"끝장전","slug":"choi-hoseon","photo":""},{"name":"하늘","race":"P","from":"ASL","slug":"ha-neul","photo":""},{"name":"한두열","race":"Z","from":"ASL","slug":"han-duyeol","photo":""},{"name":"한상봉","race":"Z","from":"ASL","slug":"han-sangbong","photo":""},{"name":"현지섭","race":"T","from":"ASL","slug":"hyun-jiseop","photo":""},{"name":"홍덕","race":"P","from":"ASL","slug":"hong-deok","photo":""},{"name":"황병영","race":"T","from":"끝장전","slug":"hwang-byeongyeong","photo":""}];
+const PLAYERS = [{"name":"강정우","race":"T","from":"ASL","slug":"kang-jeongu","photo":"","seasons":[]},{"name":"강태완","race":"T","from":"ASL","slug":"kang-taewan","photo":"","seasons":[]},{"name":"고석현","race":"Z","from":"ASL","slug":"ko-seokhyeon","photo":"","seasons":[]},{"name":"구성훈","race":"T","from":"ASL","slug":"koo-seonghun","photo":"","seasons":[]},{"name":"김건욱","race":"Z","from":"ASL","slug":"kim-geonuk","photo":"","seasons":[]},{"name":"김경모","race":"Z","from":"ASL","slug":"kim-gyeongmo","photo":"","seasons":[]},{"name":"김규회","race":"P","from":"ASL","slug":"kim-gyuhoe","photo":"","seasons":[]},{"name":"김기훈","race":"P","from":"ASL","slug":"kim-gihun","photo":"","seasons":[]},{"name":"김명운","race":"Z","from":"끝장전","slug":"kim-myeongun","photo":"kim-myeongun.webp","seasons":[9,14,15,19,20]},{"name":"김민철","race":"Z","from":"끝장전","slug":"kim-mincheol","photo":"kim-mincheol.webp","seasons":[9,14,15,19,20]},{"name":"김범성","race":"Z","from":"ASL","slug":"kim-beomseong","photo":"","seasons":[]},{"name":"김범수","race":"P","from":"ASL","slug":"kim-beomsu","photo":"","seasons":[]},{"name":"김봉준","race":"P","from":"ASL","slug":"kim-bongjun","photo":"","seasons":[]},{"name":"김상곤","race":"Z","from":"ASL","slug":"kim-sanggon","photo":"","seasons":[]},{"name":"김성대","race":"Z","from":"끝장전","slug":"kim-seongdae","photo":"kim-seongdae.webp","seasons":[9,14,15,19]},{"name":"김성현","race":"T","from":"끝장전","slug":"kim-seonghyeon","photo":"","seasons":[]},{"name":"김승현","race":"P","from":"끝장전","slug":"kim-seunghyeon","photo":"","seasons":[]},{"name":"김영진","race":"T","from":"ASL","slug":"kim-yeongjin","photo":"","seasons":[]},{"name":"김윤중","race":"P","from":"끝장전","slug":"kim-yunjung","photo":"","seasons":[]},{"name":"김윤환","race":"Z","from":"끝장전","slug":"kim-yunhwan","photo":"","seasons":[]},{"name":"김재현","race":"T","from":"ASL","slug":"kim-jaehyeon","photo":"","seasons":[]},{"name":"김재훈","race":"P","from":"ASL","slug":"kim-jaehun","photo":"","seasons":[]},{"name":"김정우","race":"Z","from":"끝장전","slug":"kim-jeongu","photo":"kim-jeongu.webp","seasons":[20]},{"name":"김지성","race":"T","from":"끝장전","slug":"kim-jiseong","photo":"kim-jiseong.webp","seasons":[14,15,21]},{"name":"김태영","race":"T","from":"ASL","slug":"kim-taeyeong","photo":"kim-taeyeong.webp","seasons":[21]},{"name":"김택용","race":"P","from":"끝장전","slug":"kim-taekyong","photo":"kim-taekyong.webp","seasons":[9,14,15,19,20,21]},{"name":"김현우","race":"Z","from":"ASL","slug":"kim-hyeonu","photo":"","seasons":[]},{"name":"도재욱","race":"P","from":"끝장전","slug":"do-jaeuk","photo":"do-jaeuk.webp","seasons":[9,14,15,19,20]},{"name":"문기호","race":"Z","from":"ASL","slug":"moon-giho","photo":"","seasons":[]},{"name":"문태호","race":"T","from":"ASL","slug":"moon-taeho","photo":"","seasons":[]},{"name":"박상현","race":"Z","from":"끝장전","slug":"park-sanghyeon","photo":"park-sanghyeon.webp","seasons":[9,14,20,21]},{"name":"박성균","race":"T","from":"끝장전","slug":"park-seonggyun","photo":"park-seonggyun.webp","seasons":[15]},{"name":"박성준","race":"Z","from":"ASL","slug":"park-seongjun","photo":"","seasons":[]},{"name":"박세정","race":"P","from":"ASL","slug":"park-sejeong","photo":"","seasons":[]},{"name":"박재혁","race":"Z","from":"ASL","slug":"park-jaehyeok","photo":"","seasons":[]},{"name":"박재현","race":"P","from":"ASL","slug":"park-jaehyeon","photo":"","seasons":[]},{"name":"박준오","race":"Z","from":"끝장전","slug":"park-juno","photo":"park-juno.webp","seasons":[16]},{"name":"박지수","race":"T","from":"ASL","slug":"park-jisu","photo":"","seasons":[]},{"name":"박지호","race":"P","from":"ASL","slug":"park-jiho","photo":"","seasons":[]},{"name":"박지훈","race":"P","from":"ASL","slug":"park-jihun","photo":"","seasons":[]},{"name":"방태수","race":"Z","from":"ASL","slug":"bang-taesu","photo":"bang-taesu.webp","seasons":[20]},{"name":"배병우","race":"Z","from":"ASL","slug":"bae-byeongu","photo":"","seasons":[]},{"name":"배성흠","race":"Z","from":"ASL","slug":"bae-seongheum","photo":"","seasons":[]},{"name":"배호연","race":"T","from":"ASL","slug":"bae-hoyeon","photo":"","seasons":[]},{"name":"변현제","race":"P","from":"끝장전","slug":"byun-hyeonje","photo":"byun-hyeonje.webp","seasons":[14,19,20]},{"name":"변형태","race":"T","from":"ASL","slug":"byun-hyeongtae","photo":"","seasons":[]},{"name":"서문지훈","race":"Z","from":"ASL","slug":"seo-munjihun","photo":"","seasons":[]},{"name":"손경훈","race":"P","from":"ASL","slug":"son-gyeonghun","photo":"son-gyeonghun.webp","seasons":[9]},{"name":"송병구","race":"P","from":"끝장전","slug":"song-byeonggu","photo":"song-byeonggu.webp","seasons":[9]},{"name":"신상문","race":"T","from":"ASL","slug":"shin-sangmun","photo":"shin-sangmun.webp","seasons":[21]},{"name":"심대성","race":"Z","from":"ASL","slug":"shim-daeseong","photo":"","seasons":[]},{"name":"염보성","race":"T","from":"끝장전","slug":"yeom-boseong","photo":"","seasons":[]},{"name":"오진식","race":"Z","from":"ASL","slug":"oh-jinsik","photo":"","seasons":[]},{"name":"원선재","race":"P","from":"ASL","slug":"won-seonjae","photo":"","seasons":[]},{"name":"원지훈","race":"P","from":"ASL","slug":"won-jihun","photo":"","seasons":[]},{"name":"유승곤","race":"T","from":"ASL","slug":"yoo-seunggon","photo":"yoo-seunggon.webp","seasons":[19]},{"name":"유영진","race":"T","from":"끝장전","slug":"yoo-yeongjin","photo":"yoo-yeongjin.webp","seasons":[14,15,19,20]},{"name":"유진우","race":"Z","from":"ASL","slug":"yoo-jinu","photo":"","seasons":[]},{"name":"윤수철","race":"P","from":"ASL","slug":"yoon-sucheol","photo":"yoon-sucheol.webp","seasons":[21]},{"name":"윤용태","race":"P","from":"끝장전","slug":"yoon-yongtae","photo":"","seasons":[]},{"name":"윤종현","race":"T","from":"ASL","slug":"yoon-jonghyeon","photo":"","seasons":[]},{"name":"윤진규","race":"Z","from":"ASL","slug":"yoon-jingyu","photo":"","seasons":[]},{"name":"윤찬희","race":"T","from":"끝장전","slug":"yoon-chanhui","photo":"yoon-chanhui.webp","seasons":[9,14]},{"name":"이경민","race":"T","from":"끝장전","slug":"lee-gyeongmin","photo":"lee-gyeongmin.webp","seasons":[9]},{"name":"이성은","race":"T","from":"ASL","slug":"lee-seongeun","photo":"","seasons":[]},{"name":"이영웅","race":"T","from":"끝장전","slug":"lee-yeongung","photo":"lee-yeongung.webp","seasons":[19,20]},{"name":"이영한","race":"Z","from":"끝장전","slug":"lee-yeonghan","photo":"lee-yeonghan.webp","seasons":[14,15]},{"name":"이영호","race":"T","from":"끝장전","slug":"lee-yeongho","photo":"lee-yeongho.webp","seasons":[9,21]},{"name":"이예준","race":"Z","from":"ASL","slug":"lee-yejun","photo":"","seasons":[]},{"name":"이예훈","race":"Z","from":"ASL","slug":"lee-yehun","photo":"","seasons":[]},{"name":"이윤열","race":"T","from":"ASL","slug":"lee-yunyeol","photo":"","seasons":[]},{"name":"이재호","race":"T","from":"끝장전","slug":"lee-jaeho","photo":"lee-jaeho.webp","seasons":[9,14,15,19,20,21]},{"name":"이제동","race":"Z","from":"끝장전","slug":"lee-jedong","photo":"lee-jedong.webp","seasons":[15,19,20,21]},{"name":"이창우","race":"Z","from":"ASL","slug":"lee-changu","photo":"","seasons":[]},{"name":"인치호","race":"Z","from":"ASL","slug":"in-chiho","photo":"","seasons":[]},{"name":"임진묵","race":"T","from":"끝장전","slug":"lim-jinmuk","photo":"lim-jinmuk.webp","seasons":[21]},{"name":"임홍규","race":"Z","from":"끝장전","slug":"lim-honggyu","photo":"lim-honggyu.webp","seasons":[9,20]},{"name":"장윤철","race":"P","from":"끝장전","slug":"jang-yuncheol","photo":"jang-yuncheol.webp","seasons":[9,14,15,19,20,21]},{"name":"전태양","race":"T","from":"끝장전","slug":"jeon-taeyang","photo":"","seasons":[]},{"name":"정경두","race":"P","from":"ASL","slug":"jung-gyeongdu","photo":"","seasons":[]},{"name":"정민기","race":"T","from":"ASL","slug":"jung-mingi","photo":"","seasons":[]},{"name":"정영재","race":"T","from":"끝장전","slug":"jung-yeongjae","photo":"jung-yeongjae.webp","seasons":[15]},{"name":"정윤성","race":"P","from":"ASL","slug":"jung-yunseong","photo":"","seasons":[]},{"name":"정윤종","race":"P","from":"ASL","slug":"jung-yunjong","photo":"jung-yunjong.webp","seasons":[19,21]},{"name":"조기석","race":"T","from":"끝장전","slug":"cho-giseok","photo":"cho-giseok.webp","seasons":[9,19,20,21]},{"name":"조일장","race":"Z","from":"끝장전","slug":"cho-iljang","photo":"cho-iljang.webp","seasons":[14,15,19,21]},{"name":"진영화","race":"P","from":"ASL","slug":"jin-yeonghwa","photo":"","seasons":[]},{"name":"최영현","race":"P","from":"ASL","slug":"choi-yeonghyeon","photo":"","seasons":[]},{"name":"최호선","race":"T","from":"끝장전","slug":"choi-hoseon","photo":"choi-hoseon.webp","seasons":[14,15,21]},{"name":"하늘","race":"P","from":"ASL","slug":"ha-neul","photo":"","seasons":[]},{"name":"한두열","race":"Z","from":"ASL","slug":"han-duyeol","photo":"","seasons":[]},{"name":"한상봉","race":"Z","from":"ASL","slug":"han-sangbong","photo":"","seasons":[]},{"name":"현지섭","race":"T","from":"ASL","slug":"hyun-jiseop","photo":"","seasons":[]},{"name":"홍덕","race":"P","from":"ASL","slug":"hong-deok","photo":"","seasons":[]},{"name":"황병영","race":"T","from":"끝장전","slug":"hwang-byeongyeong","photo":"hwang-byeongyeong.webp","seasons":[9,14,15,19,20,21]}];
 /* 끝장전 방송 CG 제작 툴.
    1920x1080 캔버스에 직접 그립니다 — 바깥 라이브러리를 쓰지 않아서
    인터넷이 끊겨도 되고, 내보낸 PNG 가 화면에 보이는 것과 정확히 같습니다.
@@ -639,11 +648,11 @@ function defaults() {
     liveBadge: '',
     players: [
       { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
-        zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0,
         prize: 'KRW 25,900,000', score: '0', delta: '',
         vs: 'VS 장윤철(P) 3 : 6 패\nVS 박상현(Z) 4 : 5 패\nVS 김민철(Z) 4 : 5 패\nVS 조일장(Z) 6 : 3 승\n[VS 이제동(Z) 6 : 3 승]' },
       { nick: 'Bisu', name: '김택용', race: 'P', photo: null, photoFrom: null,
-        zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0,
         prize: 'KRW 4,000,000', score: '0', delta: '',
         vs: 'VS 김명운(Z) 6 : 3 승\nVS 이재호(T) 3 : 6 패\nVS 이제동(Z) 5 : 4 승\nVS 이영한(Z) 8 : 1 승\n[VS 이영호(T) 5 : 3 승]' }
     ],
@@ -1212,8 +1221,48 @@ function paint(g) {
   save();
 }
 
-/* ── 조작 ──────────────────────────────────────────────────── */
+/* ── 시즌 프로필 사진 ──────────────────────────────────────────
+   같은 선수라도 시즌마다 사진이 다릅니다. ASL S19 김명운과 S20 김명운을
+   따로 고를 수 있게, 있는 시즌만 목록에 올려 둡니다. */
 function $(id) { return document.getElementById(id); }
+
+function seasonPath(slug, season) {
+  var nn = (season < 10 ? '0' : '') + season;
+  return '../img/players/seasons/' + slug + '-s' + nn + '.webp';
+}
+
+function playerInfo(name) {
+  return PLAYERS.find(function (p) { return p.name === name; });
+}
+
+/** 그 선수에게 있는 시즌만 목록에 채웁니다. 최근 시즌이 위로 옵니다. */
+function fillSeasons(i) {
+  var sel = $('season' + (i + 1));
+  if (!sel) return;
+  var info = playerInfo(S.players[i].name);
+  var list = (info && info.seasons) || [];
+  sel.innerHTML = '<option value="">사진 없음</option>' +
+    list.slice().reverse().map(function (v) {
+      return '<option value="' + v + '">ASL S' + v + '</option>';
+    }).join('');
+  sel.value = S.players[i].season === '' ? '' : String(S.players[i].season);
+  sel.disabled = list.length === 0;
+}
+
+/** 고른 시즌 사진을 실제로 붙입니다. */
+function applySeason(i, season) {
+  var pl = S.players[i], info = playerInfo(pl.name);
+  pl.season = season;
+  if (season !== '' && info) {
+    pl.photo = seasonPath(info.slug, parseInt(season, 10));
+    pl.photoFrom = 'season';
+  } else if (pl.photoFrom === 'season') {
+    pl.photo = null;
+    pl.photoFrom = null;
+  }
+  pl.zoom = 1; pl.ox = 0; pl.oy = 0;
+  var z = $('zoom' + (i + 1)); if (z) z.value = 1;
+}
 
 function bind(id, get, set) {
   var el = $(id);
@@ -1287,20 +1336,30 @@ function setupControls() {
         if (hit) { S.players[i].race = hit.race; $('race' + n).value = hit.race; }
         // 직접 올린 사진은 건드리지 않습니다 — 등록 사진일 때만 바꿉니다.
         if (S.players[i].photoFrom !== 'upload') {
-          if (hit && hit.photo) {
+          var ss = (hit && hit.seasons) || [];
+          if (ss.length) {
+            applySeason(i, String(ss[ss.length - 1]));   // 가장 최근 시즌
+          } else if (hit && hit.photo) {
             S.players[i].photo = '../img/players/' + encodeURIComponent(hit.photo);
             S.players[i].photoFrom = 'lib';
+            S.players[i].season = '';
             S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
             var z = $('zoom' + n); if (z) z.value = 1;
-          } else if (S.players[i].photoFrom === 'lib') {
-            S.players[i].photo = null; S.players[i].photoFrom = null;
+          } else if (S.players[i].photoFrom === 'lib' ||
+                     S.players[i].photoFrom === 'season') {
+            S.players[i].photo = null;
+            S.players[i].photoFrom = null;
+            S.players[i].season = '';
           }
         }
+        fillSeasons(i);
       });
     bind('race' + n, function () { return S.players[i].race; },
       function (v) { S.players[i].race = v; });
     bind('zoom' + n, function () { return S.players[i].zoom; },
       function (v) { S.players[i].zoom = parseFloat(v); });
+    var sel = $('season' + n);
+    if (sel) sel.addEventListener('change', function () { applySeason(i, sel.value); draw(); });
     bind('prize' + n, function () { return S.players[i].prize; },
       function (v) { S.players[i].prize = v; });
     bind('score' + n, function () { return S.players[i].score; },
@@ -1312,6 +1371,8 @@ function setupControls() {
     bindPhoto('photo' + n, function (d) {
       S.players[i].photo = d;
       S.players[i].photoFrom = 'upload';
+      S.players[i].season = '';
+      var sv = $('season' + n); if (sv) sv.value = '';
       S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
       $('zoom' + n).value = 1;
     });
@@ -1374,6 +1435,7 @@ function fillForm() {
     ['nick', 'name', 'race', 'zoom', 'prize', 'score', 'delta', 'vs'].forEach(function (k) {
       var el = $(k + n); if (el) el.value = p[k];
     });
+    fillSeasons(i);
   });
   ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight'].forEach(function (k) {
     var el = $(k); if (el) el.value = S[k];

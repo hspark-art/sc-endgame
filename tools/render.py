@@ -657,6 +657,8 @@ def _player_block(n, _fld):
              'accept="image/*"></label>'
              '<button class="btn danger" id="photo%dClear" type="button">지우기</button>'
              '</div>' % (n, n)) +
+        _fld('시즌 사진 (같은 선수의 다른 시즌 사진을 고를 수 있습니다)',
+             '<select id="season%d"><option value="">사진 없음</option></select>' % n) +
         _fld('사진 크기',
              '<input type="range" id="zoom%d" min="0.4" max="4" step="0.02">' % n) +
         '<div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 '

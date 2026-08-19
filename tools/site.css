@@ -386,10 +386,11 @@ tbody tr.grouphead:first-child td{border-top:none}
 .gear:hover,.gear:focus-visible{opacity:1;color:var(--dim)}
 
 /* 선수 사진 — img/players/<슬러그>.jpg 를 넣으면 자동으로 붙습니다. */
-.pphoto{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:center top;
-  border:2px solid var(--line);background:var(--panel2);flex:0 0 auto}
-.rphoto{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:center top;
-  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:6px}
+.pphoto{width:104px;height:104px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:3px solid var(--line);background:var(--panel2);flex:0 0 auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.rphoto{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:8px}
 
 /* ── 모바일 터치 크기 ─────────────────────────────────
    손가락으로 누르는 화면입니다. 글자만 한 크기로 두면 잘 안 눌립니다.
@@ -411,4 +412,10 @@ tbody tr.grouphead:first-child td{border-top:none}
   .h2hopt{padding:12px 10px}
   .h2hclear{width:34px;height:34px;font-size:19px}
   .h2hdrop{max-height:min(300px,46vh)}
+}
+
+/* 선수 사진은 얼굴이 보여야 하므로 큼직하게. 좁은 화면에서만 조금 줄입니다. */
+@media (max-width:640px){
+  .pphoto{width:78px;height:78px;border-width:2px}
+  .rphoto{width:32px;height:32px}
 }

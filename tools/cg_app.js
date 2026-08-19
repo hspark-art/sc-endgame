@@ -57,11 +57,11 @@ function defaults() {
     liveBadge: '',
     players: [
       { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
-        zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0,
         prize: 'KRW 25,900,000', score: '0', delta: '',
         vs: 'VS 장윤철(P) 3 : 6 패\nVS 박상현(Z) 4 : 5 패\nVS 김민철(Z) 4 : 5 패\nVS 조일장(Z) 6 : 3 승\n[VS 이제동(Z) 6 : 3 승]' },
       { nick: 'Bisu', name: '김택용', race: 'P', photo: null, photoFrom: null,
-        zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0,
         prize: 'KRW 4,000,000', score: '0', delta: '',
         vs: 'VS 김명운(Z) 6 : 3 승\nVS 이재호(T) 3 : 6 패\nVS 이제동(Z) 5 : 4 승\nVS 이영한(Z) 8 : 1 승\n[VS 이영호(T) 5 : 3 승]' }
     ],
@@ -630,8 +630,48 @@ function paint(g) {
   save();
 }
 
-/* ── 조작 ──────────────────────────────────────────────────── */
+/* ── 시즌 프로필 사진 ──────────────────────────────────────────
+   같은 선수라도 시즌마다 사진이 다릅니다. ASL S19 김명운과 S20 김명운을
+   따로 고를 수 있게, 있는 시즌만 목록에 올려 둡니다. */
 function $(id) { return document.getElementById(id); }
+
+function seasonPath(slug, season) {
+  var nn = (season < 10 ? '0' : '') + season;
+  return '../img/players/seasons/' + slug + '-s' + nn + '.webp';
+}
+
+function playerInfo(name) {
+  return PLAYERS.find(function (p) { return p.name === name; });
+}
+
+/** 그 선수에게 있는 시즌만 목록에 채웁니다. 최근 시즌이 위로 옵니다. */
+function fillSeasons(i) {
+  var sel = $('season' + (i + 1));
+  if (!sel) return;
+  var info = playerInfo(S.players[i].name);
+  var list = (info && info.seasons) || [];
+  sel.innerHTML = '<option value="">사진 없음</option>' +
+    list.slice().reverse().map(function (v) {
+      return '<option value="' + v + '">ASL S' + v + '</option>';
+    }).join('');
+  sel.value = S.players[i].season === '' ? '' : String(S.players[i].season);
+  sel.disabled = list.length === 0;
+}
+
+/** 고른 시즌 사진을 실제로 붙입니다. */
+function applySeason(i, season) {
+  var pl = S.players[i], info = playerInfo(pl.name);
+  pl.season = season;
+  if (season !== '' && info) {
+    pl.photo = seasonPath(info.slug, parseInt(season, 10));
+    pl.photoFrom = 'season';
+  } else if (pl.photoFrom === 'season') {
+    pl.photo = null;
+    pl.photoFrom = null;
+  }
+  pl.zoom = 1; pl.ox = 0; pl.oy = 0;
+  var z = $('zoom' + (i + 1)); if (z) z.value = 1;
+}
 
 function bind(id, get, set) {
   var el = $(id);
@@ -705,20 +745,30 @@ function setupControls() {
         if (hit) { S.players[i].race = hit.race; $('race' + n).value = hit.race; }
         // 직접 올린 사진은 건드리지 않습니다 — 등록 사진일 때만 바꿉니다.
         if (S.players[i].photoFrom !== 'upload') {
-          if (hit && hit.photo) {
+          var ss = (hit && hit.seasons) || [];
+          if (ss.length) {
+            applySeason(i, String(ss[ss.length - 1]));   // 가장 최근 시즌
+          } else if (hit && hit.photo) {
             S.players[i].photo = '../img/players/' + encodeURIComponent(hit.photo);
             S.players[i].photoFrom = 'lib';
+            S.players[i].season = '';
             S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
             var z = $('zoom' + n); if (z) z.value = 1;
-          } else if (S.players[i].photoFrom === 'lib') {
-            S.players[i].photo = null; S.players[i].photoFrom = null;
+          } else if (S.players[i].photoFrom === 'lib' ||
+                     S.players[i].photoFrom === 'season') {
+            S.players[i].photo = null;
+            S.players[i].photoFrom = null;
+            S.players[i].season = '';
           }
         }
+        fillSeasons(i);
       });
     bind('race' + n, function () { return S.players[i].race; },
       function (v) { S.players[i].race = v; });
     bind('zoom' + n, function () { return S.players[i].zoom; },
       function (v) { S.players[i].zoom = parseFloat(v); });
+    var sel = $('season' + n);
+    if (sel) sel.addEventListener('change', function () { applySeason(i, sel.value); draw(); });
     bind('prize' + n, function () { return S.players[i].prize; },
       function (v) { S.players[i].prize = v; });
     bind('score' + n, function () { return S.players[i].score; },
@@ -730,6 +780,8 @@ function setupControls() {
     bindPhoto('photo' + n, function (d) {
       S.players[i].photo = d;
       S.players[i].photoFrom = 'upload';
+      S.players[i].season = '';
+      var sv = $('season' + n); if (sv) sv.value = '';
       S.players[i].zoom = 1; S.players[i].ox = 0; S.players[i].oy = 0;
       $('zoom' + n).value = 1;
     });
@@ -792,6 +844,7 @@ function fillForm() {
     ['nick', 'name', 'race', 'zoom', 'prize', 'score', 'delta', 'vs'].forEach(function (k) {
       var el = $(k + n); if (el) el.value = p[k];
     });
+    fillSeasons(i);
   });
   ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight'].forEach(function (k) {
     var el = $(k); if (el) el.value = S[k];
