@@ -63,11 +63,11 @@ function defaults() {
     showRibbon: true,
     players: [
       { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
-        season: '', zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0, trim: 0,
         prize: 'KRW 25,900,000', score: '0', delta: '',
         vs: 'VS 장윤철(P) 3 : 6 패\nVS 박상현(Z) 4 : 5 패\nVS 김민철(Z) 4 : 5 패\nVS 조일장(Z) 6 : 3 승\n[VS 이제동(Z) 6 : 3 승]' },
       { nick: 'Bisu', name: '김택용', race: 'P', photo: null, photoFrom: null,
-        season: '', zoom: 1, ox: 0, oy: 0,
+        season: '', zoom: 1, ox: 0, oy: 0, trim: 0,
         prize: 'KRW 4,000,000', score: '0', delta: '',
         vs: 'VS 김명운(Z) 6 : 3 승\nVS 이재호(T) 3 : 6 패\nVS 이제동(Z) 5 : 4 승\nVS 이영한(Z) 8 : 1 승\n[VS 이영호(T) 5 : 3 승]' }
     ],
@@ -301,14 +301,28 @@ function drawPhoto(side, im, dim) {
   var pl = S.players[side], r = photoRect(side);
   if (im) {
     // 방송처럼 인물을 아래에 세웁니다 — 위로 꽉 채우면 머리가 잘립니다.
+    // trim 은 하반신을 얼마나 잘라낼지(0~0.6). 잘라낸 만큼 남은 상반신이
+    // 같은 높이를 채우므로 인물이 커지고, 잘린 자리는 화면 바닥에 붙습니다.
     var topGap = 150;
-    var sc = ((H - topGap) / im.height) * (pl.zoom || 1);
-    var dw = im.width * sc, dh = im.height * sc;
+    var trim = Math.min(0.6, Math.max(0, pl.trim || 0));
+    var srcH = im.height * (1 - trim);
+    var sc = ((H - topGap) / srcH) * (pl.zoom || 1);
+    var dw = im.width * sc, dh = srcH * sc;
     var dx = r.x + (r.w - dw) / 2 + (pl.ox || 0);
     var dy = H - dh + (pl.oy || 0);
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
-    ctx.drawImage(im, dx, dy, dw, dh);
+    ctx.drawImage(im, 0, 0, im.width, srcH, dx, dy, dw, dh);
+    // 인물을 위로 끌어 올려 잘린 단면이 화면 안에 보이면, 그 끝을 살짝
+    // 녹여서 뚝 잘린 티가 나지 않게 합니다.
+    var cutY = dy + dh;
+    if (cutY < H - 2) {
+      var fade = ctx.createLinearGradient(0, cutY - 90, 0, cutY);
+      fade.addColorStop(0, 'rgba(0,0,0,0)');
+      fade.addColorStop(1, 'rgba(0,0,0,.9)');
+      ctx.fillStyle = fade;
+      ctx.fillRect(dx, cutY - 90, dw, 90);
+    }
     ctx.restore();
     if (dim) {
       ctx.save();
@@ -733,8 +747,9 @@ function applySeason(i, season) {
     pl.photo = null;
     pl.photoFrom = null;
   }
-  pl.zoom = 1; pl.ox = 0; pl.oy = 0;
+  pl.zoom = 1; pl.ox = 0; pl.oy = 0; pl.trim = 0;
   var z = $('zoom' + (i + 1)); if (z) z.value = 1;
+  var t = $('trim' + (i + 1)); if (t) t.value = 0;
 }
 
 function bind(id, get, set) {
@@ -841,6 +856,8 @@ function setupControls() {
       function (v) { S.players[i].race = v; });
     bind('zoom' + n, function () { return S.players[i].zoom; },
       function (v) { S.players[i].zoom = parseFloat(v); });
+    bind('trim' + n, function () { return S.players[i].trim || 0; },
+      function (v) { S.players[i].trim = parseFloat(v); });
     var sel = $('season' + n);
     if (sel) sel.addEventListener('change', function () { applySeason(i, sel.value); draw(); });
     bind('prize' + n, function () { return S.players[i].prize; },
@@ -915,7 +932,7 @@ function setupControls() {
 function fillForm() {
   [0, 1].forEach(function (i) {
     var n = i + 1, p = S.players[i];
-    ['nick', 'name', 'race', 'zoom', 'prize', 'score', 'delta', 'vs'].forEach(function (k) {
+    ['nick', 'name', 'race', 'zoom', 'trim', 'prize', 'score', 'delta', 'vs'].forEach(function (k) {
       var el = $(k + n); if (el) el.value = p[k];
     });
     fillSeasons(i);

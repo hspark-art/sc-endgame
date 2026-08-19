@@ -661,6 +661,8 @@ def _player_block(n, _fld):
              '<select id="season%d"><option value="">사진 없음</option></select>' % n) +
         _fld('사진 크기',
              '<input type="range" id="zoom%d" min="0.4" max="4" step="0.02">' % n) +
+        _fld('하반신 자르기 (왼쪽 전신 ← → 오른쪽 상반신)',
+             '<input type="range" id="trim%d" min="0" max="0.6" step="0.01" value="0">' % n) +
         '<div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 '
         '<b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 끌어다 놓아도 '
         '바로 들어갑니다.</div>\n' +
