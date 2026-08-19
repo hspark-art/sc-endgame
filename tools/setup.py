@@ -79,14 +79,18 @@ def check_openpyxl():
 def setup_ftp():
     step(3, 'FTP 접속 정보')
     path = os.path.join(ROOT, 'data', 'deploy.json')
+    # 두 번째부터는 아무것도 묻지 않습니다 — 더블클릭만으로 끝나야 하니까요.
+    # 바꾸시려면 data/deploy.json 을 지우고 다시 돌리시면 됩니다.
     if os.path.exists(path):
-        cfg = json.load(io.open(path, encoding='utf-8'))
+        try:
+            cfg = json.load(io.open(path, encoding='utf-8'))
+        except ValueError:
+            cfg = {}
         if cfg.get('password') and not cfg['password'].startswith('여기에'):
-            print('   이미 있습니다 — %s@%s%s'
-                  % (cfg.get('user'), cfg.get('host'), cfg.get('remoteDir')))
-            if ask('다시 입력할까요? (y/N)', 'N').lower() != 'y':
-                print(OK + ' 그대로 씁니다.')
-                return cfg
+            print('   %s@%s%s' % (cfg.get('user'), cfg.get('host'), cfg.get('remoteDir')))
+            print(OK + ' 저장된 정보를 그대로 씁니다.')
+            print('   (바꾸시려면 data/deploy.json 을 지우고 다시 실행하세요)')
+            return cfg
     print('   카페24 FTP 정보를 넣어 주세요. 비밀번호는 화면에 보이지 않습니다.')
     import getpass
     cfg = {

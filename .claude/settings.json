@@ -12,7 +12,9 @@
       "Bash(git log:*)",
       "Read",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(python3 tools/setup.py:*)",
+      "Bash(python3 tools/start.py:*)"
     ]
   }
 }
