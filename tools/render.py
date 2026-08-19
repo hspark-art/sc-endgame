@@ -591,22 +591,65 @@ def _fld(label, inner):
     return '<div class="fld"><label>%s</label>%s</div>\n' % (label, inner)
 
 
-def _player_block(n):
+CG_TYPES = [
+    ('matchup', '대진표', '경기 방식·상금·사용맵'),
+    ('stats', '선수 전적', '총 전적·누적상금·상대 전적'),
+    ('score', '쉬는 시간', '전적 + 양쪽 스코어'),
+    ('winner', '경기 결과', '승자 강조·패자 어둡게'),
+    ('next', '다음 경기', 'NEXT MATCH 안내'),
+]
+
+CG_FONTS = [
+    ('pretendard', '기본 (Pretendard)'),
+    ('gothic', '맑은 고딕'),
+    ('nanum', '나눔고딕'),
+    ('black', '굵은 영문 (Arial Black)'),
+    ('serif', '바탕'),
+    ('script', '흘림체 (Script)'),
+]
+
+
+def _for(types):
+    return ' data-for="%s"' % types if types else ''
+
+
+def _style_row(key, label, types=''):
+    """글자 하나의 크기·색·폰트를 한 줄로."""
+    opts = ''.join('<option value="%s">%s</option>' % (v, t) for v, t in CG_FONTS)
+    return (
+        '<div class="strow"%s><span class="stname">%s</span>'
+        '<input type="number" id="st_%s_size" min="8" max="400" step="1" title="크기">'
+        '<input type="color" id="st_%s_color" title="색">'
+        '<select id="st_%s_font" title="폰트">%s</select></div>\n'
+        % (_for(types), label, key, key, key, opts))
+
+
+def _cg_type_bar():
+    btns = ''.join(
+        '<button class="cgtype" type="button" data-type="%s">'
+        '<b>%s</b><span>%s</span></button>' % (i, label, note)
+        for i, label, note in CG_TYPES)
+    return ('<div class="card"><div class="cardtitle">CG 종류</div>\n'
+            '<div class="cgtypes">%s</div>\n'
+            '<div class="helptxt">고른 종류에 필요한 칸만 아래에 나옵니다. '
+            '선수·사진·상단 설정은 다섯 종류가 함께 씁니다.</div></div>\n' % btns)
+
+
+def _player_block(n, _fld):
     i = n - 1
+    side = '왼쪽' if i == 0 else '오른쪽'
     return (
         '<div class="card"><div class="cardtitle">선수 %d '
-        '<span class="note">%s</span></div>\n'
-        % (n, '왼쪽' if i == 0 else '오른쪽') +
+        '<span class="note">%s</span></div>\n' % (n, side) +
         _fld('이름 (기록실에 있는 선수는 종족이 자동으로 채워집니다)',
-             '<input type="text" id="name%d" list="playerList" '
-             'placeholder="예: 김지성">' % n) +
+             '<input type="text" id="name%d" list="playerList">' % n) +
         '<div class="row2">' +
         _fld('닉네임', '<input type="text" id="nick%d" placeholder="예: RoyaL">' % n) +
         _fld('종족',
              '<select id="race%d"><option value="T">테란 (T)</option>'
              '<option value="P">프로토스 (P)</option>'
              '<option value="Z">저그 (Z)</option>'
-             '<option value="">표시 안 함</option></select>' % n) +
+             '<option value="">없음</option></select>' % n) +
         '</div>\n' +
         _fld('사진',
              '<div class="row-inline">'
@@ -615,19 +658,163 @@ def _player_block(n):
              '<button class="btn danger" id="photo%dClear" type="button">지우기</button>'
              '</div>' % (n, n)) +
         _fld('사진 크기',
-             '<input type="range" id="zoom%d" min="0.4" max="4" step="0.02" value="1">' % n) +
+             '<input type="range" id="zoom%d" min="0.4" max="4" step="0.02">' % n) +
         '<div class="helptxt">사진은 미리보기 위에서 <b>끌어서 위치</b>를 잡고 '
-        '<b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 '
-        '끌어다 놓아도 바로 들어갑니다.</div>\n'
+        '<b>휠로 크기</b>를 맞출 수 있습니다. 이미지 파일을 미리보기에 끌어다 놓아도 '
+        '바로 들어갑니다.</div>\n' +
+        '<div%s>' % _for('stats score winner') +
+        _fld('누적상금', '<input type="text" id="prize%d" placeholder="KRW 25,900,000">' % n) +
+        '</div>\n' +
+        '<div%s>' % _for('score') +
+        _fld('스코어', '<input type="text" id="score%d" placeholder="4">' % n) +
+        '</div>\n' +
+        '<div%s>' % _for('winner') +
+        _fld('상금 증감 (사진 아래 큰 글자)',
+             '<input type="text" id="delta%d" placeholder="₩700,000">' % n) +
+        '</div>\n' +
+        '<div%s>' % _for('stats score') +
+        _fld('최근 전적 목록 (한 줄에 하나씩 · [줄] 은 굵게)',
+             '<textarea id="vs%d" rows="5"></textarea>' % n) +
+        '</div>\n'
         '</div>\n')
 
 
-def _box_block(i, label, hint):
-    return (
-        '<div class="card"><div class="cardtitle">%s</div>\n' % label +
-        _fld('제목', '<input type="text" id="boxTitle%d">' % i) +
-        _fld('내용 (한 줄에 하나씩)', '<textarea id="boxBody%d"></textarea>' % i) +
-        '<div class="helptxt">%s</div>\n</div>\n' % hint)
+def _box_block(i, title, hint, _fld):
+    return ('<div class="card"%s><div class="cardtitle">%s</div>\n' % (_for('matchup'), title) +
+            _fld('제목', '<input type="text" id="boxTitle%d">' % i) +
+            _fld('내용 (한 줄에 하나씩)', '<textarea id="boxBody%d" rows="5"></textarea>' % i) +
+            '<div class="helptxt">%s</div>\n</div>\n' % hint)
+
+
+def cg_panel(_fld):
+    """CG 툴 왼쪽 조작 칸 전체."""
+    out = [_cg_type_bar()]
+
+    out.append('<div class="card"><div class="cardtitle">상단</div>\n')
+    out.append(_fld('타이틀', '<input type="text" id="title">'))
+    out.append(_fld('스폰서 글자 (로고를 올리면 로고가 우선입니다)',
+                    '<input type="text" id="sponsorText" placeholder="예: Google Play">'))
+    out.append(_fld('스폰서 로고',
+                    '<div class="row-inline">'
+                    '<label class="filebtn">파일 선택<input type="file" id="logoSponsor" '
+                    'accept="image/*"></label>'
+                    '<button class="btn danger" id="logoSponsorClear" type="button">지우기</button>'
+                    '</div>'))
+    out.append(_fld('방송국 로고 (오른쪽 위)',
+                    '<div class="row-inline">'
+                    '<label class="filebtn">파일 선택<input type="file" id="logoBroadcast" '
+                    'accept="image/*"></label>'
+                    '<button class="btn danger" id="logoBroadcastClear" type="button">지우기</button>'
+                    '</div>'))
+    out.append(_fld('LIVE 배지 (비우면 안 나옵니다)',
+                    '<input type="text" id="liveBadge" placeholder="예: LIVE">'))
+    out.append('</div>\n')
+
+    out.append(_player_block(1, _fld))
+    out.append(_player_block(2, _fld))
+
+    out.append('<div class="card"><div class="cardtitle">배경색</div>\n<div class="row2">')
+    out.append(_fld('왼쪽', '<input type="color" id="bgLeft">'))
+    out.append(_fld('오른쪽', '<input type="color" id="bgRight">'))
+    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>\n</div>\n')
+
+    hint = ('<code>[글자]</code> 는 테두리 강조 칸, <code>* 글자</code> 는 작은 주석, '
+            '빈 줄은 한 칸 띄우기입니다. 상자 높이는 내용에 맞춰 알아서 늘어납니다.')
+    for i, t in enumerate(('상자 1', '상자 2', '상자 3')):
+        out.append(_box_block(i, t, hint, _fld))
+
+    # ── 선수 전적 / 쉬는 시간 ──
+    out.append('<div class="card"%s><div class="cardtitle">가운데 전적판</div>\n'
+               % _for('stats score'))
+    out.append('<div class="row2">')
+    out.append(_fld('큰 제목', '<input type="text" id="stHeading">'))
+    out.append(_fld('작은 제목', '<input type="text" id="stSub">'))
+    out.append('</div>\n')
+    out.append(_fld('상금 칸 제목', '<input type="text" id="stPrizeLabel">'))
+    for i in (0, 1):
+        out.append('<div class="row3">')
+        out.append(_fld('%d번째 줄 이름' % (i + 1),
+                        '<input type="text" id="stRowLabel%d">' % i))
+        out.append(_fld('왼쪽', '<input type="text" id="stRowA%d">' % i))
+        out.append(_fld('오른쪽', '<input type="text" id="stRowB%d">' % i))
+        out.append('</div>\n')
+    out.append(_fld('기간 안내', '<input type="text" id="stPeriod">'))
+    out.append(_fld('종족 전적 제목', '<input type="text" id="stMuLabel">'))
+    out.append('<div class="row2">')
+    out.append(_fld('왼쪽 이름', '<input type="text" id="stMuA">'))
+    out.append(_fld('왼쪽 값', '<input type="text" id="stMuAVal">'))
+    out.append('</div>\n<div class="row2">')
+    out.append(_fld('오른쪽 이름', '<input type="text" id="stMuB">'))
+    out.append(_fld('오른쪽 값', '<input type="text" id="stMuBVal">'))
+    out.append('</div>\n')
+    out.append(_fld('아래 안내 (한 줄에 하나씩)', '<textarea id="stFoot" rows="3"></textarea>'))
+    out.append(_fld('타이머 (비우면 안 나옵니다)', '<input type="text" id="stTimer">'))
+    out.append('</div>\n')
+
+    # ── 경기 결과 ──
+    out.append('<div class="card"%s><div class="cardtitle">경기 결과</div>\n' % _for('winner'))
+    out.append(_fld('이긴 선수',
+                    '<select id="winSide"><option value="0">왼쪽 선수</option>'
+                    '<option value="1">오른쪽 선수</option></select>'))
+    out.append('<div class="row2">')
+    out.append(_fld('가운데 스코어', '<input type="text" id="winVs" placeholder="5 VS 4">'))
+    out.append(_fld('승자 글자', '<input type="text" id="winLabel" placeholder="WINNER">'))
+    out.append('</div>\n')
+    out.append(_fld('승자 위 리본 (비우면 안 나옵니다)',
+                    '<input type="text" id="winRibbon" placeholder="3연승 중!">'))
+    out.append('<div class="helptxt">진 선수 사진은 자동으로 어두워집니다. '
+               '선수별 누적상금·상금 증감은 위 선수 칸에서 넣습니다.</div>\n</div>\n')
+
+    # ── 다음 경기 ──
+    out.append('<div class="card"%s><div class="cardtitle">다음 경기</div>\n' % _for('next'))
+    out.append(_fld('큰 글자', '<input type="text" id="nextHeading" placeholder="NEXT MATCH">'))
+    out.append(_fld('날짜·시간', '<input type="text" id="nextWhen">'))
+    out.append('</div>\n')
+
+    # ── 글자 모양 ──
+    out.append('<div class="card"><div class="cardtitle">글자 모양'
+               '<span class="note">크기 · 색 · 폰트</span></div>\n')
+    rows = [
+        ('title', '타이틀', ''),
+        ('nick', '닉네임', ''),
+        ('pname', '선수 이름', ''),
+        ('boxTitle', '상자 제목', 'matchup'),
+        ('boxLine', '상자 본문', 'matchup'),
+        ('boxNote', '상자 주석', 'matchup'),
+        ('heading', '큰 제목', 'stats score'),
+        ('sub', '작은 제목', 'stats score'),
+        ('rowLabel', '줄 이름', 'stats score'),
+        ('rowValue', '줄 숫자', 'stats score'),
+        ('period', '기간 안내', 'stats score'),
+        ('prize', '누적상금', 'stats score winner'),
+        ('vsList', '최근 전적 목록', 'stats score'),
+        ('foot', '아래 안내', 'stats score'),
+        ('timer', '타이머', 'stats score'),
+        ('score', '스코어', 'score'),
+        ('winnerLabel', '승자 글자', 'winner'),
+        ('ribbon', '리본', 'winner'),
+        ('vsBig', '가운데 스코어 · 상금 증감', 'winner'),
+        ('nextHead', 'NEXT MATCH', 'next'),
+        ('when', '날짜·시간', 'next'),
+    ]
+    for key, label, types in rows:
+        out.append(_style_row(key, label, types))
+    out.append('<div class="helptxt">숫자는 1920×1080 기준 픽셀입니다. '
+               '칸을 넘치는 글자는 알아서 조금씩 줄여 그립니다.</div>\n</div>\n')
+
+    out.append(
+        '<div class="card"><div class="cardtitle">내보내기</div>\n'
+        '<div class="btnrow">'
+        '<button class="btn primary" id="download" type="button">PNG 내려받기</button>'
+        '<button class="btn" id="exportJson" type="button">설정 내보내기</button>'
+        '<label class="filebtn">설정 불러오기'
+        '<input type="file" id="importJson" accept="application/json,.json"></label>'
+        '<button class="btn danger" id="reset" type="button">처음으로</button>'
+        '</div>\n<div class="note" id="note"></div>\n'
+        '<div class="helptxt">사진까지 포함해 자동 저장하므로, 사진이 아주 크면 저장에 '
+        '실패할 수 있습니다. 그럴 때는 "설정 내보내기"로 파일에 남겨 두세요.</div>\n'
+        '</div>\n')
+    return ''.join(out)
 
 
 def cg_page(css, app_js, players):
@@ -654,56 +841,7 @@ def cg_page(css, app_js, players):
         '</div></header>\n')
 
     out.append('<div class="cglayout">\n<div class="cgpanel">\n')
-
-    out.append('<div class="card"><div class="cardtitle">상단</div>\n')
-    out.append('<div class="row2">')
-    out.append(_fld('타이틀', '<input type="text" id="title">'))
-    out.append(_fld('타이틀 색', '<input type="color" id="titleColor">'))
-    out.append('</div>\n')
-    out.append(_fld('스폰서 글자 (로고를 올리면 로고가 우선입니다)',
-                    '<input type="text" id="sponsorText" placeholder="예: Google Play">'))
-    out.append(_fld('스폰서 로고',
-                    '<div class="row-inline">'
-                    '<label class="filebtn">파일 선택<input type="file" id="logoSponsor" '
-                    'accept="image/*"></label>'
-                    '<button class="btn danger" id="logoSponsorClear" type="button">지우기</button>'
-                    '</div>'))
-    out.append(_fld('방송국 로고 (오른쪽 위)',
-                    '<div class="row-inline">'
-                    '<label class="filebtn">파일 선택<input type="file" id="logoBroadcast" '
-                    'accept="image/*"></label>'
-                    '<button class="btn danger" id="logoBroadcastClear" type="button">지우기</button>'
-                    '</div>'))
-    out.append('</div>\n')
-
-    out.append(_player_block(1))
-    out.append(_player_block(2))
-
-    out.append('<div class="card"><div class="cardtitle">배경색</div>\n<div class="row2">')
-    out.append(_fld('왼쪽', '<input type="color" id="bgLeft">'))
-    out.append(_fld('오른쪽', '<input type="color" id="bgRight">'))
-    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>\n</div>\n')
-
-    hint = ('<code>[글자]</code> 는 노란 테두리 강조 칸, '
-            '<code>* 글자</code> 는 작은 회색 주석, '
-            '빈 줄은 한 칸 띄우기입니다. 상자 높이는 내용에 맞춰 알아서 늘어납니다.')
-    out.append(_box_block(0, '상자 1', hint))
-    out.append(_box_block(1, '상자 2', hint))
-    out.append(_box_block(2, '상자 3', hint))
-
-    out.append(
-        '<div class="card"><div class="cardtitle">내보내기</div>\n'
-        '<div class="btnrow">'
-        '<button class="btn primary" id="download" type="button">PNG 내려받기</button>'
-        '<button class="btn" id="exportJson" type="button">설정 내보내기</button>'
-        '<label class="filebtn">설정 불러오기'
-        '<input type="file" id="importJson" accept="application/json,.json"></label>'
-        '<button class="btn danger" id="reset" type="button">처음으로</button>'
-        '</div>\n<div class="note" id="note"></div>\n'
-        '<div class="helptxt">사진까지 포함해 자동 저장하므로, 사진이 아주 크면 저장에 '
-        '실패할 수 있습니다. 그럴 때는 "설정 내보내기"로 파일에 남겨 두세요.</div>\n'
-        '</div>\n')
-
+    out.append(cg_panel(_fld))
     out.append('</div>\n')                                  # cgpanel
     out.append('<div class="cgstage"><canvas id="cv"></canvas>\n'
                '<div class="helptxt">미리보기는 실제 1920×1080 캔버스를 줄여 보여 주는 것이라 '
