@@ -369,13 +369,17 @@ function pkt(svc,body){
     +String(b.length).padStart(6,'0')+'00');
   const u=new Uint8Array(head.length+b.length);u.set(head);u.set(b,head.length);return u;
 }
+const seenBalloons=new Set();   // 재전송 별풍선 중복 방지 (메시지ID [3])
 function parseBalloon(f){
-  // 별풍선 svc 109 — 실측(2026-08): [4]개수 [6]보낸이ID [7]보낸이닉
+  // 별풍선 svc 109 — 실측(2026-08): [3]메시지ID [4]개수 [6]보낸이ID [7]보낸이닉
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
+  const mid=(f[3]||'').trim();
+  if(mid&&seenBalloons.has(mid))return null;   // 이미 센 별풍선
+  if(mid)seenBalloons.add(mid);
   const nick=cleanNick(f[7]);
-  return nick?{t:'balloon',nick,count:+cnt}:null;
+  return nick?{t:'balloon',nick,count:+cnt,id:(f[6]||'').trim()}:null;
 }
 async function connectChat(){
   let info;

@@ -74,7 +74,11 @@ def _clean_nick(s):
 
 
 def _parse_balloon(fields):
-    """별풍선 칸 해석 (svc 109). 실측: [4]=개수 [6]=보낸이ID [7]=보낸이닉."""
+    """별풍선 칸 해석 (svc 109). 실측: [3]=메시지ID [4]=개수 [6]=보낸이ID [7]=보낸이닉.
+
+    같은 별풍선을 서버가 여러 번 재전송하므로, [3] 메시지ID 를 함께 돌려주어
+    받는 쪽에서 한 번만 세도록 합니다 (이걸 안 하면 개수가 부풀려집니다).
+    """
     if len(fields) < 8:
         return None
     cnt = fields[4].strip()
@@ -84,7 +88,8 @@ def _parse_balloon(fields):
     uid = fields[6].strip()
     if not nick:
         return None
-    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(cnt)}
+    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(cnt),
+            'mid': fields[3].strip()}
 
 
 def listen(bid, info, on_event, should_stop=None):
@@ -106,6 +111,7 @@ def listen(bid, info, on_event, should_stop=None):
     ws.send_binary(_pkt(SVC_JOIN, F + chatno + F + F + F + F))
 
     import time as _t
+    seen_balloons = set()                    # 재전송 별풍선 중복 방지 (메시지ID)
     last_ping = _t.time()
     while True:
         if should_stop and should_stop():
@@ -129,8 +135,15 @@ def listen(bid, info, on_event, should_stop=None):
                 on_event(ev)
         elif svc == SVC_BALLOON:
             ev = _parse_balloon(fields)
-            on_event(ev if ev else
-                     {'t': 'raw', 'svc': svc, 'fields': fields})
+            if ev:
+                mid = ev.pop('mid', '')
+                if mid and mid in seen_balloons:
+                    continue                 # 이미 센 별풍선 — 건너뜁니다
+                if mid:
+                    seen_balloons.add(mid)
+                on_event(ev)
+            else:
+                on_event({'t': 'raw', 'svc': svc, 'fields': fields})
         elif svc == SVC_USERLIST:
             nicks = [_clean_nick(x) for x in fields if x and not x.isdigit()]
             on_event({'t': 'join', 'nicks': [n for n in nicks if n][:20]})
