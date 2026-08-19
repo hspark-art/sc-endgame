@@ -183,8 +183,8 @@ tbody tr:hover{background:#161b25}
 .cardtitle{font-weight:800;font-size:14.5px;margin-bottom:10px;display:flex;
   align-items:center;gap:8px;flex-wrap:wrap}
 .cardtitle .note{color:var(--dim);font-weight:500;font-size:11.5px}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
 
 /* ── 상성 막대 ────────────────────────────────────── */
 .mubar{display:flex;height:24px;border-radius:6px;overflow:hidden;margin:6px 0 4px;
@@ -430,6 +430,28 @@ tbody tr.grouphead:first-child td{border-top:none}
   border:2px solid var(--line);background:var(--panel2);flex:0 0 auto}
 .rphoto{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:center top;
   border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:6px}
+
+/* ── 모바일 터치 크기 ─────────────────────────────────
+   손가락으로 누르는 화면입니다. 글자만 한 크기로 두면 잘 안 눌립니다.
+   누르는 것들이 40px 안팎이 되도록 위아래 여백을 넉넉히 줍니다.
+
+   이 블록은 **반드시 파일 맨 끝**에 있어야 합니다. 위쪽 @media 안에 두면
+   그 뒤에 나오는 .navlink · .h2hsel 같은 규칙이 같은 우선순위로 다시
+   덮어써서 효과가 사라집니다 (실제로 그렇게 겪었습니다).
+   톱니바퀴(.gear)는 일부러 눈에 안 띄게 둔 것이라 건드리지 않습니다. */
+@media (max-width:640px){
+  .navlink{padding:11px 16px}
+  .tab{padding:10px 14px}
+  .chip{padding:9px 13px}
+  .dlbtn{padding:9px 13px}
+  .yt-mini{display:inline-block;padding:9px 4px}
+  .backlink{padding:8px 2px}
+  .nm-link{display:inline-block;padding:5px 0}
+  .h2hsel{padding-top:11px;padding-bottom:11px}
+  .h2hopt{padding:12px 10px}
+  .h2hclear{width:34px;height:34px;font-size:19px}
+  .h2hdrop{max-height:min(300px,46vh)}
+}
 
 .loginwrap{max-width:400px;margin:0 auto;padding:70px 20px 60px}
 .loginwrap h1{font-size:22px;margin-bottom:6px}
