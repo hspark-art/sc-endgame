@@ -76,8 +76,6 @@ def footer(built, extra='', depth=0):
         ' 표시된 값은 시트의 세트 단위 원본 기록을 그대로 다시 계산한 것입니다.<br>\n'
         + (extra + '<br>\n' if extra else '') +
         '마지막 갱신: ' + built + '\n'
-        '<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. '
-        '이 사이트는 SOOP·유튜브 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
         + gear(depth) +
         '</footer>\n</div>\n'
     )
@@ -426,8 +424,6 @@ def asl_footer(built, depth=1):
         '매치(시리즈)는 같은 라운드에서 같은 두 선수가 연달아 치른 세트를 하나로 묶은 것입니다.<br>\n'
         '<a href="%sindex.html">끝장전 기록실</a>은 별개 대회라 따로 있습니다.<br>\n'
         '마지막 갱신: %s\n'
-        '<div class="legal">선수 이름과 경기 결과는 공개 방송 기록을 정리한 것입니다. '
-        '이 사이트는 SOOP·아프리카TV 및 각 선수와 공식적인 관계가 없습니다.</div>\n'
         '%s'
         '</footer>\n</div>\n' % (up, built, gear(depth))
     )
