@@ -31,7 +31,8 @@ F = '\x0c'                                   # 칸 나누개
 
 SVC_PING, SVC_CONNECT, SVC_JOIN = 0, 1, 2
 SVC_USERLIST, SVC_CHAT = 4, 5
-SVC_BALLOON, SVC_BALLOON_SUB = 18, 33
+SVC_BALLOON = 109                            # 별풍선 — 실측(2026-08): [4]개수 [6]ID [7]닉
+SVC_BALLOON_OLD = (18, 33)                   # 예전 배치 (대비용)
 
 
 def live_info(bid):
@@ -73,22 +74,17 @@ def _clean_nick(s):
 
 
 def _parse_balloon(fields):
-    """별풍선 칸 해석 — 보낸이 ID·닉·개수를 최대한 찾아냅니다."""
-    # 알려진 배치: [1]=방송국ID [2]=보낸이ID [3]=보낸이닉 [4]=개수 ...
-    cand = None
-    for i in (4, 5, 3):
-        v = fields[i] if i < len(fields) else ''
-        if v.isdigit() and int(v) > 0:
-            cand = i
-            break
-    if cand is None:
+    """별풍선 칸 해석 (svc 109). 실측: [4]=개수 [6]=보낸이ID [7]=보낸이닉."""
+    if len(fields) < 8:
         return None
-    count = int(fields[cand])
-    nick = _clean_nick(fields[cand - 1] if cand - 1 < len(fields) else '')
-    uid = (fields[cand - 2] if cand - 2 < len(fields) else '').strip()
+    cnt = fields[4].strip()
+    if not (cnt.isdigit() and int(cnt) > 0):
+        return None
+    nick = _clean_nick(fields[7])
+    uid = fields[6].strip()
     if not nick:
         return None
-    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': count}
+    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(cnt)}
 
 
 def listen(bid, info, on_event, should_stop=None):
@@ -131,7 +127,7 @@ def listen(bid, info, on_event, should_stop=None):
                   'nick': _clean_nick(fields[6]), 'msg': fields[1]}
             if ev['nick']:
                 on_event(ev)
-        elif svc in (SVC_BALLOON, SVC_BALLOON_SUB):
+        elif svc == SVC_BALLOON:
             ev = _parse_balloon(fields)
             on_event(ev if ev else
                      {'t': 'raw', 'svc': svc, 'fields': fields})

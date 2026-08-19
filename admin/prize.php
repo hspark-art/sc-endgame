@@ -135,15 +135,12 @@ function pkt(svc,body){
   const u=new Uint8Array(head.length+b.length);u.set(head);u.set(b,head.length);return u;
 }
 function parseBalloon(f){
-  for(const i of [4,5,3]){
-    const v=f[i]??'';
-    if(/^\d+$/.test(v)&&+v>0){
-      const nick=cleanNick(f[i-1]??'');
-      if(nick)return{t:'balloon',nick,count:+v};
-      break;
-    }
-  }
-  return null;
+  // 별풍선 svc 109 — 실측(2026-08): [4]개수 [6]보낸이ID [7]보낸이닉
+  if(f.length<8)return null;
+  const cnt=(f[4]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
+  const nick=cleanNick(f[7]);
+  return nick?{t:'balloon',nick,count:+cnt}:null;
 }
 async function connectChat(){
   let info;
@@ -170,7 +167,7 @@ async function connectChat(){
     if(svc===5&&f.length>6){
       const nick=cleanNick(f[6]);
       if(nick)onEvent({t:'chat',nick,msg:f[1],at:now()});
-    }else if(svc===18||svc===33){
+    }else if(svc===109){
       const ev=parseBalloon(f);
       if(ev){ev.at=now();onEvent(ev);}
       else rawUnknown.push({svc,f:f.slice(0,12),at:now()});
