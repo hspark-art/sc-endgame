@@ -44,7 +44,7 @@ KEY_EXTS = {'.json', '.txt', '.py', '.js', '.env', '.md', '.bat', '.ps1',
 
 
 def mask(key):
-    return key[:8] + '…' + key[-4:]
+    return key[:8] + '...' + key[-4:]
 
 
 def old_folders():
@@ -227,7 +227,7 @@ def main():
 
     push_ok = step_push()
 
-    print('\n' + '═' * 58)
+    print('\n' + '=' * 58)
     left = []
     if not ftp_ok:
         left.append('FTP 접속 — 카페24 보안관리 → FTP/Shell 접속설정에서 IP 허용')

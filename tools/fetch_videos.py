@@ -35,6 +35,14 @@ sys.path.insert(0, HERE)
 
 import stats                                     # noqa: E402
 
+# 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except (AttributeError, OSError):
+    pass
+
+
 API = 'https://www.googleapis.com/youtube/v3/'
 HANDLES = ['ETALENT-SC', 'ETALENT-TV']           # 끝장전 전용 채널을 먼저 봅니다
 # 영상이 경기 당일보다 앞서 올라올 수는 없고, 아주 오래 뒤에 올라오지도 않습니다.

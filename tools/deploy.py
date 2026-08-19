@@ -41,6 +41,14 @@ import os
 import ssl
 import sys
 
+# 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except (AttributeError, OSError):
+    pass
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 

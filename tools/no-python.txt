@@ -1,0 +1,12 @@
+
+  [!] 파이썬이 설치돼 있지 않습니다.
+
+      아래 주소에서 받아 설치해 주세요.
+
+          https://www.python.org/downloads/
+
+      설치 화면 맨 아래
+          [v] Add python.exe to PATH
+      를 반드시 체크하셔야 합니다.
+
+      설치가 끝나면 이 창을 닫고 START.bat 을 다시 더블클릭하세요.
