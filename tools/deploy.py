@@ -239,6 +239,14 @@ def main():
     print('완료 — https://%s%s/ 에서 확인하세요.'
           % (cfg['host'], base.replace('/www', '', 1)))
 
+    # 무엇이 바뀌었는지 슬랙으로 알립니다 (PUBG META 와 같은 방식).
+    # 알림이 안 되더라도 배포는 이미 끝난 것이므로 그냥 넘어갑니다.
+    try:
+        import notify
+        notify.notify_deploy(uploaded=done, changed_files=len(changed))
+    except Exception as e:
+        print('   (슬랙 알림 건너뜀 — %s)' % e)
+
 
 if __name__ == '__main__':
     main()

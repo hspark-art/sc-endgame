@@ -63,6 +63,25 @@ PC 에서 `/remote-control` 로 이어 주세요" 라고 알려 주고 넘어가
 
 올린 뒤에는 무엇이 몇 개 올라갔는지 한 줄로 알려 주세요.
 
+## 사이트가 바뀌면 슬랙으로 알립니다
+
+`deploy.py` 가 파일을 올리고 나면 무엇이 바뀌었는지 슬랙에 올립니다.
+PUBG META(`pubgapi`)의 `src/notify.js` 와 같은 방식입니다 — 웹훅 주소 하나로
+글을 올리므로 계정 연동이나 2단계 인증이 필요 없습니다.
+
+```
+data/notify.json    무엇을 보낼지 (저장소에 올라갑니다)
+data/slack.json     웹훅 주소 (저장소에 올리지 않습니다)
+tools/notify.py     보내는 쪽. python3 tools/notify.py --test 로 시험 발송
+```
+
+- 웹훅 주소가 없으면 예전 PUBG META 폴더의 `.env` 에서 찾아와 저장합니다.
+- **지금은 PUBG META 와 같은 채널로 갑니다.** 따로 받고 싶으시면 슬랙에서 새
+  웹훅을 만들어 `data/slack.json` 의 `webhookUrl` 만 바꾸면 됩니다.
+- 알림이 실패해도 배포는 이미 끝난 것이라 그냥 넘어갑니다. 끄려면
+  `data/notify.json` 의 `enabled` 를 `false` 로.
+- 바뀐 파일이 없으면 배포 자체를 건너뛰므로 알림도 가지 않습니다.
+
 ## 꼭 지킬 것
 
 - **`index.html`, `p/`, `asl/`, `admin/`, `csv/`, `xlsx/`, `sheets.html` 은 빌드 결과물입니다.**

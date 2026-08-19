@@ -10,3 +10,7 @@ data/deploy.json
 data/.deploy-state.json
 # 유튜브 API 키 — 서버/PC 에만 둡니다
 data/youtube.json
+
+# 슬랙 웹훅 주소와 알림 상태 — 서버/PC 에만 둡니다
+data/slack.json
+data/.notify-state.json
