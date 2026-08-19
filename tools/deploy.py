@@ -49,9 +49,10 @@ STATE = os.path.join(ROOT, 'data', '.deploy-state.json')
 # 웹서버에 올릴 것 / 올리지 않을 것.
 # 점으로 시작하는 폴더(.git, .claude 등)는 전부 건너뜁니다.
 # 점으로 시작하는 '파일' 중 .nojekyll 과 admin/.htaccess 는 사이트에 필요해서 올립니다.
+# 설명 문서(.md)는 사이트 내용이 아니라서 통째로 뺍니다 — 새로 만들어도 안 올라갑니다.
 SKIP_DIRS = {'tools', 'node_modules', '__pycache__'}
-SKIP_FILES = {'.gitignore', 'README.md', 'CLAUDE.md',
-              '.deploy-state.json', 'deploy.json'}
+SKIP_FILES = {'.gitignore', '.deploy-state.json', 'deploy.json'}
+SKIP_EXTS = ('.md',)
 # 서버에만 있어야 하는 것 — 실수로도 덮어쓰지 않습니다
 NEVER_UPLOAD = {'admin/config.php'}
 
@@ -88,7 +89,8 @@ def local_files():
         for name in filenames:
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, ROOT).replace(os.sep, '/')
-            if name in SKIP_FILES or rel in NEVER_UPLOAD or rel.startswith('data/.'):
+            if (name in SKIP_FILES or name.endswith(SKIP_EXTS)
+                    or rel in NEVER_UPLOAD or rel.startswith('data/.')):
                 continue
             h = hashlib.sha1()
             with open(full, 'rb') as f:
