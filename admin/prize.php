@@ -301,7 +301,7 @@ document.getElementById('pPhoto').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{photoData=r.result;
-    document.getElementById('pPhotoName').textContent='사진: '+f.name;};
+    document.getElementById('pPhotoName').innerHTML='<img src="'+r.result+'" style="width:38px;height:38px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px">'+f.name;};
   r.readAsDataURL(f);
 });
 async function addPrize(){
@@ -366,6 +366,7 @@ function dupCheck(){
   document.getElementById('dupwarn').innerHTML=msgs.length?msgs.join(' '):'<span class="ok">✓ 당첨 기록 없음</span>';
 }
 document.getElementById('pickNick').addEventListener('input',dupCheck);
+document.getElementById('pickNick').addEventListener('keydown',function(e){if(e.key==='Enter')manualPick();});
 
 /* ── 화면 그리기 + 서버 상태 ── */
 async function refresh(){

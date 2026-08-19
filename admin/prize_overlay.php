@@ -39,7 +39,17 @@ overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:po
 #pip .lab{color:rgba(255,255,255,.7);font-weight:800;font-size:22px;pointer-events:none}
 #pip.chroma .lab{color:rgba(0,0,0,.35)}
 #pip video{width:100%;height:100%;object-fit:cover}
-#toast{position:absolute;right:44px;top:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+#confetti{position:absolute;inset:0;pointer-events:none;z-index:5}
+#lineup{position:absolute;left:0;right:0;bottom:0;top:150px;display:none;
+flex-direction:column;align-items:center;justify-content:center;gap:22px}
+#lineup.show{display:flex}
+#lineup .llabel{color:#ffc63d;font-weight:900;font-size:34px;letter-spacing:.14em}
+#lineup .cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;max-width:1500px}
+#lineup .pcard{width:230px;background:rgba(20,26,40,.72);border:1px solid rgba(255,255,255,.12);
+border-radius:16px;padding:14px;text-align:center}
+#lineup .pcard img{width:100%;height:180px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.2)}
+#lineup .pcard .nm{color:#fff;font-weight:800;font-size:22px;margin-top:10px}
+#toast{position:absolute;right:44px;top:150px;z-index:6;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
 .toastItem{padding:14px 24px;border-radius:14px;background:linear-gradient(135deg,#ffb020,#ff7a3d);
 color:#1a1206;font-weight:900;font-size:30px;box-shadow:0 10px 30px rgba(0,0,0,.4);
 animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
@@ -47,6 +57,7 @@ animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
 @keyframes fadeOut{to{opacity:0;transform:translateX(120%)}}
 </style></head><body>
 <div id="scene"></div>
+<canvas id="confetti"></canvas>
 <div id="hint">화면 클릭 = 배경 초록/어둠 · PIP 클릭 = 중계진 자리 바꾸기</div>
 <div id="title">&#127873; <b>&#45001;&#51109;&#51204;</b> &#49345;&#54408; &#52628;&#52628;&#52628;</div>
 <div id="stage">
@@ -64,6 +75,7 @@ animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
       <div><div class="plabel" style="color:#ff8fa3">후원왕</div><div class="pname" id="bkNick"></div>
         <div class="wprize" id="bkN"></div></div></div></div>
   <canvas id="board" width="1200" height="820"></canvas>
+  <div id="lineup"><div class="llabel">🎁 오늘의 상품</div><div class="cards" id="lineupCards"></div></div>
 </div>
 <div id="toast"></div>
 <div id="pip" class="frame"><span class="lab" id="pipLab"></span>
@@ -94,9 +106,25 @@ let seq=-1, anim=null;
 function show(id){['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){
   document.getElementById(b).classList.toggle('show',b===id);});
   document.getElementById('board').classList.remove('show');
+  document.getElementById('lineup').classList.remove('show');
   if(anim){cancelAnimationFrame(anim);anim=null;}
 }
-function idle(){show('idleBox');}
+let allPrizes=[];
+async function loadPrizes(){
+  try{const st=await (await fetch('prize_api.php?act=state')).json();
+    allPrizes=(st.prizes&&st.prizes.items)||[];}catch(e){}
+}
+function idle(){
+  const lu=document.getElementById('lineup');
+  if(allPrizes.length){
+    document.getElementById('lineupCards').innerHTML=allPrizes.slice(0,8).map(function(x){
+      return '<div class="pcard">'+(x.photo?'<img src="'+x.photo+'">':'')+
+        '<div class="nm">'+(x.name||'').replace(/[&<>]/g,'')+'</div></div>';}).join('');
+    ['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
+    document.getElementById('board').classList.remove('show');
+    lu.classList.add('show');
+  }else{lu.classList.remove('show');show('idleBox');}
+}
 function kings(st){
   ['idleBox','prizeBox','winBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
   document.getElementById('board').classList.remove('show');
@@ -161,8 +189,26 @@ function prize(st){
   if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
   document.getElementById('prizeName').textContent=st.prize||'';
 }
+function fireConfetti(){
+  const c=document.getElementById('confetti'),x=c.getContext('2d');
+  c.width=window.innerWidth||1920;c.height=window.innerHeight||1080;
+  const cols=['#ffc63d','#ff6a6a','#4ade80','#4a9eff','#c084fc','#ffffff'];
+  const P=[];for(let i=0;i<160;i++)P.push({x:c.width/2+(Math.random()-.5)*400,
+    y:c.height*0.3,vx:(Math.random()-.5)*14,vy:Math.random()*-16-4,
+    g:0.4+Math.random()*0.3,r:Math.random()*8+4,c:cols[i%cols.length],
+    rot:Math.random()*6,vr:(Math.random()-.5)*0.4});
+  let f=0;
+  (function frame(){
+    x.clearRect(0,0,c.width,c.height);f++;
+    P.forEach(function(p){p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+      x.save();x.translate(p.x,p.y);x.rotate(p.rot);x.fillStyle=p.c;
+      x.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);x.restore();});
+    if(f<140)requestAnimationFrame(frame);else x.clearRect(0,0,c.width,c.height);
+  })();
+}
 function winner(st){
   show('winBox');
+  fireConfetti();
   document.getElementById('winCap').textContent={'핀볼':'🎯 핀볼 추첨 당첨','룰렛':'🎡 룰렛 당첨'}[st.how]||'🎉 축하합니다';
   const im=document.getElementById('winImg');
   if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
@@ -232,5 +278,5 @@ async function poll(){
   }catch(e){}
   setTimeout(poll,900);
 }
-idle();poll();
+loadPrizes();setInterval(loadPrizes,30000);idle();poll();
 </script></body></html>
