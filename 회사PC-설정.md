@@ -162,18 +162,20 @@ Claude 앱 → 아래 **Code** → 목록에서 `스타 기록실` 을 누릅니
 사이트와는 상관없습니다. **GitHub 에 안 올려도 pubgin.com 은 잘 돌아갑니다.**
 소스 백업일 뿐이라 시간 나실 때 하시면 됩니다.
 
-지금 커밋 11개가 제 쪽에만 쌓여 있고 올라가지 못했습니다. 제가 쓰는 접근
-권한이 **읽기 전용**이라 밀어 넣을 수가 없습니다. 두 가지 중 편한 쪽으로요.
-
-**(가) 회사 PC 에서 직접** — 폴더에서 한 줄이면 됩니다.
+커밋 13개가 제 쪽에만 쌓여 있습니다. 이 작업방의 GitHub 권한이 **읽기 전용**
+이라, 쓰기 권한을 지금 주셔도 이 방에는 반영되지 않습니다. 대신 zip 안에
+**작업 내역(.git)을 통째로 넣어 뒀으니** 회사 PC 에서 한 줄이면 올라갑니다.
 
 ```bash
 cd C:\work\sc-endgame
 git push -u origin claude/starcraft-endgame-site-049jip
 ```
 
-**(나) 저에게 쓰기 권한 주기** — https://claude.ai/settings 의 GitHub 연결에서
-`hspark-art/sc-endgame` 에 쓰기 권한을 주시면 다음부터는 제가 올립니다.
+처음 한 번은 GitHub 아이디와 비밀번호(또는 토큰)를 물어봅니다.
+`Everything up-to-date` 나 `new branch` 가 뜨면 끝난 것입니다.
+
+> 이 명령이 `not a git repository` 라고 하면 zip 을 풀 때 숨김 폴더가
+> 빠진 것입니다. 압축 프로그램에서 숨김 파일 포함으로 다시 풀어 주세요.
 
 ---
 
