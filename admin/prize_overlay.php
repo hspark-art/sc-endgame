@@ -39,6 +39,12 @@ overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:po
 #pip .lab{color:rgba(255,255,255,.7);font-weight:800;font-size:22px;pointer-events:none}
 #pip.chroma .lab{color:rgba(0,0,0,.35)}
 #pip video{width:100%;height:100%;object-fit:cover}
+#toast{position:absolute;right:44px;top:150px;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.toastItem{padding:14px 24px;border-radius:14px;background:linear-gradient(135deg,#ffb020,#ff7a3d);
+color:#1a1206;font-weight:900;font-size:30px;box-shadow:0 10px 30px rgba(0,0,0,.4);
+animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(120%)}}
 </style></head><body>
 <div id="scene"></div>
 <div id="hint">화면 클릭 = 배경 초록/어둠 · PIP 클릭 = 중계진 자리 바꾸기</div>
@@ -50,8 +56,16 @@ overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:po
   <div class="box" id="winBox"><div class="wcap" id="winCap"></div>
     <img class="pimg" id="winImg" hidden style="max-height:300px">
     <div class="wnick" id="winNick"></div><div class="wprize" id="winPrize"></div></div>
+  <div class="box" id="kingBox">
+    <div class="wcap">👑 오늘의 주인공</div>
+    <div style="display:flex;gap:120px;margin-top:10px">
+      <div><div class="plabel">채팅왕</div><div class="pname" id="ckNick"></div>
+        <div class="wprize" id="ckN"></div></div>
+      <div><div class="plabel" style="color:#ff8fa3">후원왕</div><div class="pname" id="bkNick"></div>
+        <div class="wprize" id="bkN"></div></div></div></div>
   <canvas id="board" width="1200" height="820"></canvas>
 </div>
+<div id="toast"></div>
 <div id="pip" class="frame"><span class="lab" id="pipLab"></span>
   <video id="cam" autoplay muted playsinline hidden></video></div>
 <script>
@@ -77,12 +91,70 @@ pip.addEventListener('click',function(e){e.stopPropagation();pipI=(pipI+1)%PIP_M
 setPip();
 document.body.addEventListener('click',function(){document.body.classList.toggle('chroma');});
 let seq=-1, anim=null;
-function show(id){['idleBox','prizeBox','winBox'].forEach(function(b){
+function show(id){['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){
   document.getElementById(b).classList.toggle('show',b===id);});
   document.getElementById('board').classList.remove('show');
   if(anim){cancelAnimationFrame(anim);anim=null;}
 }
 function idle(){show('idleBox');}
+function kings(st){
+  ['idleBox','prizeBox','winBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
+  document.getElementById('board').classList.remove('show');
+  const k=document.getElementById('kingBox');k.classList.add('show');
+  document.getElementById('ckNick').textContent=st.chatNick||'-';
+  document.getElementById('ckN').textContent='채팅 '+(st.chatN||0)+'개';
+  document.getElementById('bkNick').textContent=st.balNick||'-';
+  document.getElementById('bkN').textContent='별풍선 '+(st.balN||0)+'개';
+}
+function hideKings(){document.getElementById('kingBox').classList.remove('show');}
+/* 룰렛 — 돌아가는 원판이 당첨자 칸에서 멈춥니다 */
+function roulette(st){
+  const slots=st.slots,winIdx=slots.indexOf(st.winner),N=slots.length;
+  ['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
+  const cvr=document.getElementById('board');cvr.classList.add('show');
+  const cxr=cvr.getContext('2d'),cx0=cvr.width/2,cy0=380,R=330;
+  const seg=2*Math.PI/N, target=-(winIdx*seg)-seg/2+ -Math.PI/2;
+  const spins=5, dur=4200; let t0=null;
+  const cols=['#ff6a6a','#ffb020','#4ade80','#4a9eff','#c084fc','#f472b6'];
+  function frame(ts){
+    if(!t0)t0=ts;const el=ts-t0,f=Math.min(1,el/dur);
+    const ease=1-Math.pow(1-f,3);
+    const ang=ease*(spins*2*Math.PI+target);
+    cxr.clearRect(0,0,cvr.width,cvr.height);
+    cxr.font='900 40px Pretendard';cxr.textAlign='center';cxr.fillStyle='#ffc63d';
+    cxr.fillText('🎡 행운의 룰렛',cx0,54);
+    for(let i=0;i<N;i++){
+      const a0=ang+i*seg,a1=a0+seg;
+      cxr.beginPath();cxr.moveTo(cx0,cy0);cxr.arc(cx0,cy0,R,a0,a1);cxr.closePath();
+      cxr.fillStyle=cols[i%cols.length];cxr.fill();
+      cxr.save();cxr.translate(cx0,cy0);cxr.rotate(a0+seg/2);
+      cxr.fillStyle='#0b0d11';cxr.textAlign='right';
+      cxr.font='800 '+Math.min(26,220/Math.max(4,slots[i].length))+'px Pretendard';
+      cxr.fillText(slots[i],R-16,7);cxr.restore();
+    }
+    cxr.beginPath();cxr.moveTo(cx0+R+8,cy0-20);cxr.lineTo(cx0+R-24,cy0);cxr.lineTo(cx0+R+8,cy0+20);
+    cxr.closePath();cxr.fillStyle='#fff';cxr.fill();
+    if(f<1)anim=requestAnimationFrame(frame);
+    else{cvr.classList.remove('show');winner({nick:st.winner,prize:st.prize,photo:st.photo,how:'룰렛'});}
+  }
+  anim=requestAnimationFrame(frame);
+}
+/* 큰 별풍선 감사 토스트 */
+let toastSeen=0;
+async function pollToasts(){
+  try{
+    const t=await (await fetch('prize_api.php?act=toasts')).json();
+    (t.list||[]).forEach(function(x){
+      if(x.seq>toastSeen){toastSeen=x.seq;
+        const d=document.createElement('div');d.className='toastItem';
+        d.textContent='🎈 '+x.nick+'님 별풍선 '+x.count+'개 감사합니다!';
+        document.getElementById('toast').appendChild(d);
+        setTimeout(function(){d.remove();},5600);}
+    });
+  }catch(e){}
+  setTimeout(pollToasts,1500);
+}
+pollToasts();
 function prize(st){
   show('prizeBox');
   const im=document.getElementById('prizeImg');
@@ -91,7 +163,7 @@ function prize(st){
 }
 function winner(st){
   show('winBox');
-  document.getElementById('winCap').textContent=st.how==='핀볼'?'🎯 핀볼 추첨 당첨':'🎉 축하합니다';
+  document.getElementById('winCap').textContent={'핀볼':'🎯 핀볼 추첨 당첨','룰렛':'🎡 룰렛 당첨'}[st.how]||'🎉 축하합니다';
   const im=document.getElementById('winImg');
   if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
   document.getElementById('winNick').textContent=st.nick||st.winner||'';
@@ -152,6 +224,8 @@ async function poll(){
       seq=st.seq;
       if(st.kind==='winner')winner(st);
       else if(st.kind==='plinko')plinko(st);
+      else if(st.kind==='roulette')roulette(st);
+      else if(st.kind==='kings')kings(st);
       else if(st.kind==='prize')prize(st);
       else idle();
     }

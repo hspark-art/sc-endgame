@@ -114,6 +114,7 @@ if ($act === 'pick') {
         'id' => uniqid('w'),
         'date' => $body['date'] ?? date('Y-m-d'),
         'nick' => $nick,
+        'sid' => (string)($body['sid'] ?? ''),   // SOOP 아이디 (있으면 정확한 대조 키)
         'prize' => (string)($body['prize'] ?? ''),
         'how' => (string)($body['how'] ?? '지명'),
         'at' => date('H:i'),
@@ -208,6 +209,68 @@ if ($act === 'stats_list') {
 if ($act === 'stats_get') {
     $date = preg_replace('/[^0-9-]/', '', (string)($_GET['date'] ?? ''));
     out(jread('stats-' . $date . '.json', ['users' => new stdClass()]));
+}
+
+// ── 별풍선 큰 알림(토스트) ──
+if ($act === 'toast_add') {
+    $t = jread('toasts.json', ['list' => []]);
+    $t['list'][] = ['seq' => (int)(($t['list'][count($t['list']) - 1]['seq'] ?? 0) + 1),
+                    'nick' => (string)($body['nick'] ?? ''),
+                    'count' => (int)($body['count'] ?? 0), 'ts' => time()];
+    $t['list'] = array_slice($t['list'], -30);
+    jwrite('toasts.json', $t);
+    out(['ok' => true]);
+}
+if ($act === 'toasts') {
+    out(jread('toasts.json', ['list' => []]));
+}
+
+// ── 구글 문서 당첨자 대조 ──
+if ($act === 'gdoc') {
+    $st = jread('settings.json', []);
+    $docId = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($st['gdocId'] ?? ''));
+    if ($docId === '') { out(['names' => [], 'ids' => [], 'note' => '문서 없음']); }
+    $cache = jread('gdoc-cache.json', []);
+    if (($cache['id'] ?? '') === $docId && (time() - ($cache['ts'] ?? 0)) < 300) {
+        out($cache['data']);              // 5분 캐시
+    }
+    $ch = curl_init('https://docs.google.com/document/d/' . $docId . '/export?format=txt');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15,
+        CURLOPT_FOLLOWLOCATION => true, CURLOPT_HTTPHEADER => ['User-Agent: Mozilla/5.0']]);
+    $txt = curl_exec($ch);
+    if ($txt === false) { out(['names' => [], 'ids' => [], 'note' => '문서 접근 실패']); }
+    // '닉네임 / 아이디' 형태를 뽑습니다. 아이디는 소문자 영숫자.
+    $ids = []; $names = [];
+    foreach (preg_split('/
+?
+/', $txt) as $line) {
+        if (preg_match('#^\s*([^/]{1,30})/\s*([A-Za-z0-9_]{3,30})#', $line, $m)) {
+            $names[] = trim($m[1]);
+            $ids[] = strtolower(trim($m[2]));
+        }
+    }
+    $data = ['names' => array_values(array_unique($names)),
+             'ids' => array_values(array_unique($ids)),
+             'note' => count($ids) . '명'];
+    jwrite('gdoc-cache.json', ['id' => $docId, 'ts' => time(), 'data' => $data]);
+    out($data);
+}
+
+// ── 슬랙으로 요약 보내기 ──
+if ($act === 'slack_report') {
+    $st = jread('settings.json', []);
+    $hook = (string)($st['slackWebhook'] ?? '');
+    if (strpos($hook, 'hooks.slack.com') === false) {
+        out(['error' => '슬랙 웹훅 주소를 설정에 먼저 넣어 주세요'], 400);
+    }
+    $text = (string)($body['text'] ?? '끝장전 상품 추첨 요약');
+    $payload = json_encode(['text' => $text], JSON_UNESCAPED_UNICODE);
+    $ch = curl_init($hook);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 12,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json']]);
+    $res = curl_exec($ch);
+    out(['ok' => trim((string)$res) === 'ok', 'resp' => substr((string)$res, 0, 60)]);
 }
 
 out(['error' => '모르는 요청: ' . $act], 404);

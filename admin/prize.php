@@ -71,9 +71,11 @@ function goCh(v){
 <select id="prizeSel" style="flex:1"></select></div>
 <div id="dupwarn" class="hint"></div>
 <div class="row">
-<button onclick="manualPick()">지명 → 자막 내보내기</button>
-<button class="gray" onclick="plinko()">🎯 핀볼 추첨</button>
-<button class="gray" onclick="clearOverlay()">자막 지우기</button></div>
+<button onclick="manualPick()">지명 → 방송 장면</button>
+<button class="gray" onclick="plinko()">🎯 핀볼</button>
+<button class="gray" onclick="roulette()">🎡 룰렛</button>
+<button class="gray" onclick="kings()">👑 오늘의 왕</button>
+<button class="gray" onclick="clearOverlay()">장면 지우기</button></div>
 <div class="hint">자막은 <b>자막 창</b>(위 링크)에 나옵니다 — 방송 프로그램에서 그 창을
 잡으면 됩니다. 핀볼은 채팅·별풍선에 따라 확률이 조금 올라갑니다.</div>
 <hr>
@@ -92,12 +94,21 @@ function goCh(v){
 <input id="wPrize" placeholder="상품" style="flex:1">
 <button class="gray" onclick="addWinner()">지난 기록 넣기</button></div>
 <hr>
-<div class="ct">확률 설정</div>
-<div class="row hint">채팅 <input id="sChatFull" style="width:56px"> 개에
-+<input id="sChatMax" style="width:50px"> · 별풍선
-<input id="sBalFull" style="width:64px"> 개에 +<input id="sBalMax" style="width:50px">
-<label><input type="checkbox" id="sExcl"> 이전 당첨자 제외</label>
-<button class="gray" onclick="saveSettings()">저장</button></div>
+<div class="ct">확률·규칙 설정</div>
+<div class="row hint">채팅 <input id="sChatFull" style="width:52px"> 개에
++<input id="sChatMax" style="width:46px"> · 별풍선
+<input id="sBalFull" style="width:60px"> 개에 +<input id="sBalMax" style="width:46px"></div>
+<div class="row hint">
+<label><input type="checkbox" id="sExcl"> 이전 당첨자 전체 제외</label>
+· 최근 <input id="sWeeks" style="width:40px"> 주 당첨자 제외(0=끄기)
+· 별풍선 <input id="sAlert" style="width:52px"> 개 이상이면 감사 배너</div>
+<div class="row hint">구글 문서 ID <input id="sGdoc" style="flex:1;min-width:180px" placeholder="당첨자 문서 주소의 /d/ 다음 부분">
+<span id="gdocInfo" class="pill"></span></div>
+<div class="row hint">슬랙 웹훅 <input id="sSlack" style="flex:1;min-width:180px" placeholder="https://hooks.slack.com/...">
+<button class="gray" onclick="saveSettings()">설정 저장</button></div>
+<div class="row">
+<button class="gray" onclick="copyLedger()">📋 당첨 기록 복사</button>
+<button class="gray" onclick="slackReport()">📨 슬랙으로 요약</button></div>
 </div>
 
 </div></div>
@@ -111,7 +122,9 @@ const BJ=(new URLSearchParams(location.search).get('bj')||'talent')
 const IS_TEST_CH = BJ!=='talent';
 const F='\x0c', users={}, recent=[], rawUnknown=[];
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
-let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,excludeWinners:false};
+let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
+  excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
+let gdoc={names:[],ids:[]};   // 구글 문서에서 읽어 온 당첨자
 
 function esc(s){return String(s??'').replace(/[&<>"]/g,
   c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -123,10 +136,16 @@ function bump(nick,kind,n){
   if(kind==='c')u.c++; else u.b+=n;
 }
 function onEvent(ev){
-  if(ev.t==='chat'){bump(ev.nick,'c');recent.push(ev);}
-  else if(ev.t==='balloon'){bump(ev.nick,'b',ev.count);recent.push(ev);}
+  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);}
+  else if(ev.t==='balloon'){
+    bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
+    // 큰 별풍선이면 방송 장면에 감사 배너를 자동으로 띄웁니다
+    if(!IS_TEST_CH && ev.count>=(settings.balloonAlert||100))
+      api('toast_add',{nick:ev.nick,count:ev.count});
+  }
   recent.splice(0,Math.max(0,recent.length-200));
 }
+const uid={};   // 닉네임 → SOOP 아이디 (지금 방송에서 본 것)
 /* SOOP 채팅 프로토콜 — 시청자용 접속과 같은 방식입니다 */
 function pkt(svc,body){
   const b=new TextEncoder().encode(body);
@@ -197,17 +216,44 @@ function weight(nick){
 function norm(s){return String(s||'').replace(/\s+/g,'').toLowerCase()}
 function winCount(nick){
   if(!ST)return[0,''];
-  const n=norm(nick),h=ST.winners.list.filter(w=>norm(w.nick)===n);
+  const n=norm(nick),sid=(uid[nick]||'').toLowerCase();
+  const h=ST.winners.list.filter(w=>norm(w.nick)===n||(sid&&(w.sid||'').toLowerCase()===sid));
   return[h.length,h.length?h[h.length-1].date:''];
 }
-function pickWeighted(){
+function recentWin(nick){
+  // 최근 N주 안에 받은 적 있나 (0 이면 제한 없음)
+  const wk=settings.excludeWeeks||0; if(!wk||!ST)return false;
+  const cut=new Date(Date.now()-wk*7*864e5).toISOString().slice(0,10);
+  const n=norm(nick),sid=(uid[nick]||'').toLowerCase();
+  return ST.winners.list.some(w=>(norm(w.nick)===n||(sid&&(w.sid||'').toLowerCase()===sid))
+    && (w.date||'')>=cut);
+}
+function inGdoc(nick){
+  const sid=(uid[nick]||'').toLowerCase();
+  if(sid&&gdoc.ids.includes(sid))return true;
+  const n=norm(nick);
+  return gdoc.names.some(x=>norm(x)===n)||gdoc.names.some(x=>norm(x).includes(n)&&n.length>=2);
+}
+function drawPool(){
   let pool=Object.keys(users).filter(n=>users[n].c+users[n].b>0);
   if(settings.excludeWinners)pool=pool.filter(n=>winCount(n)[0]===0);
+  if(settings.excludeWeeks)pool=pool.filter(n=>!recentWin(n));
+  return pool;
+}
+function pickFrom(pool){
   if(!pool.length)return null;
   const ws2=pool.map(weight), tot=ws2.reduce((a,b)=>a+b,0);
   let r=Math.random()*tot;
   for(let i=0;i<pool.length;i++){r-=ws2[i];if(r<=0)return pool[i];}
   return pool[pool.length-1];
+}
+// 핀볼·룰렛 후보 슬롯 — 확률 높은 사람 위주로 채웁니다(당첨자 포함).
+function slotsFor(win,pool,k){
+  const others=pool.filter(n=>n!==win).sort((a,b)=>weight(b)-weight(a));
+  const top=others.slice(0,Math.max(0,k-1));
+  const slots=top.concat([win]);
+  for(let i=slots.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[slots[i],slots[j]]=[slots[j],slots[i]];}
+  return slots;
 }
 
 /* ── 서버 통신 ── */
@@ -222,22 +268,31 @@ async function manualPick(){
   const nick=document.getElementById('pickNick').value.trim();
   if(!nick)return alert('닉네임을 넣어 주세요');
   const pz=prizeOf(document.getElementById('prizeSel').value)||{};
-  await api('pick',{nick,prize:pz.name||'',how:'지명'});
+  await api('pick',{nick,sid:uid[nick]||'',prize:pz.name||'',how:'지명'});
   await api('overlay_set',{overlay:{kind:'winner',nick,prize:pz.name||'',
     photo:pz.photo||'',how:'지명'}});
   refresh();
 }
-async function plinko(){
-  const win=pickWeighted();
-  if(!win)return alert('추첨할 시청자가 없습니다 (채팅한 사람이 있어야 합니다)');
-  const others=Object.keys(users).filter(n=>n!==win&&users[n].c+users[n].b>0);
-  others.sort(()=>Math.random()-.5);
-  const slots=others.slice(0,8).concat([win]).sort(()=>Math.random()-.5);
+async function draw(kind){
+  const pool=drawPool();
+  const win=pickFrom(pool);
+  if(!win)return alert('추첨할 시청자가 없습니다 (조건에 맞는 참가자가 없음)');
+  const slots=slotsFor(win,pool,kind==='roulette'?10:9);
   const pz=prizeOf(document.getElementById('prizeSel').value)||{};
-  await api('pick',{nick:win,prize:pz.name||'',how:'핀볼'});
-  await api('overlay_set',{overlay:{kind:'plinko',winner:win,slots,
-    prize:pz.name||'',photo:pz.photo||''}});
+  await api('pick',{nick:win,sid:uid[win]||'',prize:pz.name||'',how:kind==='roulette'?'룰렛':'핀볼'});
+  await api('overlay_set',{overlay:{kind,winner:win,slots,prize:pz.name||'',photo:pz.photo||''}});
   refresh();
+}
+const plinko=()=>draw('plinko');
+const roulette=()=>draw('roulette');
+async function kings(){
+  const arr=Object.entries(users);
+  if(!arr.length)return alert('아직 참가자가 없습니다');
+  const chatKing=arr.slice().sort((a,b)=>b[1].c-a[1].c)[0];
+  const balKing=arr.slice().sort((a,b)=>b[1].b-a[1].b)[0];
+  await api('overlay_set',{overlay:{kind:'kings',
+    chatNick:chatKing[0],chatN:chatKing[1].c,
+    balNick:balKing[0],balN:balKing[1].b}});
 }
 async function clearOverlay(){await api('overlay_set',{overlay:{kind:'none'}})}
 let photoData='';
@@ -262,20 +317,52 @@ async function addWinner(){
   document.getElementById('wNick').value='';refresh();
 }
 async function saveSettings(){
-  settings={chatFull:+document.getElementById('sChatFull').value||50,
+  settings=Object.assign(settings,{
+    chatFull:+document.getElementById('sChatFull').value||50,
     chatBonusMax:+document.getElementById('sChatMax').value||0.3,
     balloonFull:+document.getElementById('sBalFull').value||1000,
     balloonBonusMax:+document.getElementById('sBalMax').value||0.5,
-    excludeWinners:document.getElementById('sExcl').checked};
-  await api('settings_set',{settings});
+    excludeWinners:document.getElementById('sExcl').checked,
+    excludeWeeks:+document.getElementById('sWeeks').value||0,
+    balloonAlert:+document.getElementById('sAlert').value||100,
+    gdocId:(document.getElementById('sGdoc').value.trim().match(/[-\w]{25,}/)||[document.getElementById('sGdoc').value.trim()])[0],
+    slackWebhook:document.getElementById('sSlack').value.trim()});
+  await api('settings_set',{settings});loadGdoc();
+}
+async function loadGdoc(){
+  try{const g=await (await fetch('prize_api.php?act=gdoc')).json();
+    gdoc={names:g.names||[],ids:g.ids||[]};
+    document.getElementById('gdocInfo').textContent=g.note||'';}catch(e){}
+}
+function copyLedger(){
+  if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
+  const txt=ST.winners.list.map(w=>[w.date,w.nick,w.sid||'',w.prize,w.how].join('	')).join('
+');
+  navigator.clipboard.writeText('날짜	닉네임	아이디	상품	방식
+'+txt)
+    .then(()=>alert('당첨 기록 '+ST.winners.list.length+'건을 복사했습니다 (엑셀·문서에 붙여넣기)'));
+}
+async function slackReport(){
+  const tot=Object.values(users).reduce((a,u)=>({c:a.c+u.c,b:a.b+u.b}),{c:0,b:0});
+  const todays=(ST?ST.winners.list:[]).filter(w=>w.date===new Date().toISOString().slice(0,10));
+  const text='🎁 끝장전 상품 추첨 요약
+'+
+    '시청자 '+Object.keys(users).length+'명 · 채팅 '+tot.c+' · 별풍선 '+tot.b+'
+'+
+    '오늘 당첨 '+todays.length+'명'+(todays.length?': '+todays.map(w=>w.nick+'('+w.prize+')').join(', '):'');
+  const r=await api('slack_report',{text});
+  if(r.ok)alert('슬랙으로 보냈습니다');else alert('슬랙 전송 실패 — 웹훅 주소를 확인하세요');
 }
 function pickThis(n){document.getElementById('pickNick').value=n;dupCheck()}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
+  if(!n){document.getElementById('dupwarn').innerHTML='';return;}
   const [cnt,last]=winCount(n);
-  document.getElementById('dupwarn').innerHTML=!n?'':cnt
-    ?'<span class="warn">⚠ 이미 '+cnt+'회 당첨 (마지막 '+esc(last)+')</span>'
-    :'<span class="ok">✓ 당첨 기록 없음</span>';
+  const msgs=[];
+  if(cnt)msgs.push('<span class="warn">⚠ 이미 '+cnt+'회 당첨 (마지막 '+esc(last)+')</span>');
+  if(settings.excludeWeeks&&recentWin(n))msgs.push('<span class="warn">⚠ 최근 '+settings.excludeWeeks+'주 내 당첨</span>');
+  if(inGdoc(n))msgs.push('<span class="warn">⚠ 구글 문서 당첨자 명단에 있음</span>');
+  document.getElementById('dupwarn').innerHTML=msgs.length?msgs.join(' '):'<span class="ok">✓ 당첨 기록 없음</span>';
 }
 document.getElementById('pickNick').addEventListener('input',dupCheck);
 
@@ -307,9 +394,11 @@ async function refresh(){
   document.querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
     await api('winner_del',{id:b.dataset.wdel});refresh();});
   for(const [id,v] of [['sChatFull',settings.chatFull],['sChatMax',settings.chatBonusMax],
-    ['sBalFull',settings.balloonFull],['sBalMax',settings.balloonBonusMax]]){
+    ['sBalFull',settings.balloonFull],['sBalMax',settings.balloonBonusMax],
+    ['sWeeks',settings.excludeWeeks||0],['sAlert',settings.balloonAlert||100],
+    ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||'']]){
     const el=document.getElementById(id);
-    if(document.activeElement!==el)el.value=v;
+    if(el&&document.activeElement!==el)el.value=v;
   }
   document.getElementById('sExcl').checked=!!settings.excludeWinners;
   try{
@@ -359,6 +448,7 @@ async function snapshot(){
 setInterval(paint,1500);
 setInterval(snapshot,45000);
 refresh();setInterval(refresh,6000);
+loadGdoc();setInterval(loadGdoc,300000);
 connectChat();
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){
