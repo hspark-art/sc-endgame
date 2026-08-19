@@ -61,11 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── 방송 정보 (SOOP) — 브라우저는 CORS 로 막혀서 서버가 대신 물어봅니다 ──
 if ($act === 'live') {
-    $ch = curl_init('https://live.sooplive.com/afreeca/player_live_api.php?bjid=talent');
+    // 기본은 우리 채널(talent). 시험용으로 ?bj=다른아이디 를 받을 수 있습니다.
+    $bj = preg_replace('/[^a-z0-9_]/', '', strtolower((string)($_GET['bj'] ?? 'talent')));
+    if ($bj === '') { $bj = 'talent'; }
+    $ch = curl_init('https://live.sooplive.com/afreeca/player_live_api.php?bjid=' . $bj);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => http_build_query([
-            'bid' => 'talent', 'type' => 'live', 'confirm_adult' => 'false',
+            'bid' => $bj, 'type' => 'live', 'confirm_adult' => 'false',
             'player_type' => 'html5', 'mode' => 'landing', 'from_api' => '0',
             'pwd' => '', 'stream_type' => 'common', 'quality' => 'HD']),
         CURLOPT_RETURNTRANSFER => true,

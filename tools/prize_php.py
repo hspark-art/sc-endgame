@@ -77,11 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── 방송 정보 (SOOP) — 브라우저는 CORS 로 막혀서 서버가 대신 물어봅니다 ──
 if ($act === 'live') {
-    $ch = curl_init('https://live.sooplive.com/afreeca/player_live_api.php?bjid=talent');
+    // 기본은 우리 채널(talent). 시험용으로 ?bj=다른아이디 를 받을 수 있습니다.
+    $bj = preg_replace('/[^a-z0-9_]/', '', strtolower((string)($_GET['bj'] ?? 'talent')));
+    if ($bj === '') { $bj = 'talent'; }
+    $ch = curl_init('https://live.sooplive.com/afreeca/player_live_api.php?bjid=' . $bj);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => http_build_query([
-            'bid' => 'talent', 'type' => 'live', 'confirm_adult' => 'false',
+            'bid' => $bj, 'type' => 'live', 'confirm_adult' => 'false',
             'player_type' => 'html5', 'mode' => 'landing', 'from_api' => '0',
             'pwd' => '', 'stream_type' => 'common', 'quality' => 'HD']),
         CURLOPT_RETURNTRANSFER => true,
@@ -323,6 +326,12 @@ a.top:hover{color:#e8ecf3}
 </div></div>
 <script>
 /* ── 채팅 집계 (이 브라우저 안에서) ─────────────────────────── */
+/* 주소 뒤에 ?bj=아이디 를 붙이면 그 채널에 붙습니다 — 우리 방송이 없을 때
+   다른 라이브에서 수신을 시험하는 용도입니다. 시험 채널일 때는
+   방송별 눈금(stats)을 저장하지 않아 진짜 기록과 섞이지 않습니다. */
+const BJ=(new URLSearchParams(location.search).get('bj')||'talent')
+  .toLowerCase().replace(/[^a-z0-9_]/g,'')||'talent';
+const IS_TEST_CH = BJ!=='talent';
 const F='\x0c', users={}, recent=[], rawUnknown=[];
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,excludeWinners:false};
@@ -361,16 +370,16 @@ function parseBalloon(f){
 }
 async function connectChat(){
   let info;
-  try{info=await (await fetch('prize_api.php?act=live')).json();}
+  try{info=await (await fetch('prize_api.php?act=live&bj='+BJ)).json();}
   catch(e){setStatus('서버 오류');return setTimeout(connectChat,20000);}
   if(String(info.RESULT)!=='1'){
     liveOn=false;setStatus('방송 대기 중 — 시작되면 자동으로 붙습니다');
     return setTimeout(connectChat,20000);
   }
   liveOn=true;liveTitle=info.TITLE||'';
-  setStatus('<span class="live">● LIVE</span> '+esc(liveTitle));
+  setStatus('<span class="live">● LIVE</span> '+esc(liveTitle)+(IS_TEST_CH?' <span class="warn">['+BJ+' 채널 시험 중 — 기록 저장 안 함]</span>':''));
   try{
-    ws=new WebSocket('wss://'+info.CHDOMAIN+':'+(+info.CHPT+1)+'/Websocket/talent',['chat']);
+    ws=new WebSocket('wss://'+info.CHDOMAIN+':'+(+info.CHPT+1)+'/Websocket/'+BJ,['chat']);
   }catch(e){setStatus('채팅 연결 실패');return setTimeout(connectChat,15000);}
   ws.binaryType='arraybuffer';
   let joined=false;
@@ -553,6 +562,7 @@ function paint(){
 }
 /* 45초마다 오늘 집계를 서버에 남깁니다 — 지난 방송 기록이 됩니다 */
 async function snapshot(){
+  if(IS_TEST_CH)return;                    // 남의 채널 시험은 기록하지 않습니다
   if(Object.keys(users).length===0)return;
   await api('stats_save',{date:new Date().toISOString().slice(0,10),
     title:liveTitle,users,rawUnknown});
