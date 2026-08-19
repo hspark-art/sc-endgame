@@ -710,6 +710,13 @@ def cg_panel(_fld):
                     '</div>'))
     out.append(_fld('LIVE 배지 (비우면 안 나옵니다)',
                     '<input type="text" id="liveBadge" placeholder="예: LIVE">'))
+    out.append('<div class="checkrow">'
+               '<label><input type="checkbox" id="showSponsor">스폰서 로고·글자 넣기</label>'
+               '<label><input type="checkbox" id="showBg">배경 넣기</label>'
+               '<label%s><input type="checkbox" id="showRibbon">연승 리본 넣기</label>'
+               '</div>' % _for('winner'))
+    out.append('<div class="helptxt">배경을 끄면 뒤가 <b>투명한 PNG</b> 로 나옵니다 — '
+               '루핑백 위에 그대로 얹으실 때 쓰세요.</div>')
     out.append('</div>\n')
 
     out.append(_player_block(1, _fld))

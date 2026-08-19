@@ -482,6 +482,12 @@ tbody tr.grouphead:first-child td{border-top:none}
   .rphoto{width:32px;height:32px}
 }
 
+/* CG 툴 — 넣고 빼기 체크칸 */
+.checkrow{display:flex;flex-wrap:wrap;gap:10px 16px;margin:4px 0 8px}
+.checkrow label{display:flex;align-items:center;gap:6px;color:var(--txt);
+  font-size:12.5px;cursor:pointer;user-select:none}
+.checkrow input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+
 .loginwrap{max-width:400px;margin:0 auto;padding:70px 20px 60px}
 .loginwrap h1{font-size:22px;margin-bottom:6px}
 .loginwrap .sub{margin-bottom:22px}

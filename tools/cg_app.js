@@ -55,6 +55,9 @@ function defaults() {
     logoSponsor: null,
     logoBroadcast: null,
     liveBadge: '',
+    showBg: true,        // 끄면 배경이 투명하게 빠집니다 (루핑백 위에 얹을 때)
+    showSponsor: true,
+    showRibbon: true,
     players: [
       { nick: 'RoyaL', name: '김지성', race: 'T', photo: null, photoFrom: null,
         season: '', zoom: 1, ox: 0, oy: 0,
@@ -102,11 +105,11 @@ function defaults() {
     },
     style: {
       title: { size: 58, color: '#4aa8ff', font: 'pretendard' },
-      nick: { size: 46, color: '#e9edf5', font: 'pretendard' },
-      pname: { size: 74, color: '#ffffff', font: 'pretendard' },
-      boxTitle: { size: 38, color: '#ffd166', font: 'pretendard' },
-      boxLine: { size: 26, color: '#ffffff', font: 'pretendard' },
-      boxNote: { size: 20, color: '#b9c2d0', font: 'pretendard' },
+      nick: { size: 52, color: '#e9edf5', font: 'pretendard' },
+      pname: { size: 86, color: '#ffffff', font: 'pretendard' },
+      boxTitle: { size: 46, color: '#ffd166', font: 'pretendard' },
+      boxLine: { size: 31, color: '#ffffff', font: 'pretendard' },
+      boxNote: { size: 23, color: '#b9c2d0', font: 'pretendard' },
       heading: { size: 62, color: '#ffffff', font: 'script' },
       sub: { size: 30, color: '#ffffff', font: 'pretendard' },
       rowLabel: { size: 26, color: '#ffffff', font: 'pretendard' },
@@ -238,9 +241,12 @@ function drawTopBar(imgs) {
   var titleW = ctx.measureText(S.title).width;
 
   var sponsorW = 0;
+  if (!S.showSponsor) {
+    imgs = { sponsor: null, broadcast: imgs.broadcast };
+  }
   if (imgs.sponsor) {
     sponsorW = Math.min(imgs.sponsor.width * (h / imgs.sponsor.height), 460);
-  } else if (S.sponsorText) {
+  } else if (S.sponsorText && S.showSponsor) {
     setFont(42, 800, st.font);
     sponsorW = ctx.measureText(S.sponsorText).width;
   }
@@ -291,12 +297,21 @@ function photoRect(side) {
 function drawPhoto(side, im, dim) {
   var pl = S.players[side], r = photoRect(side);
   if (im) {
-    drawCover(im, r.x, r.y, r.w, r.h, pl.zoom, pl.ox, pl.oy, 0);
+    // 방송처럼 인물을 아래에 세웁니다 — 위로 꽉 채우면 머리가 잘립니다.
+    var topGap = 150;
+    var sc = ((H - topGap) / im.height) * (pl.zoom || 1);
+    var dw = im.width * sc, dh = im.height * sc;
+    var dx = r.x + (r.w - dw) / 2 + (pl.ox || 0);
+    var dy = H - dh + (pl.oy || 0);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+    ctx.drawImage(im, dx, dy, dw, dh);
+    ctx.restore();
     if (dim) {
       ctx.save();
-      ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
-      ctx.fillStyle = 'rgba(6,8,12,.62)';
-      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.clip();
+      ctx.fillStyle = 'rgba(6,8,12,.66)';
+      ctx.fillRect(dx, dy, dw, dh);
       ctx.restore();
     }
   } else {
@@ -552,7 +567,7 @@ function drawWinner() {
     }
     if (side === w.side) {
       var by = 420;
-      if (w.ribbon) {
+      if (w.ribbon && S.showRibbon) {
         setFont(S.style.ribbon.size, 800, S.style.ribbon.font);
         var rw = ctx.measureText(w.ribbon).width + 34;
         ctx.fillStyle = '#e0392b';
@@ -607,7 +622,8 @@ function draw() {
 
 function paint(g) {
   ctx.clearRect(0, 0, W, H);
-  drawBackground();
+  // 배경을 끄면 투명하게 남깁니다 — 방송에서 루핑백 위에 그대로 얹을 수 있습니다.
+  if (S.showBg) drawBackground();
   var dim = [false, false];
   if (S.type === 'winner') { dim[1 - S.winner.side] = true; }
   drawPhoto(0, g[2], dim[0]);
@@ -615,8 +631,15 @@ function paint(g) {
   drawTopBar({ sponsor: g[0], broadcast: g[1] });
 
   if (S.type === 'matchup') {
-    drawNamePlate(0, 310, 830, 'center', 520);
-    drawNamePlate(1, W - 310, 830, 'center', 520);
+    [0, 1].forEach(function (side) {
+      var cx = side === 0 ? 268 : W - 268;
+      var g2 = ctx.createLinearGradient(0, 700, 0, H);
+      g2.addColorStop(0, 'rgba(0,0,0,0)');
+      g2.addColorStop(1, 'rgba(0,0,0,.78)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(side === 0 ? 0 : W - 536, 700, 536, H - 700);
+      drawNamePlate(side, cx, 872, 'center', 520);
+    });
     drawMatchup();
   } else if (S.type === 'stats' || S.type === 'score') {
     drawSidePanel(0, S.type === 'score');
@@ -680,6 +703,13 @@ function bind(id, get, set) {
   el.addEventListener('input', function () { set(el.value); draw(); });
 }
 
+function bindCheck(id, get, set) {
+  var el = $(id);
+  if (!el) return;
+  el.checked = !!get();
+  el.addEventListener('change', function () { set(el.checked); draw(); });
+}
+
 function bindPhoto(id, onLoad) {
   var el = $(id);
   if (!el) return;
@@ -726,6 +756,9 @@ function setupControls() {
   bind('title', function () { return S.title; }, function (v) { S.title = v; });
   bind('sponsorText', function () { return S.sponsorText; }, function (v) { S.sponsorText = v; });
   bind('liveBadge', function () { return S.liveBadge; }, function (v) { S.liveBadge = v; });
+  bindCheck('showBg', function () { return S.showBg; }, function (v) { S.showBg = v; });
+  bindCheck('showSponsor', function () { return S.showSponsor; }, function (v) { S.showSponsor = v; });
+  bindCheck('showRibbon', function () { return S.showRibbon; }, function (v) { S.showRibbon = v; });
   bind('bgLeft', function () { return S.bgLeft; }, function (v) { S.bgLeft = v; });
   bind('bgRight', function () { return S.bgRight; }, function (v) { S.bgRight = v; });
 
@@ -848,6 +881,9 @@ function fillForm() {
   });
   ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight'].forEach(function (k) {
     var el = $(k); if (el) el.value = S[k];
+  });
+  ['showBg', 'showSponsor', 'showRibbon'].forEach(function (k) {
+    var el = $(k); if (el) el.checked = !!S[k];
   });
   S.boxes.forEach(function (b, i) {
     if ($('boxTitle' + i)) $('boxTitle' + i).value = b.title;
