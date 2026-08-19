@@ -83,8 +83,9 @@ def main():
 
     print('')
     print('── 3. 끝장전 시트 받아오기 ' + '─' * 28)
-    eg_sets = endgame_import.fetch_sets(*endgame_import.load_source())
+    eg_sets, eg_fixes = endgame_import.load_sets()
     print('  세트 %d줄을 읽었습니다.' % len(eg_sets))
+    endgame_import.show_fixes(eg_fixes)
     eg_path = os.path.join(ROOT, 'data', 'endgame.json')
     eg_old = None
     if os.path.exists(eg_path):

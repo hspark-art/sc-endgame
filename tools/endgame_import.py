@@ -74,6 +74,75 @@ def fetch_sets(sheet_id, sheet_name):
     return out
 
 
+# 시트에 잘못 적힌 맵 이름을 바로잡습니다 (왼쪽 → 오른쪽).
+# 대소문자·띄어쓰기만 다른 것은 아래 normalize_sets 가 알아서 합치므로
+# 여기에는 '사람이 판단해야 했던 것'만 적습니다.
+MAP_ALIASES = {
+    'MatchPoint': 'Match Point',
+    'New Heartbreak Ridge': 'Neo Heartbreak Ridge Line',
+}
+
+
+def _mapkey(name):
+    """대소문자·띄어쓰기를 무시한 맵 이름 열쇠."""
+    return name.replace(' ', '').lower()
+
+
+def normalize_sets(sets):
+    """시트에 잘못 적힌 것을 바로잡습니다.
+
+    원본 시트는 건드리지 않습니다. 무엇을 고쳤는지 함께 돌려주므로
+    실행할 때마다 화면에 나옵니다.
+
+      1. 선수 종족이 줄마다 다르게 적힌 경우 → 가장 많이 적힌 종족으로
+      2. 맵 이름이 대소문자·띄어쓰기만 다른 경우 → 가장 많이 쓰인 표기로
+      3. MAP_ALIASES 에 적어 둔 맵 이름 → 정해 둔 표기로
+    """
+    race_count = {}
+    map_count = {}
+    for _dt, w, wr, lo, lr, mp in sets:
+        for who, r in ((w, wr), (lo, lr)):
+            race_count.setdefault(who, {})
+            race_count[who][r] = race_count[who].get(r, 0) + 1
+        if mp:
+            name = MAP_ALIASES.get(mp, mp)
+            k = _mapkey(name)
+            map_count.setdefault(k, {})
+            map_count[k][name] = map_count[k].get(name, 0) + 1
+
+    # 선수마다 가장 많이 적힌 종족, 맵마다 가장 많이 쓰인 표기를 정답으로 봅니다.
+    best_race = {}
+    for who, c in race_count.items():
+        if len(c) > 1:
+            best_race[who] = max(c.items(), key=lambda kv: kv[1])[0]
+    best_map = {}
+    for k, c in map_count.items():
+        best_map[k] = max(c.items(), key=lambda kv: kv[1])[0]
+
+    fixes = []
+    out = []
+    for dt, w, wr, lo, lr, mp in sets:
+        nwr = best_race.get(w, wr)
+        nlr = best_race.get(lo, lr)
+        if nwr != wr:
+            fixes.append('%s  %s 종족 %s → %s' % (dt, w, wr, nwr))
+        if nlr != lr:
+            fixes.append('%s  %s 종족 %s → %s' % (dt, lo, lr, nlr))
+        nmp = mp
+        if mp:
+            nmp = best_map.get(_mapkey(MAP_ALIASES.get(mp, mp)), mp)
+            if nmp != mp:
+                fixes.append('%s  맵 이름 %s → %s' % (dt, mp, nmp))
+        out.append((dt, w, nwr, lo, nlr, nmp))
+    return out, fixes
+
+
+def load_sets():
+    """시트에서 읽고 잘못 적힌 것까지 바로잡아 돌려줍니다."""
+    sets = fetch_sets(*load_source())
+    return normalize_sets(sets)
+
+
 def group_matches(sets):
     """같은 날 같은 두 선수의 세트를 하나의 매치로 묶습니다.
 
@@ -234,6 +303,18 @@ def build_doc(sets, built_at):
     }
 
 
+def show_fixes(fixes):
+    """시트를 읽으면서 바로잡은 것을 알려 줍니다. 원본 시트는 그대로입니다."""
+    if not fixes:
+        return
+    print('  시트에 잘못 적힌 것을 읽으면서 바로잡았습니다 (원본 시트는 그대로):')
+    seen = {}
+    for f in fixes:
+        seen[f[12:]] = seen.get(f[12:], 0) + 1     # 날짜를 뺀 내용으로 묶습니다
+    for what, n in sorted(seen.items()):
+        print('    %s%s' % (what, ('  (%d줄)' % n) if n > 1 else ''))
+
+
 def summarize(old, new):
     """무엇이 달라지는지 한눈에 보여줍니다."""
     og, ng = (old or {}).get('global', {}), new['global']
@@ -263,8 +344,9 @@ def main():
 
     sheet_id, sheet_name = load_source()
     print('끝장전 시트에서 받아옵니다 — %s 탭' % sheet_name)
-    sets = fetch_sets(sheet_id, sheet_name)
+    sets, fixes = normalize_sets(fetch_sets(sheet_id, sheet_name))
     print('  세트 %d줄을 읽었습니다.' % len(sets))
+    show_fixes(fixes)
 
     old = None
     if os.path.exists(TARGET):

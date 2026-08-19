@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-08-19T10:45:01.611Z",
-  "updatedAtKo": "2026년 08월 19일 19:45 (KST)",
+  "updatedAt": "2026-08-19T11:02:33.674Z",
+  "updatedAtKo": "2026년 08월 19일 20:02 (KST)",
   "base": "https://pubgin.com/endgame",
   "xlsx": "https://pubgin.com/endgame/xlsx/sc-endgame.xlsx",
   "aslXlsx": "https://pubgin.com/endgame/xlsx/asl.xlsx",
@@ -12,7 +12,7 @@
       "desc": "선수별 통산 전적과 종족별 세트 전적",
       "file": "players.csv",
       "group": "끝장전",
-      "rows": 35,
+      "rows": 33,
       "url": "https://pubgin.com/endgame/csv/players.csv"
     },
     {
@@ -20,7 +20,7 @@
       "desc": "매치 한 줄씩 — 날짜·대진·스코어·맵·다시보기",
       "file": "matches.csv",
       "group": "끝장전",
-      "rows": 296,
+      "rows": 294,
       "url": "https://pubgin.com/endgame/csv/matches.csv"
     },
     {
@@ -28,7 +28,7 @@
       "desc": "매치 안의 세트마다 어떤 맵을 썼는지",
       "file": "sets.csv",
       "group": "끝장전",
-      "rows": 2656,
+      "rows": 2638,
       "url": "https://pubgin.com/endgame/csv/sets.csv"
     },
     {
@@ -36,7 +36,7 @@
       "desc": "맵별 사용 세트 수와 종족 상성",
       "file": "maps.csv",
       "group": "끝장전",
-      "rows": 82,
+      "rows": 78,
       "url": "https://pubgin.com/endgame/csv/maps.csv"
     },
     {
@@ -44,7 +44,7 @@
       "desc": "선수 대 선수 맞대결 기록",
       "file": "headtohead.csv",
       "group": "끝장전",
-      "rows": 115,
+      "rows": 113,
       "url": "https://pubgin.com/endgame/csv/headtohead.csv"
     },
     {

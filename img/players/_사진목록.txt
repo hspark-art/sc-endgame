@@ -72,7 +72,7 @@ P        윤용태                          [없음] yoon-yongtae.jpg
 T        윤종현                          [없음] yoon-jonghyeon.jpg
 Z        윤진규                          [없음] yoon-jingyu.jpg
 T        윤찬희                          [없음] yoon-chanhui.jpg
-T        이경민                          [없음] lee-gyeongmin.jpg
+P        이경민                          [없음] lee-gyeongmin.jpg
 T        이성은                          [없음] lee-seongeun.jpg
 T        이영웅                          [없음] lee-yeongung.jpg
 Z        이영한                          [없음] lee-yeonghan.jpg
