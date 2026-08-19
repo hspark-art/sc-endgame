@@ -171,22 +171,16 @@ def fetch_sheet_csv(source=None):
            + ('&gid=%s' % gid if gid else ''))
     print('구글시트에서 받아오는 중 — %s (%s)'
           % (src.get('title') or sid, ('gid %s' % gid) if gid else '첫 번째 탭'))
-    req = urllib.request.Request(url, headers={'User-Agent': 'sc-endgame/1.0'})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            raw = r.read()
-    except urllib.error.HTTPError as e:
-        raise SystemExit(
-            '시트를 받지 못했습니다 (HTTP %s).\n'
-            "  시트 공유 설정이 '링크가 있는 모든 사용자 — 뷰어' 인지 확인해 주세요.\n"
-            '  주소: %s' % (e.code, url))
-    except urllib.error.URLError as e:
-        raise SystemExit('시트에 접속하지 못했습니다: %s' % e.reason)
-    text = raw.decode('utf-8-sig')
-    if text.lstrip().startswith('<'):
+    # 받아오면서 마지막 정상본을 data/sheet-backup/ 에 남깁니다.
+    # 연동본이 #REF! 가 되거나 시트가 사라져도 백업으로 계속 돌아갑니다.
+    import sheetbackup
+    text, used_backup = sheetbackup.fetch_csv(url, 'asl')
+    text = text.lstrip('﻿')
+    if not used_backup and text.lstrip().startswith('<'):
         raise SystemExit(
             'CSV 대신 로그인 화면이 왔습니다.\n'
-            "  시트를 '링크가 있는 모든 사용자 — 뷰어' 로 열어 주세요.")
+            "  시트를 '링크가 있는 모든 사용자 — 뷰어' 로 열어 주세요.\n"
+            '  주소: %s' % url)
     return text
 
 

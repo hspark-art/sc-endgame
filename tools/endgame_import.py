@@ -59,7 +59,10 @@ def fetch_sets(sheet_id, sheet_name):
     """Results 탭을 인증 없이 CSV 로 받아 세트 목록으로 만듭니다."""
     url = ('https://docs.google.com/spreadsheets/d/%s/gviz/tq?tqx=out:csv&sheet=%s'
            % (sheet_id, urllib.parse.quote(sheet_name)))
-    raw = urllib.request.urlopen(url, timeout=60).read().decode('utf-8')
+    # 받아오면서 마지막 정상본을 data/sheet-backup/ 에 남깁니다.
+    # 시트가 사라지거나 접속이 안 돼도 백업으로 계속 돌아갑니다.
+    import sheetbackup
+    raw, _used_backup = sheetbackup.fetch_csv(url, 'endgame')
     rows = list(csv.reader(io.StringIO(raw)))
     if len(rows) < 2:
         raise SystemExit('시트를 읽었지만 내용이 없습니다. 공유 설정을 확인하세요.')

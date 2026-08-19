@@ -121,8 +121,8 @@ def is_compilation(video):
     return bool(COMPILATION_RE.search(video['title']))
 
 
-# 제목 끝의 방송 회차 — 'SC1-14', 'Sc1- 221' 처럼 적혀 있습니다.
-EPISODE_RE = re.compile('[Ss][Cc]1[- –] *([0-9]{1,3})')
+# 제목 끝의 방송 회차 — 'SC1-221' 이 보통이고 'SC-176' 처럼 1 이 빠진 것도 있습니다.
+EPISODE_RE = re.compile('[Ss][Cc]1?[- –] *([0-9]{1,3})')
 
 
 def episode_of(video):
@@ -130,17 +130,30 @@ def episode_of(video):
     return int(m.group(1)) if m else None
 
 
+def segment_for(match, video):
+    """두 선수가 '함께' 나오는 제목 구간의 번호. 없으면 None.
+
+    한 방송에 두 경기가 들어간 영상이 있습니다 —
+      '이재호 vs 김민철 | 박상현 vs 정영재'
+    이걸 통째로 보면 '김민철 vs 정영재' 같은 없는 대진에도 걸립니다.
+    그래서 세로줄로 잘라 같은 구간 안에 두 선수가 있을 때만 인정합니다.
+    """
+    a, b = match['players']
+    for i, seg in enumerate(video['title'].split('|')):
+        if a in seg and b in seg:
+            return i
+    return None
+
+
 def score(match, video):
     """경기와 영상이 얼마나 맞는지 점수. 3점 이상이면 꽤 믿을 만합니다."""
-    a, b = match['players']
-    title = video['title']
-    text = title + ' ' + video['desc']
-    # 두 이름이 '제목'에 다 나와야 합니다. 설명글에는 그날 방송의 다른 경기까지
-    # 적혀 있어서, 설명만 보고 맞추면 엉뚱한 경기에 붙습니다.
-    if not (a in title and b in title):
+    text = video['title'] + ' ' + video['desc']
+    # 두 이름이 '제목의 같은 구간'에 다 나와야 합니다. 설명글에는 그날 방송의
+    # 다른 경기까지 적혀 있어서, 설명만 보고 맞추면 엉뚱한 경기에 붙습니다.
+    if segment_for(match, video) is None:
         return 0
 
-    s = 4                                        # 제목에 두 선수 이름이 다 나옴
+    s = 4                                        # 제목 한 구간에 두 선수가 다 나옴
     mdate = date(*map(int, match['date'].split('-')))
     pub = video['published']
     pubd = date(*map(int, pub.split('-'))) if pub else None
@@ -230,15 +243,17 @@ def main():
                 continue
             gap = (abs((date(*map(int, v['published'].split('-'))) - mdate).days)
                    if v['published'] else 999)
-            pairs.append((-s, gap, mi, v))
+            pairs.append((-s, gap, mi, v, segment_for(matches[mi], v)))
     pairs.sort(key=lambda x: x[:3])               # 점수 높은 순 → 날짜 가까운 순
 
+    # 한 방송에 두 경기가 담긴 영상은 구간마다 따로 쓸 수 있어야 하므로,
+    # 자리는 영상이 아니라 (영상, 구간) 단위로 잡습니다.
     best, taken_m, taken_v = {}, set(), set()
-    for _s, _gap, mi, v in pairs:
-        if mi in taken_m or v['id'] in taken_v:
+    for _s, _gap, mi, v, seg in pairs:
+        if mi in taken_m or (v['id'], seg) in taken_v:
             continue
         taken_m.add(mi)
-        taken_v.add(v['id'])
+        taken_v.add((v['id'], seg))
         best[stats.match_key(matches[mi])] = 'https://www.youtube.com/watch?v=' + v['id']
 
     # 2차 — 한참 뒤에 올라온 재업로드를 회차 번호로 찾아 붙입니다.
@@ -265,8 +280,9 @@ def main():
         for v in cand:
             if v['id'] in taken_v:
                 continue
+            seg = segment_for(m, v)
             n = episode_of(v)
-            if not n or not all(x in v['title'] for x in pair):
+            if not n or seg is None or (v['id'], seg) in taken_v:
                 continue
             i = bisect.bisect_left(ns, n)
             lo = anchors[ns[i - 1]] if i > 0 else ''
@@ -274,7 +290,7 @@ def main():
             fits = [dt for dt in pair_dates[pair] if lo <= dt <= hi]
             if len(fits) == 1 and fits[0] == m['date']:
                 taken_m.add(mi)
-                taken_v.add(v['id'])
+                taken_v.add((v['id'], seg))
                 best[stats.match_key(m)] = 'https://www.youtube.com/watch?v=' + v['id']
                 late += 1
                 break
