@@ -459,7 +459,8 @@ function parseBalloon(f){
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
   const mid=(f[3]||'').trim();
   if(mid&&seenBalloons.has(mid))return null;   // 이미 센 별풍선
-  if(mid)seenBalloons.add(mid);
+  if(mid){seenBalloons.add(mid);
+    if(seenBalloons.size>4000)seenBalloons=new Set([...seenBalloons].slice(-2000));}
   const nick=cleanNick(f[7]);
   return nick?{t:'balloon',nick,count:+cnt,id:(f[6]||'').trim()}:null;
 }

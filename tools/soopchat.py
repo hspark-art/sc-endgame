@@ -141,6 +141,8 @@ def listen(bid, info, on_event, should_stop=None):
                     continue                 # 이미 센 별풍선 — 건너뜁니다
                 if mid:
                     seen_balloons.add(mid)
+                    if len(seen_balloons) > 4000:   # 긴 방송에서 메모리 방지
+                        seen_balloons = set(list(seen_balloons)[-2000:])
                 on_event(ev)
             else:
                 on_event({'t': 'raw', 'svc': svc, 'fields': fields})
