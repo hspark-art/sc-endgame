@@ -133,9 +133,20 @@ def score(match, video):
     return s
 
 
+def stored_key():
+    """data/youtube.json 에 넣어 둔 키. 환경변수가 없을 때 씁니다."""
+    path = os.path.join(ROOT, 'data', 'youtube.json')
+    if not os.path.exists(path):
+        return None
+    try:
+        return json.load(io.open(path, encoding='utf-8')).get('apiKey') or None
+    except (ValueError, OSError):
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--key', default=os.environ.get('YOUTUBE_API_KEY'))
+    ap.add_argument('--key', default=os.environ.get('YOUTUBE_API_KEY') or stored_key())
     ap.add_argument('--write', action='store_true', help='data/videos.json 에 기록')
     ap.add_argument('--min-score', type=int, default=3)
     ap.add_argument('--cache', default=os.path.join(HERE, '.yt-cache.json'),
@@ -151,7 +162,8 @@ def main():
         if not args.key:
             raise SystemExit(
                 'YouTube Data API 키가 필요합니다.\n'
-                '  export YOUTUBE_API_KEY=...  또는  --key ... 로 넘겨 주세요.\n'
+                '  data/youtube.json 에  {"apiKey": "..."}  로 넣어 두거나,\n'
+                '  YOUTUBE_API_KEY 환경변수  또는  --key ... 로 넘겨 주세요.\n'
                 '  (구글 클라우드 콘솔 → API 및 서비스 → YouTube Data API v3 사용 설정 → 키 만들기)')
         for handle in HANDLES:
             pid, title = uploads_playlist(handle, args.key)

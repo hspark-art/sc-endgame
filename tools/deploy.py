@@ -52,9 +52,14 @@ STATE = os.path.join(ROOT, 'data', '.deploy-state.json')
 # 설명 문서(.md)는 사이트 내용이 아니라서 통째로 뺍니다 — 새로 만들어도 안 올라갑니다.
 SKIP_DIRS = {'tools', 'node_modules', '__pycache__'}
 SKIP_FILES = {'.gitignore', '.deploy-state.json', 'deploy.json'}
-SKIP_EXTS = ('.md',)
-# 서버에만 있어야 하는 것 — 실수로도 덮어쓰지 않습니다
-NEVER_UPLOAD = {'admin/config.php'}
+SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
+# 절대 웹서버로 나가면 안 되는 것.
+#   admin/config.php  관리자 계정 (서버에만 있어야 하고 덮어써서도 안 됩니다)
+#   data/deploy.json  FTP 비밀번호
+#   data/youtube.json 유튜브 API 키
+# data/ 는 sheets.html 이 원본 JSON 을 공개하느라 통째로 올라가므로,
+# 그 안에 비밀이 들어오면 반드시 여기에 적어야 합니다.
+NEVER_UPLOAD = {'admin/config.php', 'data/deploy.json', 'data/youtube.json'}
 
 
 def load_settings():
