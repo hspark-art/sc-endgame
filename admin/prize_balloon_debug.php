@@ -51,7 +51,7 @@ function pkt(svc,body){const b=new TextEncoder().encode(body);
 function setFlag(h){document.getElementById('flag').innerHTML=h}
 // 같은 사람이 같은 아이템ID 를 몇 번 보냈는지 (이모티콘 반복 표시용)
 const itemSeen={};
-const EMOTE_ITEMS=new Set(['537477152']);
+const EMOTE_ITEMS=new Set(['537477152','2684436480']);
 function classify(svc,f){
   if(svc===109){const it=(f[8]||'').split('|')[0];
     return {k:EMOTE_ITEMS.has(it)?'이모티콘(제외)':'별풍선(svc109)',cls:EMOTE_ITEMS.has(it)?'etc':'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:it};}
