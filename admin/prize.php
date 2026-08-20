@@ -50,6 +50,7 @@ padding:16px 18px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.
 .chip.on{border-color:#1c8cff;color:#cfe6ff;background:#12283f}
 .rwrow{padding:3px 3px;border-bottom:1px solid #171c25;font-size:12.5px;
 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
 @media(max-width:760px){
   .wrap{padding:10px 10px}
   body{font-size:15px}
@@ -103,7 +104,9 @@ function goCh(v){
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
 <div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span>
-<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearStats()">집계 초기화</button></div>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
+<button class="gray" style="padding:4px 10px" onclick="downloadActivity()">⬇ 활약 CSV</button>
+<button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button></div>
 <div class="scroll"><table id="users"><thead><tr><th class="num">#</th><th>닉네임</th>
 <th>SOOP계정</th><th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
 <th>당첨</th><th></th></tr></thead><tbody></tbody></table></div>
@@ -169,6 +172,10 @@ function goCh(v){
   · 별풍선 <input id="sAlert" style="width:52px"> 개 이상이면 감사 배너</div>
   <div class="row hint">집계 제외 계정 <input id="sExclAcc" style="flex:1;min-width:220px"
    placeholder="매크로·스태프 아이디/닉 (스페이스나 쉼표로 여러 개)"></div>
+  <div class="row hint">우리 채널 (데이터 저장) <input id="sRealCh" style="flex:1;min-width:200px"
+   placeholder="talent (기본) — 다른 방송도 저장하려면 아이디 추가"></div>
+  <div class="hint" style="margin:-2px 0 6px">여기 적은 채널만 채팅·활약·당첨 데이터를 저장합니다.
+  나머지 채널(테스트용)은 저장하지 않고 창을 닫으면 사라집니다.</div>
   <div class="hint" style="margin:-2px 0 6px">우리 방송 계정(<b id="bjName"></b>)은 자동 제외됩니다.
   자동 매크로 채팅·매니저 계정을 여기 넣으면 시청자 활약 집계에서 빠집니다.</div>
   <div class="row hint">구글 문서 ID <input id="sGdoc" style="flex:1;min-width:180px" placeholder="당첨자 문서 주소의 /d/ 다음 부분">
@@ -187,7 +194,14 @@ function goCh(v){
 const BJ=(new URLSearchParams(location.search).get('bj')||'talent')
   .toLowerCase().replace(/[^a-z0-9_]/g,'')||'talent';
 const IS_DEMO = location.search.includes('demo');
-const IS_TEST_CH = BJ!=='talent' || IS_DEMO;   // 연습 모드도 진짜 기록에 안 섞음
+function realChSet(){
+  let list=['talent'];
+  try{const j=JSON.parse(localStorage.getItem('pzRealCh')||'null');if(Array.isArray(j)&&j.length)list=j;}catch(e){}
+  return new Set(list.map(x=>String(x).toLowerCase()).concat('talent'));
+}
+/* 우리 채널(기록 저장 대상)이 아니면 휘발성(테스트)으로 봅니다.
+   기본은 talent, 설정에서 다른 채널도 추가할 수 있습니다. */
+let IS_TEST_CH = !realChSet().has(BJ) || IS_DEMO;
 const F='\x0c', users={}, recent=[], rawUnknown=[];
 const sess={on:false,date:'',startedAt:''};   // 스타트/종료 상태
 const logBuf=[];                              // 서버로 보낼 채팅 로그 대기줄
@@ -425,12 +439,40 @@ async function saveSettings(){
     balloonAlert:+document.getElementById('sAlert').value||100,
     gdocId:(document.getElementById('sGdoc').value.trim().match(/[-\w]{25,}/)||[document.getElementById('sGdoc').value.trim()])[0],
     slackWebhook:document.getElementById('sSlack').value.trim(),
-    excludeAccounts:document.getElementById('sExclAcc').value.trim()});
-  await api('settings_set',{settings});loadGdoc();rebuildExcl();closeSettings();
+    excludeAccounts:document.getElementById('sExclAcc').value.trim(),
+    realChannels:document.getElementById('sRealCh').value.trim()});
+  await api('settings_set',{settings});loadGdoc();rebuildExcl();applyRealCh();closeSettings();
 }
 function openSettings(){var b=document.getElementById('bjName');if(b)b.textContent=BJ;
   document.getElementById('settingsModal').style.display='flex';}
 function closeSettings(){document.getElementById('settingsModal').style.display='none';}
+function applyRealCh(){
+  const raw=(settings.realChannels||'').toLowerCase().split(/[\s,]+/).filter(Boolean);
+  if(!raw.includes('talent'))raw.push('talent');
+  try{localStorage.setItem('pzRealCh',JSON.stringify(raw));}catch(e){}
+  IS_TEST_CH = !new Set(raw).has(BJ) || IS_DEMO;
+}
+function updateMaskBtn(){
+  const b=document.getElementById('maskBtn');if(!b)return;
+  b.textContent=document.body.classList.contains('maskacc')?'👁 계정 보기':'🙈 계정 가리기';
+}
+function toggleMask(){
+  document.body.classList.toggle('maskacc');
+  try{localStorage.setItem('pzMaskAcc',document.body.classList.contains('maskacc')?'1':'');}catch(e){}
+  updateMaskBtn();
+}
+function downloadActivity(){
+  const rows=Object.entries(users).map(([nick,u])=>({nick,acc:uid[nick]||'',c:u.c,b:u.b,w:winCount(nick)[0]}));
+  if(!rows.length)return alert('활약 데이터가 없습니다');
+  rows.sort((a,b)=>b.b-a.b||b.c-a.c);
+  const NL=String.fromCharCode(10);
+  const q=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  const lines=rows.map(r=>[q(r.nick),q(r.acc),r.c,r.b,r.w].join(','));
+  const csv=String.fromCharCode(0xFEFF)+['닉네임,SOOP계정,채팅수,별풍선수,당첨횟수'].concat(lines).join(NL);
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
+}
 function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
 const PCATS=[
   {k:'마우스패드',re:/마우스\s*패드|패드|gigantus|mousepad/i,c:'#a78bfa'},
@@ -470,7 +512,7 @@ function renderRecentWinners(){
       const badges=Object.entries(pp.cats).map(([k,c])=>'<span title=\"'+esc(k)+'\" style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:'+c+';margin-right:2px;vertical-align:middle\"></span>').join('');
       const names=[...new Set(pp.prizes.map(x=>x.prize))].join(', ');
       return '<div class=\"rwrow\" title=\"'+esc(names)+'\">'+badges+' <b style=\"color:'+primary+'\">'+esc(pp.nick)+'</b>'+
-        (pp.sid?' <span class=\"pill\" style=\"font-size:10px\">'+esc(pp.sid)+'</span>':'')+
+        (pp.sid?' <span class=\"pill acc\" style=\"font-size:10px\">'+esc(pp.sid)+'</span>':'')+
         ' <span class=\"n\" style=\"font-size:10.5px\">'+esc(pp.date)+'</span></div>';
     }).join('');
 }
@@ -574,7 +616,7 @@ async function refresh(){
   document.querySelector('#winners tbody').innerHTML=wl.slice().reverse().map(w=>{
     const acc=w.sid||'';
     return '<tr><td>'+esc(w.date)+'</td><td><b>'+esc(w.nick)+'</b></td>'+
-    '<td>'+(acc?'<span class="pill" style="font-size:11px">'+esc(acc)+'</span>'
+    '<td>'+(acc?'<span class="pill acc" style="font-size:11px">'+esc(acc)+'</span>'
       :'<span class="warn" style="font-size:11px">없음</span>')+'</td>'+
     '<td>'+esc(w.prize)+'</td><td class="pill">'+esc(w.how||'')+'</td>'+
     '<td style="white-space:nowrap">'+
@@ -599,12 +641,13 @@ async function refresh(){
     ['sBalFull',settings.balloonFull],['sBalMax',settings.balloonBonusMax],
     ['sWeeks',settings.excludeWeeks||0],['sAlert',settings.balloonAlert||100],
     ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||''],
-    ['sExclAcc',settings.excludeAccounts||'']]){
+    ['sExclAcc',settings.excludeAccounts||''],
+    ['sRealCh',settings.realChannels||'']]){
     const el=document.getElementById(id);
     if(el&&document.activeElement!==el)el.value=v;
   }
   const ex=document.getElementById('sExcl');if(ex)ex.checked=!!settings.excludeWinners;
-  rebuildExcl();
+  rebuildExcl();applyRealCh();
   try{
     const pl=await (await fetch('prize_api.php?act=stats_list')).json();
     document.getElementById('pastdays').innerHTML='<tbody>'+pl.list.map(r=>
@@ -638,7 +681,7 @@ function paint(){
     const pct=Math.round((u.b*3+u.c)/maxAct*100);
     return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
     '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td>'+
-    '<td class="pill" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td><td class="num">'+u.c+'</td>'+
+    '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td><td class="num">'+u.c+'</td>'+
     '<td class="num balloon">'+(u.b||'')+'</td><td class="num">x'+u.w.toFixed(2)+
     '</td><td>'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
     '<td><button class="gray" style="padding:2px 8px" data-pick="'
@@ -759,6 +802,9 @@ setInterval(paint,1500);
 setInterval(snapshot,45000);
 refresh();setInterval(refresh,6000);
 loadGdoc();setInterval(loadGdoc,300000);
+applyRealCh();
+if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
+updateMaskBtn();
 restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){

@@ -29,6 +29,7 @@ td[contenteditable]:hover{background:#181d28}
 td[contenteditable]:focus{outline:2px solid #1c8cff;background:#181d28;border-radius:4px}
 td.saved{outline:2px solid #1f9d55;border-radius:4px}
 td.c-nick{font-weight:700}td.c-sid{color:#7cb6ff;font-size:12px}
+body.maskacc td.c-sid,body.maskacc #selIds{filter:blur(6px);user-select:none}
 td.c-how{color:#8a93a6;font-size:12px}
 #notebar{position:fixed;left:0;right:0;bottom:0;background:#10141c;
 border-top:1px solid #232a38;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:10px 16px;z-index:5}
@@ -53,6 +54,7 @@ text-overflow:ellipsis;white-space:nowrap}
   <span style="flex:1"></span>
   <button class="gray" onclick="addRow()">＋ 행 추가</button>
   <button class="green" onclick="openGoogleSheet()">📗 구글 시트로 열기</button>
+  <button class="gray" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
   <button class="gray" onclick="copyLedger()">&#128203; 복사</button>
   <button class="gray" onclick="downloadLedger()">⬇ CSV</button>
  </div>
@@ -365,5 +367,12 @@ function downloadLedger(){
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-당첨자-'+today()+'.csv';a.click();}
+function updateMaskBtn(){const b=document.getElementById('maskBtn');
+  if(b)b.textContent=document.body.classList.contains('maskacc')?'👁 계정 보기':'🙈 계정 가리기';}
+function toggleMask(){document.body.classList.toggle('maskacc');
+  try{localStorage.setItem('pzMaskAcc',document.body.classList.contains('maskacc')?'1':'');}catch(e){}
+  updateMaskBtn();}
+if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
+updateMaskBtn();
 refresh();noteSessionStatus();
 </script></body></html>
