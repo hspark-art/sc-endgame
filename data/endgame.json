@@ -1,9 +1,9 @@
 {
  "builtAt": "2026-08-15T20:10:41.735Z",
  "global": {
-  "totalSets": 2657,
-  "totalMatches": 297,
-  "totalPlayers": 35,
+  "totalSets": 2630,
+  "totalMatches": 294,
+  "totalPlayers": 31,
   "firstDate": "2019-05-14",
   "lastDate": "2026-08-20"
  },
@@ -5249,75 +5249,6 @@
    ]
   },
   {
-   "name": "김윤환",
-   "race": "Z",
-   "matchWin": 2,
-   "matchLoss": 1,
-   "setWin": 18,
-   "setLoss": 9,
-   "appearances": 3,
-   "firstDate": "2019-08-02",
-   "lastDate": "2022-07-21",
-   "vsRace": {
-    "T": {
-     "w": 14,
-     "l": 4
-    },
-    "P": {
-     "w": 4,
-     "l": 5
-    },
-    "Z": {
-     "w": 0,
-     "l": 0
-    }
-   },
-   "vsPlayers": [
-    {
-     "name": "김승현",
-     "race": "P",
-     "w": 4,
-     "l": 5,
-     "matches": [
-      {
-       "date": "2019-08-02",
-       "w": 4,
-       "l": 5,
-       "result": "패"
-      }
-     ]
-    },
-    {
-     "name": "이경민",
-     "race": "T",
-     "w": 7,
-     "l": 2,
-     "matches": [
-      {
-       "date": "2019-10-07",
-       "w": 7,
-       "l": 2,
-       "result": "승"
-      }
-     ]
-    },
-    {
-     "name": "염보성",
-     "race": "T",
-     "w": 7,
-     "l": 2,
-     "matches": [
-      {
-       "date": "2022-07-21",
-       "w": 7,
-       "l": 2,
-       "result": "승"
-      }
-     ]
-    }
-   ]
-  },
-  {
    "name": "김정우",
    "race": "Z",
    "matchWin": 2,
@@ -5522,47 +5453,6 @@
        "w": 4,
        "l": 5,
        "result": "패"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "name": "김승현",
-   "race": "P",
-   "matchWin": 1,
-   "matchLoss": 0,
-   "setWin": 5,
-   "setLoss": 4,
-   "appearances": 1,
-   "firstDate": "2019-08-02",
-   "lastDate": "2019-08-02",
-   "vsRace": {
-    "T": {
-     "w": 0,
-     "l": 0
-    },
-    "P": {
-     "w": 0,
-     "l": 0
-    },
-    "Z": {
-     "w": 5,
-     "l": 4
-    }
-   },
-   "vsPlayers": [
-    {
-     "name": "김윤환",
-     "race": "Z",
-     "w": 5,
-     "l": 4,
-     "matches": [
-      {
-       "date": "2019-08-02",
-       "w": 5,
-       "l": 4,
-       "result": "승"
       }
      ]
     }
@@ -5968,47 +5858,6 @@
    ]
   },
   {
-   "name": "이경민",
-   "race": "T",
-   "matchWin": 0,
-   "matchLoss": 1,
-   "setWin": 2,
-   "setLoss": 7,
-   "appearances": 1,
-   "firstDate": "2019-10-07",
-   "lastDate": "2019-10-07",
-   "vsRace": {
-    "T": {
-     "w": 0,
-     "l": 0
-    },
-    "P": {
-     "w": 0,
-     "l": 0
-    },
-    "Z": {
-     "w": 2,
-     "l": 7
-    }
-   },
-   "vsPlayers": [
-    {
-     "name": "김윤환",
-     "race": "Z",
-     "w": 2,
-     "l": 7,
-     "matches": [
-      {
-       "date": "2019-10-07",
-       "w": 2,
-       "l": 7,
-       "result": "패"
-      }
-     ]
-    }
-   ]
-  },
-  {
    "name": "임진묵",
    "race": "T",
    "matchWin": 0,
@@ -6226,47 +6075,6 @@
      "matches": [
       {
        "date": "2025-03-05",
-       "w": 2,
-       "l": 7,
-       "result": "패"
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "name": "염보성",
-   "race": "T",
-   "matchWin": 0,
-   "matchLoss": 1,
-   "setWin": 2,
-   "setLoss": 7,
-   "appearances": 1,
-   "firstDate": "2022-07-21",
-   "lastDate": "2022-07-21",
-   "vsRace": {
-    "T": {
-     "w": 0,
-     "l": 0
-    },
-    "P": {
-     "w": 0,
-     "l": 0
-    },
-    "Z": {
-     "w": 2,
-     "l": 7
-    }
-   },
-   "vsPlayers": [
-    {
-     "name": "김윤환",
-     "race": "Z",
-     "w": 2,
-     "l": 7,
-     "matches": [
-      {
-       "date": "2022-07-21",
        "w": 2,
        "l": 7,
        "result": "패"
@@ -14004,34 +13812,6 @@
    "youtubeUrl": null
   },
   {
-   "date": "2022-07-21",
-   "players": [
-    "김윤환",
-    "염보성"
-   ],
-   "race": {
-    "김윤환": "Z",
-    "염보성": "T"
-   },
-   "setWins": {
-    "김윤환": 7,
-    "염보성": 2
-   },
-   "winner": "김윤환",
-   "maps": [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
-   ],
-   "youtubeUrl": null
-  },
-  {
    "date": "2022-07-13",
    "players": [
     "김민철",
@@ -16916,34 +16696,6 @@
    "youtubeUrl": null
   },
   {
-   "date": "2019-10-07",
-   "players": [
-    "김윤환",
-    "이경민"
-   ],
-   "race": {
-    "김윤환": "Z",
-    "이경민": "T"
-   },
-   "setWins": {
-    "김윤환": 7,
-    "이경민": 2
-   },
-   "winner": "김윤환",
-   "maps": [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
-   ],
-   "youtubeUrl": null
-  },
-  {
    "date": "2019-10-02",
    "players": [
     "유영진",
@@ -17108,34 +16860,6 @@
     "Circuit Breakers",
     "Neo Sylphid",
     "Tres Pass"
-   ],
-   "youtubeUrl": null
-  },
-  {
-   "date": "2019-08-02",
-   "players": [
-    "김승현",
-    "김윤환"
-   ],
-   "race": {
-    "김승현": "P",
-    "김윤환": "Z"
-   },
-   "setWins": {
-    "김승현": 5,
-    "김윤환": 4
-   },
-   "winner": "김승현",
-   "maps": [
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    ""
    ],
    "youtubeUrl": null
   },
