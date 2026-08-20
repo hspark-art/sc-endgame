@@ -214,6 +214,7 @@ if ($act === 'stats_save') {
         'title' => (string)($body['title'] ?? ''),
         'savedAt' => date('H:i:s'),
         'users' => $body['users'] ?? new stdClass(),
+        'uid' => $body['uid'] ?? new stdClass(),
         'rawUnknown' => array_slice($body['rawUnknown'] ?? [], -200),
     ]);
     out(['ok' => true]);

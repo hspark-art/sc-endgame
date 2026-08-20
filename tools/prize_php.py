@@ -230,6 +230,7 @@ if ($act === 'stats_save') {
         'title' => (string)($body['title'] ?? ''),
         'savedAt' => date('H:i:s'),
         'users' => $body['users'] ?? new stdClass(),
+        'uid' => $body['uid'] ?? new stdClass(),
         'rawUnknown' => array_slice($body['rawUnknown'] ?? [], -200),
     ]);
     out(['ok' => true]);
@@ -505,7 +506,7 @@ function parseBalloon(f){
   if(mid){seenBalloons.add(mid);
     if(seenBalloons.size>4000)seenBalloons=new Set([...seenBalloons].slice(-2000));}
   const nick=cleanNick(f[7]);
-  return nick?{t:'balloon',nick,count:+cnt,id:(f[6]||'').trim()}:null;
+  return nick?{t:'balloon',nick,count:+cnt,id:cleanNick(f[6])}:null;
 }
 async function connectChat(){
   let info;
@@ -531,7 +532,7 @@ async function connectChat(){
     if(!joined){joined=true;ws.send(pkt(2,F+String(info.CHATNO)+F+F+F+F));}
     if(svc===5&&f.length>6){
       const nick=cleanNick(f[6]);
-      if(nick)onEvent({t:'chat',nick,msg:f[1],at:now()});
+      if(nick)onEvent({t:'chat',nick,id:cleanNick(f[2]),msg:f[1],at:now()});
     }else if(svc===109){
       const ev=parseBalloon(f);
       if(ev){ev.at=now();onEvent(ev);}
@@ -682,6 +683,8 @@ function clearStats(){
   if(!confirm('이번 방송 집계(채팅·별풍선·시청자)를 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
+  if(!IS_TEST_CH)api('stats_save',{date:new Date().toISOString().slice(0,10),
+    title:liveTitle,users:{},rawUnknown:[],uid:{}});
   recent.length=0;document.getElementById('chat').innerHTML='';paint();}
 function downloadLedger(){
   if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
@@ -828,13 +831,26 @@ async function snapshot(){
   if(IS_TEST_CH)return;                    // 남의 채널 시험은 기록하지 않습니다
   if(Object.keys(users).length===0)return;
   await api('stats_save',{date:new Date().toISOString().slice(0,10),
-    title:liveTitle,users,rawUnknown});
+    title:liveTitle,users,rawUnknown,uid});
+}
+/* 창을 껐다 켜도 오늘 집계·계정을 이어받습니다 (같은 날짜 눈금에서) */
+async function restoreToday(){
+  if(IS_TEST_CH)return;
+  try{
+    const j=await (await fetch('prize_api.php?act=stats_get&date='
+      +new Date().toISOString().slice(0,10))).json();
+    const u=j.users||{};
+    for(const k in u)if(!users[k])users[k]={c:u[k].c||0,b:u[k].b||0};
+    const iu=j.uid||{};
+    for(const k in iu)if(!uid[k])uid[k]=iu[k];
+    if(Object.keys(u).length)paint();
+  }catch(e){}
 }
 setInterval(paint,1500);
 setInterval(snapshot,45000);
 refresh();setInterval(refresh,6000);
 loadGdoc();setInterval(loadGdoc,300000);
-connectChat();
+restoreToday().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){
   const NICKS=['별사탕요정','테란만세','저글링1000','프로브혁명','캐리어가요',
@@ -843,11 +859,13 @@ if(location.search.includes('demo')){
   liveOn=true;liveTitle='(연습)';
   setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 (기록 저장 안 함)');
   window.IS_TEST_CH=true;
+  const DIDS=['byeolst4r','terranzzang','zergrun1000','probe1017','carrier4u',
+    'ggnooo','buildgm88','doublenex','mutalking','bunkerman'];
   setInterval(()=>{
-    const n=NICKS[Math.floor(Math.random()*NICKS.length)];
-    if(Math.random()<0.12)onEvent({t:'balloon',nick:n,at:now(),
+    const i=Math.floor(Math.random()*NICKS.length), n=NICKS[i];
+    if(Math.random()<0.12)onEvent({t:'balloon',nick:n,id:DIDS[i],at:now(),
       count:[1,5,10,50,100,500][Math.floor(Math.random()*6)]});
-    else onEvent({t:'chat',nick:n,at:now(),
+    else onEvent({t:'chat',nick:n,id:DIDS[i],at:now(),
       msg:MSGS[Math.floor(Math.random()*MSGS.length)]});
   },500);
 }

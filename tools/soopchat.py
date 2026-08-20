@@ -85,7 +85,7 @@ def _parse_balloon(fields):
     if not (cnt.isdigit() and int(cnt) > 0):
         return None
     nick = _clean_nick(fields[7])
-    uid = fields[6].strip()
+    uid = _clean_nick(fields[6])
     if not nick:
         return None
     return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(cnt),
@@ -129,7 +129,7 @@ def listen(bid, info, on_event, should_stop=None):
         if svc is None:
             continue
         if svc == SVC_CHAT and len(fields) > 6:
-            ev = {'t': 'chat', 'id': fields[2].strip(),
+            ev = {'t': 'chat', 'id': _clean_nick(fields[2]),
                   'nick': _clean_nick(fields[6]), 'msg': fields[1]}
             if ev['nick']:
                 on_event(ev)
