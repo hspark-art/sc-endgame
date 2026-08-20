@@ -374,14 +374,14 @@ def prize_page():
 <title>상품 추첨 관제 — 끝장전</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic',sans-serif;font-size:14px}
-.wrap{max-width:1520px;margin:0 auto;padding:14px}
+.wrap{margin:0 auto;padding:14px 18px}
 h1{font-size:18px;margin:4px 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grid{display:grid;gap:12px;grid-template-columns:1.1fr .9fr 1fr}
 @media(max-width:1100px){.grid{grid-template-columns:1fr}}
 .card{background:#141821;border:1px solid #232a38;border-radius:12px;padding:12px;min-width:0}
 .ct{font-weight:800;margin-bottom:8px;display:flex;gap:8px;align-items:center}
 .ct .n{color:#8a93a6;font-weight:500;font-size:11.5px}
-.scroll{overflow-y:auto;max-height:520px}
+.scroll{overflow:auto;max-height:520px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
@@ -1343,7 +1343,7 @@ def prize_sheet():
 <title>당첨자 시트 — 끝장전</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic',sans-serif;font-size:14px}
-.wrap{max-width:1420px;margin:0 auto;padding:14px 14px 330px}
+.wrap{margin:0 auto;padding:14px 18px 320px}
 h1{font-size:18px;margin:4px 0 10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}a.top:hover{color:#e8ecf3}
 .card{background:#141821;border:1px solid #232a38;border-radius:12px;padding:12px}
@@ -1361,7 +1361,7 @@ padding:2px 9px;font-size:11.5px;color:#8a93a6}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 8px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px;position:sticky;top:0;background:#141821;z-index:2}
-.scroll{overflow:auto;max-height:calc(100vh - 400px);min-height:240px}
+.scroll{overflow:auto;max-height:calc(100vh - 390px);min-height:260px}
 td[contenteditable]{cursor:text;min-width:56px}
 td[contenteditable]:hover{background:#181d28}
 td[contenteditable]:focus{outline:2px solid #1c8cff;background:#181d28;border-radius:4px}
@@ -1370,10 +1370,10 @@ td.c-nick{font-weight:700}td.c-sid{color:#7cb6ff;font-size:12px}
 td.c-how{color:#8a93a6;font-size:12px}
 #notebar{position:fixed;left:0;right:0;bottom:0;background:#10141c;
 border-top:1px solid #232a38;box-shadow:0 -8px 30px rgba(0,0,0,.45);padding:10px 16px;z-index:5}
-#notebar .inner{max-width:1420px;margin:0 auto}
+#notebar .inner{margin:0 auto;padding:0 2px}
 #noteTxt{width:100%;min-height:110px;resize:vertical;line-height:1.55}
-#selIds{color:#7cb6ff;font-size:12px;max-width:600px;overflow:hidden;
-text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+#selIds{color:#7cb6ff;font-size:12px;flex:1;min-width:140px;overflow:hidden;
+text-overflow:ellipsis;white-space:nowrap}
 </style></head><body><div class="wrap">
 <h1>&#128210; 당첨자 시트
  <span class="pill" id="sumline">불러오는 중…</span>

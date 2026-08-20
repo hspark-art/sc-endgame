@@ -5,14 +5,14 @@
 <title>상품 추첨 관제 — 끝장전</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic',sans-serif;font-size:14px}
-.wrap{max-width:1520px;margin:0 auto;padding:14px}
+.wrap{margin:0 auto;padding:14px 18px}
 h1{font-size:18px;margin:4px 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .grid{display:grid;gap:12px;grid-template-columns:1.1fr .9fr 1fr}
 @media(max-width:1100px){.grid{grid-template-columns:1fr}}
 .card{background:#141821;border:1px solid #232a38;border-radius:12px;padding:12px;min-width:0}
 .ct{font-weight:800;margin-bottom:8px;display:flex;gap:8px;align-items:center}
 .ct .n{color:#8a93a6;font-weight:500;font-size:11.5px}
-.scroll{overflow-y:auto;max-height:520px}
+.scroll{overflow:auto;max-height:520px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
