@@ -76,12 +76,15 @@ const NOTE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 
 function note_write(string $cookie, string $to, string $content): array
 {
-    $ch = curl_init('https://note.sooplive.com/app/index.php?page=write');
+    // 실제 전송은 note_api.php 로 갑니다 (작성 폼 action 은 ?page=write 이지만
+    // doWrite 가 note_api.php 로 POST 합니다 — 실측 2026-08-21).
+    // recv_id·txt_to 둘 다 받는 아이디, szWork=WRITE.
+    $ch = curl_init('https://note.sooplive.com/api/note_api.php');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => http_build_query([
-            'szWork' => 'WRITE', 'txt_to' => $to, 'recv_id' => '',
-            'file_key' => '', 'file_size' => '0', 'content' => $content]),
+            'szWork' => 'WRITE', 'recv_id' => $to, 'txt_to' => $to,
+            'file_key' => '', 'file_size' => '', 'content' => $content]),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_ENCODING => '',
@@ -105,27 +108,26 @@ function note_write(string $cookie, string $to, string $content): array
         return ['ok' => false, 'expired' => true, 'http' => $code,
                 'reason' => 'talent 세션이 만료됐습니다 — 세션을 다시 등록하세요'];
     }
-    $ok = null; $msg = '';
+    // note_api.php 는 JSON 을 돌려줍니다:
+    //   {"RESULT":1,"user_nick":"...","all_reject":false,"sender_balck":false,"MSG":"..."}
     $j = json_decode(trim($res), true);
-    if (is_array($j)) {
-        foreach (['result', 'RESULT', 'success', 'ret', 'code'] as $k) {
-            if (isset($j[$k])) {
-                $ok = in_array((string)$j[$k], ['1', 'true', 'ok', 'success', 'y'], true);
-                break;
-            }
+    if (is_array($j) && array_key_exists('RESULT', $j)) {
+        $rok = ((string)$j['RESULT'] === '1' || $j['RESULT'] === true);
+        $msg = (string)($j['MSG'] ?? $j['MESSAGE'] ?? $j['message'] ?? '');
+        // 상대가 쪽지 수신을 막았으면 도달하지 않습니다
+        if (!empty($j['all_reject']) || !empty($j['sender_balck'])) {
+            return ['ok' => false, 'http' => $code,
+                    'reason' => '상대가 쪽지 수신을 거부한 계정입니다',
+                    'nick' => (string)($j['user_nick'] ?? '')];
         }
-        $msg = (string)($j['MESSAGE'] ?? $j['message'] ?? $j['msg'] ?? '');
+        return ['ok' => $rok, 'http' => $code,
+                'reason' => $rok ? '' : ($msg ?: '전송에 실패했습니다'),
+                'nick' => (string)($j['user_nick'] ?? '')];
     }
-    if ($ok === null) {                          // HTML 응답 — 오류 문구 없으면 성공
-        $bad = ['존재하지 않', '없는 아이디', '없는 회원', '수신거부', '수신을 거부',
-                '차단', '스팸', '실패했', '오류', '에러', '보낼 수 없'];
-        foreach ($bad as $b) {
-            if (mb_strpos($res, $b) !== false) { $ok = false; $msg = $b; break; }
-        }
-        if ($ok === null) { $ok = ($code === 200); }
-    }
-    return ['ok' => (bool)$ok, 'http' => $code,
-            'reason' => $ok ? '' : ($msg ?: '보내지 못했습니다'),
+    // JSON 이 아니면(로그인 페이지·오류 HTML 등) 실패로 봅니다 —
+    // 성공은 반드시 RESULT:1 로만 인정합니다 (거짓 성공 방지).
+    return ['ok' => false, 'http' => $code,
+            'reason' => '예상치 못한 응답 (세션 만료이거나 SOOP 변경일 수 있음)',
             'snippet' => mb_substr(trim(preg_replace('/\s+/', ' ',
                 strip_tags((string)$res))), 0, 140)];
 }
@@ -672,6 +674,7 @@ const IS_TEST_CH = BJ!=='talent' || IS_DEMO;   // 연습 모드도 진짜 기록
 const F='\x0c', users={}, recent=[], rawUnknown=[];
 const sess={on:false,date:'',startedAt:''};   // 스타트/종료 상태
 const logBuf=[];                              // 서버로 보낼 채팅 로그 대기줄
+const LSKEY='pzLive_'+BJ;   // 이 브라우저에 로그·집계 임시 보관 (창을 나가도 유지)
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
   excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
@@ -957,6 +960,7 @@ function clearStats(){
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
   recent.length=0;logBuf.length=0;macroCount=0;
+  try{localStorage.removeItem(LSKEY);}catch(e){}
   if(!IS_TEST_CH&&sess.date){
     api('stats_save',{date:sess.date,title:liveTitle,users:{},rawUnknown:[],uid:{}});
     api('chat_clear',{date:sess.date});
@@ -1139,6 +1143,7 @@ async function flushLog(){
 }
 setInterval(flushLog,20000);
 window.addEventListener('beforeunload',()=>{
+  saveLive();   // 이 브라우저에 즉시 저장 (창을 나가도 안 사라지게 — 가장 확실)
   if(IS_TEST_CH||!navigator.sendBeacon)return;
   if(logBuf.length)navigator.sendBeacon('prize_api.php',new Blob([JSON.stringify(
     {act:'chat_log',date:sess.date,lines:logBuf.splice(0,2000)})],{type:'application/json'}));
@@ -1173,12 +1178,40 @@ async function stopSession(){
   setStatus('⏹ 종료 상태 — 데이터는 저장돼 있습니다. ▶ 스타트로 다시 시작');
 }
 /* 창을 껐다 켜면 지난 상태(집계·계정·채팅창)를 통째로 이어받습니다 */
+/* 창을 나가도(뒤로가기·닫기) 채팅창·집계가 사라지지 않게 이 브라우저에 저장합니다.
+   집계 초기화 전까지 유지하고, 이틀 지난 것은 버립니다
+   (서버의 날짜별 stats/chatlog 파일이 원본 보관 = 파일화). */
+function saveLive(){
+  if(IS_TEST_CH)return;
+  try{localStorage.setItem(LSKEY,JSON.stringify({
+    v:1,sess:sess,users:users,uid:uid,macroCount:macroCount,
+    recent:recent.slice(-200),savedEpoch:Date.now()}));}catch(e){}
+}
+function loadLive(){
+  if(IS_TEST_CH)return false;
+  try{
+    const d=JSON.parse(localStorage.getItem(LSKEY)||'null');
+    if(!d)return false;
+    if(Date.now()-(d.savedEpoch||0)>2*24*60*60*1000){localStorage.removeItem(LSKEY);return false;}
+    if(d.sess){sess.on=!!d.sess.on;sess.date=d.sess.date||'';sess.startedAt=d.sess.startedAt||'';}
+    const u=d.users||{};for(const k in u)users[k]=u[k];
+    const iu=d.uid||{};for(const k in iu)uid[k]=iu[k];
+    if(typeof d.macroCount==='number')macroCount=d.macroCount;
+    if(Array.isArray(d.recent)&&recent.length===0)recent.push(...d.recent);
+    return true;
+  }catch(e){return false;}
+}
+setInterval(saveLive,3000);
+addEventListener('pagehide',saveLive);
 async function restoreSession(){
   if(IS_TEST_CH)return;
+  const hadLocal=loadLive();   // 이 브라우저에 남은 채팅·집계를 즉시 복원
+  sessBtns();paint();
   try{
     const st=await (await fetch('prize_api.php?act=state')).json();
     const sv=(st&&st.session)||{};
-    sess.on=!!sv.on;sess.date=sv.date||'';sess.startedAt=sv.startedAt||'';
+    if(!hadLocal){sess.on=!!sv.on;sess.date=sv.date||'';sess.startedAt=sv.startedAt||'';}
+    else if(!sess.date&&sv.date){sess.date=sv.date;sess.on=!!sv.on;sess.startedAt=sv.startedAt||'';}
   }catch(e){}
   sessBtns();
   if(!sess.date)return;

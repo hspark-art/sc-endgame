@@ -191,6 +191,7 @@ const IS_TEST_CH = BJ!=='talent' || IS_DEMO;   // 연습 모드도 진짜 기록
 const F='\x0c', users={}, recent=[], rawUnknown=[];
 const sess={on:false,date:'',startedAt:''};   // 스타트/종료 상태
 const logBuf=[];                              // 서버로 보낼 채팅 로그 대기줄
+const LSKEY='pzLive_'+BJ;   // 이 브라우저에 로그·집계 임시 보관 (창을 나가도 유지)
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
   excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
@@ -476,6 +477,7 @@ function clearStats(){
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
   recent.length=0;logBuf.length=0;macroCount=0;
+  try{localStorage.removeItem(LSKEY);}catch(e){}
   if(!IS_TEST_CH&&sess.date){
     api('stats_save',{date:sess.date,title:liveTitle,users:{},rawUnknown:[],uid:{}});
     api('chat_clear',{date:sess.date});
@@ -658,6 +660,7 @@ async function flushLog(){
 }
 setInterval(flushLog,20000);
 window.addEventListener('beforeunload',()=>{
+  saveLive();   // 이 브라우저에 즉시 저장 (창을 나가도 안 사라지게 — 가장 확실)
   if(IS_TEST_CH||!navigator.sendBeacon)return;
   if(logBuf.length)navigator.sendBeacon('prize_api.php',new Blob([JSON.stringify(
     {act:'chat_log',date:sess.date,lines:logBuf.splice(0,2000)})],{type:'application/json'}));
@@ -692,12 +695,40 @@ async function stopSession(){
   setStatus('⏹ 종료 상태 — 데이터는 저장돼 있습니다. ▶ 스타트로 다시 시작');
 }
 /* 창을 껐다 켜면 지난 상태(집계·계정·채팅창)를 통째로 이어받습니다 */
+/* 창을 나가도(뒤로가기·닫기) 채팅창·집계가 사라지지 않게 이 브라우저에 저장합니다.
+   집계 초기화 전까지 유지하고, 이틀 지난 것은 버립니다
+   (서버의 날짜별 stats/chatlog 파일이 원본 보관 = 파일화). */
+function saveLive(){
+  if(IS_TEST_CH)return;
+  try{localStorage.setItem(LSKEY,JSON.stringify({
+    v:1,sess:sess,users:users,uid:uid,macroCount:macroCount,
+    recent:recent.slice(-200),savedEpoch:Date.now()}));}catch(e){}
+}
+function loadLive(){
+  if(IS_TEST_CH)return false;
+  try{
+    const d=JSON.parse(localStorage.getItem(LSKEY)||'null');
+    if(!d)return false;
+    if(Date.now()-(d.savedEpoch||0)>2*24*60*60*1000){localStorage.removeItem(LSKEY);return false;}
+    if(d.sess){sess.on=!!d.sess.on;sess.date=d.sess.date||'';sess.startedAt=d.sess.startedAt||'';}
+    const u=d.users||{};for(const k in u)users[k]=u[k];
+    const iu=d.uid||{};for(const k in iu)uid[k]=iu[k];
+    if(typeof d.macroCount==='number')macroCount=d.macroCount;
+    if(Array.isArray(d.recent)&&recent.length===0)recent.push(...d.recent);
+    return true;
+  }catch(e){return false;}
+}
+setInterval(saveLive,3000);
+addEventListener('pagehide',saveLive);
 async function restoreSession(){
   if(IS_TEST_CH)return;
+  const hadLocal=loadLive();   // 이 브라우저에 남은 채팅·집계를 즉시 복원
+  sessBtns();paint();
   try{
     const st=await (await fetch('prize_api.php?act=state')).json();
     const sv=(st&&st.session)||{};
-    sess.on=!!sv.on;sess.date=sv.date||'';sess.startedAt=sv.startedAt||'';
+    if(!hadLocal){sess.on=!!sv.on;sess.date=sv.date||'';sess.startedAt=sv.startedAt||'';}
+    else if(!sess.date&&sv.date){sess.date=sv.date;sess.on=!!sv.on;sess.startedAt=sv.startedAt||'';}
   }catch(e){}
   sessBtns();
   if(!sess.date)return;
