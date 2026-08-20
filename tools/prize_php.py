@@ -106,6 +106,7 @@ if ($act === 'state') {
         'winners' => jread('winners.json', ['list' => []]),
         'settings' => jread('settings.json', new stdClass()),
         'overlay' => jread('overlay.json', ['seq' => 0, 'kind' => 'none']),
+        'session' => jread('session.json', ['on' => false, 'date' => '', 'startedAt' => '']),
     ]);
 }
 if ($act === 'overlay') {
@@ -254,6 +255,49 @@ if ($act === 'stats_get') {
     out(jread('stats-' . $date . '.json', ['users' => new stdClass()]));
 }
 
+// ── 집계 켜짐/꺼짐 (스타트·종료 버튼 상태 — 창을 껐다 켜도 이어받게) ──
+if ($act === 'session_set') {
+    $s = $body['session'] ?? [];
+    jwrite('session.json', [
+        'on' => !empty($s['on']),
+        'date' => preg_replace('/[^0-9-]/', '', (string)($s['date'] ?? '')),
+        'startedAt' => (string)($s['startedAt'] ?? ''),
+    ]);
+    out(['ok' => true]);
+}
+
+// ── 채팅 로그 — 방송 날짜별 파일에 이어 붙입니다 (초기화 전까지 보존) ──
+if ($act === 'chat_log') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
+    $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);
+    if ($lines && $date !== '') {
+        $txt = '';
+        foreach ($lines as $l) {
+            $txt .= json_encode($l, JSON_UNESCAPED_UNICODE) . "\n";
+        }
+        file_put_contents(PZ . '/chatlog-' . $date . '.jsonl', $txt, FILE_APPEND | LOCK_EX);
+    }
+    out(['ok' => true]);
+}
+if ($act === 'chat_tail') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($_GET['date'] ?? ''));
+    $p = PZ . '/chatlog-' . $date . '.jsonl';
+    $rows = [];
+    if ($date !== '' && file_exists($p)) {
+        $all = explode("\n", trim((string)file_get_contents($p)));
+        foreach (array_slice($all, -300) as $ln) {
+            $j = json_decode($ln, true);
+            if ($j) { $rows[] = $j; }
+        }
+    }
+    out(['lines' => $rows]);
+}
+if ($act === 'chat_clear') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? ''));
+    if ($date !== '') { @unlink(PZ . '/chatlog-' . $date . '.jsonl'); }
+    out(['ok' => true]);
+}
+
 // ── 별풍선 큰 알림(토스트) ──
 if ($act === 'toast_add') {
     $t = jread('toasts.json', ['list' => []]);
@@ -348,6 +392,8 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
 font-weight:700;cursor:pointer;font-family:inherit}
 button.gray{background:#232a38}button.red{background:#e0392b}
+button.green{background:#1f9d55}
+button:disabled{opacity:.35;cursor:default}
 input,select{background:#1b202b;color:#e8ecf3;border:1px solid #232a38;
 border-radius:8px;padding:7px 9px;font-family:inherit;font-size:13px}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
@@ -365,7 +411,10 @@ hr{border-color:#232a38}
 a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}
 a.top:hover{color:#e8ecf3}
 </style></head><body><div class="wrap">
-<h1>🎁 상품 추첨 관제 <span id="liveflag" class="pill">연결 준비…</span></h1>
+<h1>🎁 상품 추첨 관제
+<button id="btnStart" class="green" onclick="startSession()">▶ 스타트</button>
+<button id="btnStop" class="red" onclick="stopSession()" disabled>⏹ 종료</button>
+<span id="liveflag" class="pill">상태 확인 중…</span></h1>
 <div class="row" style="margin:0 0 10px">
 <span class="n">채널</span>
 <input id="bjInput" placeholder="talent (우리 방송)" style="width:180px">
@@ -389,7 +438,7 @@ function goCh(v){
 <div class="grid">
 
 <div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
-<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()">채팅 지우기</button></div>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button></div>
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
 <div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span>
@@ -461,8 +510,11 @@ function goCh(v){
    방송별 눈금(stats)을 저장하지 않아 진짜 기록과 섞이지 않습니다. */
 const BJ=(new URLSearchParams(location.search).get('bj')||'talent')
   .toLowerCase().replace(/[^a-z0-9_]/g,'')||'talent';
-const IS_TEST_CH = BJ!=='talent';
+const IS_DEMO = location.search.includes('demo');
+const IS_TEST_CH = BJ!=='talent' || IS_DEMO;   // 연습 모드도 진짜 기록에 안 섞음
 const F='\x0c', users={}, recent=[], rawUnknown=[];
+const sess={on:false,date:'',startedAt:''};   // 스타트/종료 상태
+const logBuf=[];                              // 서버로 보낼 채팅 로그 대기줄
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
   excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
@@ -485,6 +537,7 @@ function onEvent(ev){
     if(!IS_TEST_CH && ev.count>=(settings.balloonAlert||100))
       api('toast_add',{nick:ev.nick,count:ev.count});
   }
+  if(sess.on&&!IS_TEST_CH&&(ev.t==='chat'||ev.t==='balloon'))logBuf.push(ev);
   recent.splice(0,Math.max(0,recent.length-200));
 }
 const uid={};   // 닉네임 → SOOP 아이디 (지금 방송에서 본 것)
@@ -509,6 +562,8 @@ function parseBalloon(f){
   return nick?{t:'balloon',nick,count:+cnt,id:cleanNick(f[6])}:null;
 }
 async function connectChat(){
+  if(!sess.on){setStatus('⏹ 종료 상태 — ▶ 스타트를 누르면 집계를 시작합니다');sessBtns();return;}
+  if(IS_DEMO)return;                        // 연습 모드는 진짜 채팅 서버에 안 붙습니다
   let info;
   try{info=await (await fetch('prize_api.php?act=live&bj='+BJ)).json();}
   catch(e){setStatus('서버 오류');return setTimeout(connectChat,20000);}
@@ -611,7 +666,7 @@ async function manualPick(){
   const nick=document.getElementById('pickNick').value.trim();
   if(!nick)return alert('닉네임을 넣어 주세요');
   const pz=prizeOf(document.getElementById('prizeSel').value)||{};
-  await api('pick',{nick,sid:uid[nick]||'',prize:pz.name||'',how:'지명'});
+  await api('pick',{nick,sid:uid[nick]||'',prize:pz.name||'',how:'지명'+(IS_TEST_CH?'(연습)':'')});
   await api('overlay_set',{overlay:{kind:'winner',nick,prize:pz.name||'',
     photo:pz.photo||'',how:'지명'}});
   refresh();
@@ -622,7 +677,7 @@ async function draw(kind){
   if(!win)return alert('추첨할 시청자가 없습니다 (조건에 맞는 참가자가 없음)');
   const slots=slotsFor(win,pool,kind==='roulette'?10:9);
   const pz=prizeOf(document.getElementById('prizeSel').value)||{};
-  await api('pick',{nick:win,sid:uid[win]||'',prize:pz.name||'',how:kind==='roulette'?'룰렛':'핀볼'});
+  await api('pick',{nick:win,sid:uid[win]||'',prize:pz.name||'',how:(kind==='roulette'?'룰렛':'핀볼')+(IS_TEST_CH?'(연습)':'')});
   await api('overlay_set',{overlay:{kind,winner:win,slots,prize:pz.name||'',photo:pz.photo||''}});
   refresh();
 }
@@ -680,12 +735,17 @@ async function loadGdoc(){
 function clearChat(){recent.length=0;
   document.getElementById('chat').innerHTML='';}
 function clearStats(){
-  if(!confirm('이번 방송 집계(채팅·별풍선·시청자)를 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
+  if(!confirm('집계·계정·채팅 로그를 모두 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
-  if(!IS_TEST_CH)api('stats_save',{date:new Date().toISOString().slice(0,10),
-    title:liveTitle,users:{},rawUnknown:[],uid:{}});
-  recent.length=0;document.getElementById('chat').innerHTML='';paint();}
+  recent.length=0;logBuf.length=0;
+  if(!IS_TEST_CH&&sess.date){
+    api('stats_save',{date:sess.date,title:liveTitle,users:{},rawUnknown:[],uid:{}});
+    api('chat_clear',{date:sess.date});
+  }
+  sess.date=sess.on?todayStr():'';
+  if(!IS_TEST_CH)api('session_set',{session:sess});
+  document.getElementById('chat').innerHTML='';paint();}
 function downloadLedger(){
   if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
   const NL=String.fromCharCode(10);
@@ -828,29 +888,88 @@ function paint(){
 }
 /* 45초마다 오늘 집계를 서버에 남깁니다 — 지난 방송 기록이 됩니다 */
 async function snapshot(){
-  if(IS_TEST_CH)return;                    // 남의 채널 시험은 기록하지 않습니다
+  if(IS_TEST_CH||!sess.on)return;          // 시험 채널·종료 상태에선 저장 안 함
   if(Object.keys(users).length===0)return;
-  await api('stats_save',{date:new Date().toISOString().slice(0,10),
-    title:liveTitle,users,rawUnknown,uid});
+  await api('stats_save',{date:sess.date,title:liveTitle,users,rawUnknown,uid});
+  api('session_set',{session:sess});
 }
-/* 창을 껐다 켜도 오늘 집계·계정을 이어받습니다 (같은 날짜 눈금에서) */
-async function restoreToday(){
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function sessBtns(){
+  const s=document.getElementById('btnStart'),e=document.getElementById('btnStop');
+  if(s)s.disabled=sess.on;
+  if(e)e.disabled=!sess.on;
+}
+/* 채팅 로그를 서버에 이어 붙입니다 — 초기화 전까지 보존 */
+async function flushLog(){
+  if(IS_TEST_CH||!logBuf.length)return;
+  const lines=logBuf.splice(0);
+  const r=await api('chat_log',{date:sess.date,lines});
+  if(!r||!r.ok)logBuf.unshift(...lines.slice(-500));
+}
+setInterval(flushLog,20000);
+window.addEventListener('beforeunload',()=>{
+  if(IS_TEST_CH||!navigator.sendBeacon)return;
+  if(logBuf.length)navigator.sendBeacon('prize_api.php',new Blob([JSON.stringify(
+    {act:'chat_log',date:sess.date,lines:logBuf.splice(0,2000)})],{type:'application/json'}));
+  if(sess.on&&Object.keys(users).length)navigator.sendBeacon('prize_api.php',new Blob([JSON.stringify(
+    {act:'stats_save',date:sess.date,title:liveTitle,users,rawUnknown:[],uid})],{type:'application/json'}));
+});
+async function startSession(){
+  if(sess.on)return;
+  sess.on=true;
+  if(!sess.date)sess.date=todayStr();       // 이어서 할 땐 기존 날짜 유지
+  if(sess.date!==todayStr()&&!confirm('저장돼 있는 '+sess.date+' 집계에 이어서 셉니다. 계속할까요?\n(새로 시작하려면 취소 후 집계 초기화를 먼저 누르세요)')){
+    sess.on=false;return;
+  }
+  sess.startedAt=now().slice(0,5);
+  if(!IS_TEST_CH)await api('session_set',{session:sess});
+  sessBtns();
+  if(IS_DEMO){setStatus('<span class="live">● 연습 모드</span> 가짜 채팅이 흐릅니다');return;}
+  connectChat();
+}
+async function stopSession(){
+  if(!sess.on)return;
+  if(!confirm('집계를 종료할까요? 지금까지의 채팅·집계·계정은 그대로 저장돼 있습니다.'))return;
+  sess.on=false;
+  await flushLog();
+  if(!IS_TEST_CH){
+    if(Object.keys(users).length)
+      await api('stats_save',{date:sess.date,title:liveTitle,users,rawUnknown,uid});
+    await api('session_set',{session:sess});
+  }
+  try{if(ws)ws.close();}catch(e){}
+  sessBtns();
+  setStatus('⏹ 종료 상태 — 데이터는 저장돼 있습니다. ▶ 스타트로 다시 시작');
+}
+/* 창을 껐다 켜면 지난 상태(집계·계정·채팅창)를 통째로 이어받습니다 */
+async function restoreSession(){
   if(IS_TEST_CH)return;
   try{
-    const j=await (await fetch('prize_api.php?act=stats_get&date='
-      +new Date().toISOString().slice(0,10))).json();
+    const st=await (await fetch('prize_api.php?act=state')).json();
+    const sv=(st&&st.session)||{};
+    sess.on=!!sv.on;sess.date=sv.date||'';sess.startedAt=sv.startedAt||'';
+  }catch(e){}
+  sessBtns();
+  if(!sess.date)return;
+  try{
+    const j=await (await fetch('prize_api.php?act=stats_get&date='+sess.date)).json();
     const u=j.users||{};
     for(const k in u)if(!users[k])users[k]={c:u[k].c||0,b:u[k].b||0};
     const iu=j.uid||{};
     for(const k in iu)if(!uid[k])uid[k]=iu[k];
-    if(Object.keys(u).length)paint();
   }catch(e){}
+  try{
+    const t=await (await fetch('prize_api.php?act=chat_tail&date='+sess.date)).json();
+    const lines=(t&&t.lines)||[];
+    if(lines.length&&recent.length===0)recent.push(...lines.slice(-200));
+  }catch(e){}
+  paint();
 }
 setInterval(paint,1500);
 setInterval(snapshot,45000);
 refresh();setInterval(refresh,6000);
 loadGdoc();setInterval(loadGdoc,300000);
-restoreToday().finally(connectChat);
+restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){
   const NICKS=['별사탕요정','테란만세','저글링1000','프로브혁명','캐리어가요',
@@ -858,10 +977,11 @@ if(location.search.includes('demo')){
   const MSGS=['ㅋㅋㅋㅋ','이걸 막네','오늘 폼 미쳤다','9세트 가자','GG','역전각','지리네요'];
   liveOn=true;liveTitle='(연습)';
   setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 (기록 저장 안 함)');
-  window.IS_TEST_CH=true;
+  sess.on=true;sess.date=todayStr();sessBtns();
   const DIDS=['byeolst4r','terranzzang','zergrun1000','probe1017','carrier4u',
     'ggnooo','buildgm88','doublenex','mutalking','bunkerman'];
   setInterval(()=>{
+    if(!sess.on)return;
     const i=Math.floor(Math.random()*NICKS.length), n=NICKS[i];
     if(Math.random()<0.12)onEvent({t:'balloon',nick:n,id:DIDS[i],at:now(),
       count:[1,5,10,50,100,500][Math.floor(Math.random()*6)]});

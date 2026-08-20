@@ -90,6 +90,7 @@ if ($act === 'state') {
         'winners' => jread('winners.json', ['list' => []]),
         'settings' => jread('settings.json', new stdClass()),
         'overlay' => jread('overlay.json', ['seq' => 0, 'kind' => 'none']),
+        'session' => jread('session.json', ['on' => false, 'date' => '', 'startedAt' => '']),
     ]);
 }
 if ($act === 'overlay') {
@@ -236,6 +237,49 @@ if ($act === 'stats_list') {
 if ($act === 'stats_get') {
     $date = preg_replace('/[^0-9-]/', '', (string)($_GET['date'] ?? ''));
     out(jread('stats-' . $date . '.json', ['users' => new stdClass()]));
+}
+
+// ── 집계 켜짐/꺼짐 (스타트·종료 버튼 상태 — 창을 껐다 켜도 이어받게) ──
+if ($act === 'session_set') {
+    $s = $body['session'] ?? [];
+    jwrite('session.json', [
+        'on' => !empty($s['on']),
+        'date' => preg_replace('/[^0-9-]/', '', (string)($s['date'] ?? '')),
+        'startedAt' => (string)($s['startedAt'] ?? ''),
+    ]);
+    out(['ok' => true]);
+}
+
+// ── 채팅 로그 — 방송 날짜별 파일에 이어 붙입니다 (초기화 전까지 보존) ──
+if ($act === 'chat_log') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
+    $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);
+    if ($lines && $date !== '') {
+        $txt = '';
+        foreach ($lines as $l) {
+            $txt .= json_encode($l, JSON_UNESCAPED_UNICODE) . "\n";
+        }
+        file_put_contents(PZ . '/chatlog-' . $date . '.jsonl', $txt, FILE_APPEND | LOCK_EX);
+    }
+    out(['ok' => true]);
+}
+if ($act === 'chat_tail') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($_GET['date'] ?? ''));
+    $p = PZ . '/chatlog-' . $date . '.jsonl';
+    $rows = [];
+    if ($date !== '' && file_exists($p)) {
+        $all = explode("\n", trim((string)file_get_contents($p)));
+        foreach (array_slice($all, -300) as $ln) {
+            $j = json_decode($ln, true);
+            if ($j) { $rows[] = $j; }
+        }
+    }
+    out(['lines' => $rows]);
+}
+if ($act === 'chat_clear') {
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? ''));
+    if ($date !== '') { @unlink(PZ . '/chatlog-' . $date . '.jsonl'); }
+    out(['ok' => true]);
 }
 
 // ── 별풍선 큰 알림(토스트) ──
