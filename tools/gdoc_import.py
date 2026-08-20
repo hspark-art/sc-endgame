@@ -44,6 +44,14 @@ PRIZE_DEFAULT = 'Razer Viper V3 Pro White'
 PRIZE_HEADERS = ('마우스', '안경', '쿠폰')     # 날짜 아래 소제목으로 쓰인 것들
 PRIZE_WORD = re.compile(r'안경|마우스|유니폼|패드|포인트|쿠폰|코드|웨어웨어|에디션')
 
+# 문서에 적힌 우리말 표기 → 실제 상품 정식 이름 (사장님 지정, 2026-08-20)
+PRIZE_RENAME = {
+    '카운터스트라이크 마우스': 'Razer Viper V3 Pro CS2',
+    '유니폼': 'Jamie West Uniform',
+    '페이커 마우스': 'Viper V3 Pro Faker',
+    '마우스패드': 'Gigantus V2 Large CS2',
+}
+
 RE_PAREN = re.compile(r'^(.{1,40}?)\s*\(\s*([A-Za-z0-9_]{2,30})\)?\s*/\s*(.+)$')
 RE_SLASH = re.compile(r'^(.{1,40}?)\s*/\s*([A-Za-z0-9_]{2,30})(\??)\s*(.*)$')
 RE_MID = re.compile(r'^(.{1,40}?)\s+([A-Za-z0-9_]{3,30})\s*/\s*(.+)$')
@@ -74,7 +82,7 @@ def norm_prize(item):
         return 'Wearwhere 안경', detail
     if s == '마우스':
         return PRIZE_DEFAULT, detail
-    return s, detail                          # 문서에 적힌 말 그대로
+    return PRIZE_RENAME.get(s, s), detail     # 정식 이름으로, 없으면 문서 표기 그대로
 
 
 def parse_spec(spec, ctx):

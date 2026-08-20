@@ -236,18 +236,35 @@ def main():
         print('  실패 %d개:' % len(failed))
         for rel, msg in failed[:10]:
             print('    %s — %s' % (rel, msg))
+        # 문제가 생겼을 때만 슬랙으로 알립니다 (정상 배포는 조용히, 2026-08-20).
+        try:
+            import notify
+            lines = ['파일 %d개 업로드 실패 (%d개는 성공):' % (len(failed), done)]
+            lines += ['· %s — %s' % (rel, msg) for rel, msg in failed[:12]]
+            if len(failed) > 12:
+                lines.append('· … 외 %d개' % (len(failed) - 12))
+            notify.notify_problem('끝장전 배포 실패', lines)
+        except Exception as e:
+            print('   (문제 알림 건너뜀 — %s)' % e)
         sys.exit(1)
     print('완료 — https://%s%s/ 에서 확인하세요.'
           % (cfg['host'], base.replace('/www', '', 1)))
-
-    # 무엇이 바뀌었는지 슬랙으로 알립니다 (PUBG META 와 같은 방식).
-    # 알림이 안 되더라도 배포는 이미 끝난 것이므로 그냥 넘어갑니다.
-    try:
-        import notify
-        notify.notify_deploy(uploaded=done, changed_files=len(changed))
-    except Exception as e:
-        print('   (슬랙 알림 건너뜀 — %s)' % e)
+    # 정상 배포에는 슬랙 알림을 보내지 않습니다 (사장님 요청 — 문제 있을 때만).
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise                                 # 실패 알림은 이미 위에서 보냈습니다
+    except Exception as e:
+        # 예상 못 한 오류(FTP 접속 불가 등)도 문제 알림으로 보냅니다.
+        import traceback
+        traceback.print_exc()
+        try:
+            import notify
+            notify.notify_problem('끝장전 배포 오류',
+                                  ['%s: %s' % (type(e).__name__, e)])
+        except Exception:
+            pass
+        sys.exit(1)

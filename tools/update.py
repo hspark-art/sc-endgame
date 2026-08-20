@@ -101,6 +101,14 @@ def main():
         return
 
     if (shrank or eg_lost) and not args.force:
+        # 기록이 줄어드는 건 사고 신호라 슬랙으로도 알립니다 (문제 있을 때만).
+        try:
+            import notify
+            notify.notify_problem('끝장전 갱신 중단 — 기록이 줄었습니다',
+                ['시트에서 줄이 지워졌을 수 있어 자동 갱신을 멈췄습니다.',
+                 '시트를 확인하시고, 의도한 삭제면 --force 로 다시 실행하세요.'])
+        except Exception:
+            pass
         raise SystemExit(
             '\n기록이 줄었습니다. 시트에서 줄이 지워졌을 수 있어 멈춥니다.\n'
             '  시트를 확인해 보시고, 의도한 것이면 --force 를 붙여 다시 실행하세요.')

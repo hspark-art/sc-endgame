@@ -1390,6 +1390,7 @@ text-overflow:ellipsis;white-space:nowrap}
    <option value="no">안 보낸 사람</option><option value="yes">보낸 사람</option></select>
   <span style="flex:1"></span>
   <button class="gray" onclick="addRow()">＋ 행 추가</button>
+  <button class="green" onclick="openGoogleSheet()">📗 구글 시트로 열기</button>
   <button class="gray" onclick="copyLedger()">&#128203; 복사</button>
   <button class="gray" onclick="downloadLedger()">⬇ CSV</button>
  </div>
@@ -1601,11 +1602,25 @@ async function addRow(){
   if(!nick||!nick.trim())return;
   await api('pick',{nick:nick.trim(),prize:'',how:'수동',date:today()});
   refresh();}
-function copyLedger(){
+function ledgerTsv(){
   const vis=visible();
-  const txt=vis.map(w=>[w.date||'',w.how||'',w.nick||'',w.sid||'',w.prize||'',w.sent||'',w.memo||''].join(TAB)).join(NL);
-  copyToClip(['날짜','방식','닉네임','SOOP계정','상품','쪽지','메모'].join(TAB)+NL+txt,
-    '보이는 '+vis.length+'줄 복사됨 ✓');}
+  const head=['날짜','방식','닉네임','SOOP계정','상품','쪽지','메모'].join(TAB);
+  const body=vis.map(w=>[w.date||'',w.how||'',w.nick||'',w.sid||'',w.prize||'',w.sent||'',w.memo||''].join(TAB)).join(NL);
+  return {n:vis.length,txt:head+NL+body};}
+function copyLedger(){
+  const g=ledgerTsv();
+  copyToClip(g.txt,'보이는 '+g.n+'줄 복사됨 ✓');}
+/* 구글 시트로 열기 — 시청자 계정이 밖에 노출되지 않도록(개인정보) 서버에서
+   공개 링크를 만들지 않고, 표 내용을 클립보드에 담아 새 구글 시트를 연 뒤
+   붙여넣게 합니다. 붙여넣기는 Ctrl+V 한 번이면 셀에 자동 정렬됩니다. */
+function openGoogleSheet(){
+  const g=ledgerTsv();
+  if(!g.n)return alert('열 줄이 없습니다');
+  copyToClip(g.txt,'복사됨 — 새 구글 시트에서 Ctrl+V 로 붙여넣으세요');
+  window.open('https://sheets.new','_blank','noopener');
+  const el=document.getElementById('flash');
+  el.innerHTML='📗 새 구글 시트가 열렸습니다 — <b>빈 칸(A1)을 클릭하고 Ctrl+V</b> 로 붙여넣으세요 ('+g.n+'줄)';
+  setTimeout(()=>{if(el.textContent.startsWith('📗'))el.textContent='';},9000);}
 function downloadLedger(){
   const vis=visible();
   if(!vis.length)return alert('내려받을 줄이 없습니다');

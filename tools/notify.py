@@ -224,6 +224,28 @@ def deploy_payload(uploaded=None, changed_files=None):
                  'link': (site or 'https://pubgin.com/endgame') + '/'}
 
 
+def notify_problem(title, lines, link=None):
+    """문제가 생겼을 때만 슬랙으로 알립니다 (배포 실패·오류 등).
+
+    정상 배포에는 알림을 보내지 않기로 해서(2026-08-20), 이 경로만 씁니다.
+    알림 자체가 실패해도 예외를 밖으로 던지지 않습니다.
+    """
+    try:
+        site = (_read_json(os.path.join(ROOT, 'data', 'site.json'), {}) or {}).get('baseUrl')
+        payload = {'title': title, 'level': 'error',
+                   'lines': lines if isinstance(lines, list) else [str(lines)],
+                   'link': link or ((site or 'https://pubgin.com/endgame') + '/')}
+        ok, err = send(payload, key=None)     # 문제 알림은 중복 억제 없이 항상
+        if ok:
+            print('   🚨 슬랙에 문제 알림을 보냈습니다.')
+        elif err and '없습니다' not in err and '꺼져' not in err:
+            print('   (문제 알림 실패 — %s)' % err)
+        return ok
+    except Exception as e:
+        print('   (문제 알림 건너뜀 — %s)' % e)
+        return False
+
+
 def notify_deploy(uploaded=None, changed_files=None):
     """배포가 끝난 뒤 부릅니다. 실패해도 배포에는 영향을 주지 않습니다."""
     try:
