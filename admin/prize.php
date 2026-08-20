@@ -282,35 +282,35 @@ function pkt(svc,body){
    건너뜁니다. 다른 사람·다른 개수·시간차 큰 같은 선물은 각각 셉니다. */
 let seenBalloons=new Map();   // (보낸사람|개수) -> 마지막 시각(ms)
 const BAL_WINDOW=8000;
-/* 별풍선 중복제거 — 같은 사람이 같은 개수를 8초 안에 다시 보내면 재전송으로 봄.
-   svc109·svc18 을 한 표에서 함께 보므로, 한 선물이 두 svc 로 겹쳐 와도 한 번만 셈. */
+/* 별풍선 — SOOP 플레이어 공식 코드에서 확인한 레이아웃 그대로 (2026-08-21).
+     svc 18 = SVC_SENDBALLOON      [1]채널 [2]보낸이ID [3]닉 [4]개수 [8]시그니처 이미지 파일명
+     svc 33 = SVC_SENDBALLOONSUB   [2]채널 [4]보낸이ID [5]닉 [6]개수 (중계방)
+     svc109 = SVC_OGQ_EMOTICON     이모티콘 스티커 — 별풍선이 아니므로 세지 않음
+   닉==ID 인 시청자도 진짜 별풍선입니다(공식 파서에 제외 규칙 없음).
+   순위·누적은 svc 30/39(TOPFAN/TOPCLAN)로 따로 오므로 여기 안 섞입니다.
+   중복제거: 같은 사람·같은 개수가 8초 안에 다시 오면 재전송으로 봄. */
 function dedupBalloon(who,cnt){
   const key=who+'|'+cnt, t=Date.now(), last=seenBalloons.get(key);
   seenBalloons.set(key,t);
   if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
   return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
 }
-/* 이모티콘·시그니처 선물의 아이템ID (별풍선으로 사지만 별풍선 집계엔 안 넣음).
-   실측으로 확인되는 대로 계속 추가합니다 (같은 사람이 같은 아이템ID 를
-   개수만 바꿔 반복 발송하면 이모티콘 신호). */
-const EMOTE_ITEMS=new Set(['537477152','2684436480','2148089856','537477120']);
-function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉 [8]아이템ID
-  if(f.length<8)return null;
-  const cnt=(f[4]||'').trim();
-  if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
-  const item=(f[8]||'').split('|')[0];
-  if(EMOTE_ITEMS.has(item))return null;   // 이모티콘/시그니처 — 별풍선 아님
-  const nick=cleanNick(f[7]); if(!nick)return null;
-  const id=cleanNick(f[6]);
-  return dedupBalloon(id||nick,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
-}
-function parseBalloon18(f){  // svc 18 별풍선 — [1]채널 [2]보낸이ID [3]보낸이닉 [4]개수 (talent 실측 2026-08)
+function parseBalloon18(f){  // svc 18 — 공식 SVC_SENDBALLOON
   if(f.length<5)return null;
   const cnt=(f[4]||'').trim();
-  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>100000)return null;
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
   const id=cleanNick(f[2]), nick=cleanNick(f[3]);
-  if(!id||!nick||norm(id)===norm(nick))return null;   // id==닉 은 누적·순위 이벤트라 제외
+  if(!id||!nick)return null;
   if((f[1]||'').toLowerCase()!==BJ)return null;        // 이 채널로 온 선물만
+  return dedupBalloon(id,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
+}
+function parseBalloon33(f){  // svc 33 — 공식 SVC_SENDBALLOONSUB (중계방 별풍선)
+  if(f.length<7)return null;
+  const cnt=(f[6]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
+  const id=cleanNick(f[4]), nick=cleanNick(f[5]);
+  if(!id||!nick)return null;
+  if((f[2]||'').toLowerCase()!==BJ)return null;
   return dedupBalloon(id,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
 }
 async function connectChat(){
@@ -340,12 +340,14 @@ async function connectChat(){
     if(svc===5&&f.length>6){
       const nick=cleanNick(f[6]);
       if(nick)onEvent({t:'chat',nick,id:cleanNick(f[2]),msg:f[1],at:now()});
-    }else if(svc===109){
-      const ev=parseBalloon(f);
-      if(ev){ev.at=now();onEvent(ev);}   // null 이면 재전송 — 조용히 건너뜀
     }else if(svc===18){
-      const ev=parseBalloon18(f);        // 별풍선이 svc18 로도 옵니다 (낭만헌터 100개 건)
+      const ev=parseBalloon18(f);        // 별풍선 (공식 SVC_SENDBALLOON)
       if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===33){
+      const ev=parseBalloon33(f);        // 중계방 별풍선 (공식 SVC_SENDBALLOONSUB)
+      if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===109){
+      // OGQ 이모티콘(공식 SVC_OGQ_EMOTICON) — 별풍선 아님, 집계 안 함
 
     }else if(![0,1,2,4].includes(svc)){
       rawUnknown.push({svc,f:f.slice(0,10),at:now()});

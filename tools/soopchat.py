@@ -31,8 +31,9 @@ F = '\x0c'                                   # 칸 나누개
 
 SVC_PING, SVC_CONNECT, SVC_JOIN = 0, 1, 2
 SVC_USERLIST, SVC_CHAT = 4, 5
-SVC_BALLOON = 109                            # 별풍선 — 실측(2026-08): [4]개수 [6]ID [7]닉
-SVC_BALLOON_OLD = (18, 33)                   # 예전 배치 (대비용)
+SVC_BALLOON = 18                             # SVC_SENDBALLOON — 별풍선 (SOOP 공식 상수)
+SVC_BALLOON_SUB = 33                         # SVC_SENDBALLOONSUB — 중계방 별풍선
+SVC_OGQ = 109                                # SVC_OGQ_EMOTICON — 이모티콘 스티커 (별풍선 아님)
 
 
 def live_info(bid):
@@ -73,29 +74,27 @@ def _clean_nick(s):
     return s.strip()
 
 
-EMOTE_ITEMS = {'537477152', '2684436480', '2148089856', '537477120'}   # 이모티콘·시그니처 아이템ID (별풍선 집계 제외, 계속 추가)
-
-
-def _parse_balloon(fields):
-    """별풍선 칸 해석 (svc 109). 실측: [3]=메시지ID [4]=개수 [6]=보낸이ID [7]=보낸이닉.
-
-    같은 별풍선을 서버가 여러 번 재전송하므로, [3] 메시지ID 를 함께 돌려주어
-    받는 쪽에서 한 번만 세도록 합니다 (이걸 안 하면 개수가 부풀려집니다).
-    """
-    if len(fields) < 8:
+def _parse_balloon(fields, svc=SVC_BALLOON):
+    """별풍선 해석 — SOOP 플레이어 공식 레이아웃 (LivePlayer.js 에서 확인).
+      svc 18: [1]채널 [2]보낸이ID [3]닉 [4]개수 [8]시그니처 이미지 파일명
+      svc 33: [2]채널 [4]보낸이ID [5]닉 [6]개수 (중계방)
+    svc 109(OGQ 이모티콘)는 별풍선이 아니므로 여기서 다루지 않습니다.
+    닉==ID 시청자도 진짜 별풍선입니다 (공식 파서에 제외 규칙 없음)."""
+    if svc == SVC_BALLOON_SUB:
+        ci, ui, ni, cc = 2, 4, 5, 6
+    else:
+        ci, ui, ni, cc = 1, 2, 3, 4
+    if len(fields) <= cc:
         return None
-    cnt = fields[4].strip()
-    if not (cnt.isdigit() and int(cnt) > 0):
+    c = fields[cc].strip()
+    if not (c.isdigit() and int(c) > 0):
         return None
-    item = (fields[8] if len(fields) > 8 else '').split('|')[0]
-    if item in EMOTE_ITEMS:
-        return None                          # 이모티콘/시그니처 — 별풍선 아님
-    nick = _clean_nick(fields[7])
-    uid = _clean_nick(fields[6])
-    if not nick:
+    nick = _clean_nick(fields[ni])
+    uid = _clean_nick(fields[ui])
+    if not nick or not uid:
         return None
-    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(cnt),
-            'mid': fields[3].strip()}
+    return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(c),
+            'ch': (fields[ci] or '').strip().lower()}
 
 
 def listen(bid, info, on_event, should_stop=None):
@@ -140,13 +139,12 @@ def listen(bid, info, on_event, should_stop=None):
                   'nick': _clean_nick(fields[6]), 'msg': fields[1]}
             if ev['nick']:
                 on_event(ev)
-        elif svc == SVC_BALLOON:
-            ev = _parse_balloon(fields)
+        elif svc in (SVC_BALLOON, SVC_BALLOON_SUB):
+            ev = _parse_balloon(fields, svc)
+            if ev and ev.pop('ch', '') not in ('', bid.lower()):
+                ev = None                     # 다른 채널로 간 선물
             if ev:
-                mid = ev.pop('mid', '')
-                # [3]은 별풍선 '종류' 해시라 여러 사람이 공유합니다.
-                # 종류+보낸사람+개수가 같고 짧은 시간에 다시 온 것만 재전송.
-                key = '%s|%s|%s' % (mid, ev['id'], ev['count'])
+                key = '%s|%s' % (ev['id'], ev['count'])
                 now = _t.time()
                 last = seen_balloons.get(key)
                 seen_balloons[key] = now
@@ -156,8 +154,8 @@ def listen(bid, info, on_event, should_stop=None):
                     seen_balloons = {k: v for k, v in seen_balloons.items()
                                      if now - v < BAL_WINDOW}
                 on_event(ev)
-            else:
-                on_event({'t': 'raw', 'svc': svc, 'fields': fields})
+        elif svc == SVC_OGQ:
+            pass                              # OGQ 이모티콘 — 별풍선 아님
         elif svc == SVC_USERLIST:
             nicks = [_clean_nick(x) for x in fields if x and not x.isdigit()]
             on_event({'t': 'join', 'nicks': [n for n in nicks if n][:20]})

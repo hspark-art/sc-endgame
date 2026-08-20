@@ -34,8 +34,10 @@ mark{background:#3a2b12;color:#ffd24a;padding:0 3px;border-radius:4px}
 <button class="gray" onclick="rows.length=0;document.querySelector('#t tbody').innerHTML=''">지우기</button>
 </div>
 <div class="hint">들어오는 <b>선물 후보</b> 이벤트를 원본 그대로 보여줍니다. 방송의 실제 별풍선/이모티콘과 맞춰 보세요.
-<b class="b109">노랑=svc109</b> · <b class="b18">초록=svc18(큰 별풍선)</b> · <b class="ad">파랑=애드벌룬</b> · <b class="sub">보라=구독</b>.
-같은 사람이 <b>아이템ID가 계속 같으면 이모티콘/시그니처</b>(예: 가포 537477152), <b>제각각이면 진짜 별풍선</b>입니다.</div>
+<b class="b18">초록 = 별풍선</b> (SOOP 공식 SVC_SENDBALLOON 18 · 중계 33 — 이것만 집계) ·
+<b class="etc">회색 = OGQ 이모티콘</b> (별풍선 아님, 집계 안 함) ·
+<b class="ad">파랑 = 애드벌룬·영상풍선·초콜릿</b> · <b class="sub">보라 = 구독·미션</b>.
+별풍선의 아이템 칸은 시그니처 이미지 파일명입니다 (기본 별풍선은 '기본').</div>
 <table id="t"><thead><tr><th>시각</th><th>svc</th><th>종류</th><th>닉네임</th><th>계정</th>
 <th class="num">개수</th><th>아이템ID</th><th>원본 필드</th></tr></thead><tbody></tbody></table>
 <script>
@@ -51,14 +53,17 @@ function pkt(svc,body){const b=new TextEncoder().encode(body);
 function setFlag(h){document.getElementById('flag').innerHTML=h}
 // 같은 사람이 같은 아이템ID 를 몇 번 보냈는지 (이모티콘 반복 표시용)
 const itemSeen={};
-const EMOTE_ITEMS=new Set(['537477152','2684436480','2148089856','537477120']);
 function classify(svc,f){
-  if(svc===109){const it=(f[8]||'').split('|')[0];
-    return {k:EMOTE_ITEMS.has(it)?'이모티콘(제외)':'별풍선(svc109)',cls:EMOTE_ITEMS.has(it)?'etc':'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:it};}
-  if(svc===18)  return {k:'별풍선(svc18)', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:'(svc18)'};
-  if(svc===87)  return {k:'애드벌룬',       cls:'ad',  nick:clean(f[4]||f[3]),id:clean(f[3]),cnt:(f[5]||'').replace(/[^0-9]/g,'')||'?',item:'ad'};
-  if(svc===54)  return {k:'구독',           cls:'sub', nick:clean(f[2]),id:'',cnt:'',item:'sub'};
-  return {k:'기타 svc'+svc,cls:'etc',nick:'',id:'',cnt:'',item:''};
+  // SOOP 플레이어 공식 상수 기준 (2026-08-21 확인)
+  if(svc===18)  return {k:'별풍선', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:(f[8]||'')||'기본'};
+  if(svc===33)  return {k:'별풍선(중계)', cls:'b18', nick:clean(f[5]),id:clean(f[4]),cnt:f[6],item:(f[9]||'')||'기본'};
+  if(svc===109) return {k:'OGQ 이모티콘(집계 안함)', cls:'etc', nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:(f[8]||'').split('|')[0]};
+  if(svc===87)  return {k:'애드벌룬', cls:'ad', nick:clean(f[4]||f[3]),id:clean(f[3]),cnt:(f[5]||'').replace(/[^0-9]/g,'')||'?',item:'adcon'};
+  if(svc===105) return {k:'영상풍선', cls:'ad', nick:'',id:'',cnt:'',item:'video'};
+  if(svc===37)  return {k:'초콜릿', cls:'ad', nick:'',id:'',cnt:'',item:'choco'};
+  if(svc===108) return {k:'구독', cls:'sub', nick:clean(f[3]||f[2]),id:clean(f[2]),cnt:'',item:'sub'};
+  if(svc===121) return {k:'도전미션', cls:'sub', nick:'',id:'',cnt:'',item:'mission'};
+  return {k:'svc '+svc,cls:'etc',nick:'',id:'',cnt:'',item:''};
 }
 function add(svc,f){
   const c=classify(svc,f);
@@ -90,7 +95,7 @@ async function connect(){
   ws.onmessage=(m)=>{const s=new TextDecoder().decode(m.data);
     if(!s.startsWith('\x1b\t'))return;const svc=+s.slice(2,6),f=s.slice(14).split(F);
     if(!joined){joined=true;ws.send(pkt(2,F+String(info.CHATNO)+F+F+F+F));}
-    if([18,54,87,106,107,108,109].includes(svc))add(svc,f);
+    if([18,33,37,87,105,108,109,121].includes(svc))add(svc,f);
   };
   ws.onclose=()=>{clearInterval(pingT);setFlag('연결 끊김 — 다시 붙는 중…');setTimeout(connect,6000);};
   ws.onerror=()=>{try{ws.close()}catch(e){}};
