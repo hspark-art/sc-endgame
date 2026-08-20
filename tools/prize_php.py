@@ -498,8 +498,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
 .num{text-align:right;font-variant-numeric:tabular-nums}
-.chatline{padding:3px 0;border-bottom:1px solid #12161e;font-size:13px;
-overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chatline{padding:3px 4px;border-bottom:1px solid #12161e;font-size:13px;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:5px}
+.chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
 font-weight:700;cursor:pointer;font-family:inherit}
@@ -530,6 +531,26 @@ padding:16px 18px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.
 .chip.on{border-color:#1c8cff;color:#cfe6ff;background:#12283f}
 .rwrow{padding:3px 3px;border-bottom:1px solid #171c25;font-size:12.5px;
 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:760px){
+  .wrap{padding:10px 10px}
+  body{font-size:15px}
+  h1{font-size:16px}
+  .card{padding:11px}
+  #chat{max-height:40vh !important}
+  .scroll{max-height:48vh}
+  input,select{font-size:16px;padding:10px 11px}
+  #pickNick,#prizeSel{flex:1 1 100% !important}
+  .row>button{min-height:46px;padding:12px 14px;font-size:15px}
+  #users td,#users th{padding:9px 5px;font-size:14.5px}
+  /* 좁은 화면에선 SOOP계정·확률 열을 숨겨 깔끔하게 */
+  #users th:nth-child(3),#users td:nth-child(3),
+  #users th:nth-child(6),#users td:nth-child(6){display:none}
+  #users button{padding:9px 14px;font-size:14px}
+  .chatline{padding:9px 5px;font-size:14.5px}
+  .rwrow{padding:8px 4px;font-size:14px}
+  #winners td,#winners th{padding:8px 5px}
+  #settingsModal .modalbox{padding:13px}
+}
 </style></head><body><div class="wrap">
 <h1>🎁 상품 추첨 관제
 <button id="btnStart" class="green" onclick="startSession()">▶ 스타트</button>
@@ -572,7 +593,7 @@ function goCh(v){
 
 <div class="card">
 <div class="ct">당첨 만들기</div>
-<div class="row"><input id="pickNick" placeholder="닉네임 (지명)" style="flex:1">
+<div class="row"><input id="pickNick" placeholder="닉네임 — 채팅을 눌러도 들어갑니다" style="flex:1">
 <select id="prizeSel" style="flex:1"></select></div>
 <div id="dupwarn" class="hint"></div>
 <div class="row">
@@ -968,7 +989,12 @@ async function slackReport(){
   const r=await api('slack_report',{text});
   if(r.ok)alert('슬랙으로 보냈습니다');else alert('슬랙 전송 실패 — 웹훅 주소를 확인하세요');
 }
-function pickThis(n){document.getElementById('pickNick').value=n;dupCheck()}
+function pickThis(n){
+  const el=document.getElementById('pickNick');
+  el.value=n;dupCheck();
+  el.style.background='#12283f';setTimeout(function(){el.style.background='';},450);
+  if(window.innerWidth<=760)el.scrollIntoView({block:'center',behavior:'smooth'});
+}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
@@ -981,6 +1007,10 @@ function dupCheck(){
 }
 document.getElementById('pickNick').addEventListener('input',dupCheck);
 document.getElementById('pickNick').addEventListener('keydown',function(e){if(e.key==='Enter')manualPick();});
+document.getElementById('chat').addEventListener('click',function(ev){
+  const line=ev.target.closest('.chatline[data-nick]');
+  if(line&&line.dataset.nick)pickThis(line.dataset.nick);
+});
 
 /* ── 화면 그리기 + 서버 상태 ── */
 async function refresh(){
@@ -1063,9 +1093,9 @@ function paint(){
   const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
   chatEl.innerHTML=recent.slice(-80).map(e=>
     e.t==='balloon'
-    ?'<div class="chatline">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
+    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="눌러서 당첨 만들기에 넣기">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
       +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
-    :'<div class="chatline"><span class="pill" style="margin-right:5px">'+e.at
+    :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="눌러서 당첨 만들기에 넣기"><span class="pill" style="margin-right:5px">'+e.at
       +'</span><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
   if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
   const rows=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,
