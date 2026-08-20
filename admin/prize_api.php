@@ -160,6 +160,18 @@ if ($act === 'prize_del') {
     jwrite('prizes.json', $p);
     out(['ok' => true]);
 }
+if ($act === 'prize_move') {
+    $p = jread('prizes.json', ['items' => []]);
+    $items = $p['items'];
+    $i = -1;
+    foreach ($items as $k => $x) { if (($x['id'] ?? '') === ($body['id'] ?? '')) { $i = $k; break; } }
+    $j = $i + ((($body['dir'] ?? '') === 'up') ? -1 : 1);
+    if ($i >= 0 && $j >= 0 && $j < count($items)) {
+        $tmp = $items[$i]; $items[$i] = $items[$j]; $items[$j] = $tmp;
+        $p['items'] = $items; jwrite('prizes.json', $p);
+    }
+    out(['ok' => true]);
+}
 if ($act === 'img') {
     $f = basename((string)($_GET['f'] ?? ''));
     $p = PZ . '/img/' . $f;

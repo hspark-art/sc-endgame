@@ -29,6 +29,9 @@ border-radius:8px;padding:7px 9px;font-family:inherit;font-size:13px}
 .warn{color:#ffb020;font-weight:700}.ok{color:#4ade80}
 .pill{background:#1b202b;border:1px solid #232a38;border-radius:999px;
 padding:2px 9px;font-size:11.5px;color:#8a93a6}
+#users td:nth-child(2){position:relative;z-index:0}
+.actbar{position:absolute;left:0;top:2px;bottom:2px;z-index:-1;border-radius:5px;
+background:linear-gradient(90deg,rgba(28,140,255,.30),rgba(255,176,32,.14));min-width:2px}
 .live{color:#ff4d5a;font-weight:900}
 img.thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;
 vertical-align:middle;margin-right:6px;background:#0a0d13}
@@ -337,20 +340,16 @@ async function loadGdoc(){
 }
 function copyLedger(){
   if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
-  const txt=ST.winners.list.map(w=>[w.date,w.nick,w.sid||'',w.prize,w.how].join('	')).join('
-');
-  navigator.clipboard.writeText('날짜	닉네임	아이디	상품	방식
-'+txt)
+  const TAB=String.fromCharCode(9),NL=String.fromCharCode(10);
+  const txt=ST.winners.list.map(w=>[w.date,w.nick,w.sid||'',w.prize,w.how].join(TAB)).join(NL);
+  navigator.clipboard.writeText(['날짜','닉네임','아이디','상품','방식'].join(TAB)+NL+txt)
     .then(()=>alert('당첨 기록 '+ST.winners.list.length+'건을 복사했습니다 (엑셀·문서에 붙여넣기)'));
 }
 async function slackReport(){
   const tot=Object.values(users).reduce((a,u)=>({c:a.c+u.c,b:a.b+u.b}),{c:0,b:0});
   const todays=(ST?ST.winners.list:[]).filter(w=>w.date===new Date().toISOString().slice(0,10));
-  const text='🎁 끝장전 상품 추첨 요약
-'+
-    '시청자 '+Object.keys(users).length+'명 · 채팅 '+tot.c+' · 별풍선 '+tot.b+'
-'+
-    '오늘 당첨 '+todays.length+'명'+(todays.length?': '+todays.map(w=>w.nick+'('+w.prize+')').join(', '):'');
+  const NL=String.fromCharCode(10);
+  const text='🎁 끝장전 상품 추첨 요약'+NL+'시청자 '+Object.keys(users).length+'명 · 채팅 '+tot.c+' · 별풍선 '+tot.b+NL+'오늘 당첨 '+todays.length+'명'+(todays.length?': '+todays.map(w=>w.nick+'('+w.prize+')').join(', '):'');
   const r=await api('slack_report',{text});
   if(r.ok)alert('슬랙으로 보냈습니다');else alert('슬랙 전송 실패 — 웹훅 주소를 확인하세요');
 }
@@ -378,15 +377,19 @@ async function refresh(){
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;
   const givenCount={};
   (ST.winners.list||[]).forEach(w=>{if(w.prize)givenCount[w.prize]=(givenCount[w.prize]||0)+1;});
-  document.getElementById('prizes').innerHTML=ST.prizes.items.map(x=>{
+  document.getElementById('prizes').innerHTML=ST.prizes.items.map((x,i)=>{
     const g=givenCount[x.name]||0;
     return '<div class="row">'+(x.photo?'<img class="thumb" src="'+x.photo+'">':'')+
     '<span style="flex:1">'+esc(x.name)+(g?' <span class="pill" style="color:#4ade80;border-color:#2c6b3f">✓ '+g+'회 지급</span>':'')+'</span>'+
+    '<button class="gray" style="padding:3px 7px" data-mv="up" data-id="'+x.id+'"'+(i===0?' disabled':'')+'>▲</button>'+
+    '<button class="gray" style="padding:3px 7px" data-mv="down" data-id="'+x.id+'"'+(i===ST.prizes.items.length-1?' disabled':'')+'>▼</button>'+
     '<button class="gray" style="padding:3px 9px" data-show="'+x.id+'">📺 보여주기</button>'+
     '<button class="red" style="padding:3px 9px" data-del="'+x.id+'">지우기</button></div>';})
     .join('')||'<div class="hint">아직 상품이 없습니다.</div>';
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     await api('prize_del',{id:b.dataset.del});refresh();});
+  document.querySelectorAll('[data-mv]').forEach(b=>b.onclick=async()=>{
+    await api('prize_move',{id:b.dataset.id,dir:b.dataset.mv});refresh();});
   document.querySelectorAll('[data-show]').forEach(b=>b.onclick=async()=>{
     const pz=prizeOf(b.dataset.show)||{};
     await api('overlay_set',{overlay:{kind:'prize',prize:pz.name||'',photo:pz.photo||''}});});
@@ -433,13 +436,16 @@ function paint(){
     w:weight(nick),wins:winCount(nick)[0]}));
   // 당첨 확률(가중치) 높은 순 — 같으면 별풍선·채팅 순
   rows.sort((a,b)=>b.w-a.w||b.b-a.b||b.c-a.c);
-  document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map((u,i)=>
-    '<tr><td class="num" style="color:#8a93a6">'+(i+1)+'</td>'+
-    '<td>'+esc(u.nick)+'</td><td class="num">'+u.c+'</td>'+
+  const medal=['🥇','🥈','🥉'];
+  const maxAct=Math.max(1,...rows.map(u=>u.b*3+u.c));
+  document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map((u,i)=>{
+    const pct=Math.round((u.b*3+u.c)/maxAct*100);
+    return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
+    '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td><td class="num">'+u.c+'</td>'+
     '<td class="num balloon">'+(u.b||'')+'</td><td class="num">x'+u.w.toFixed(2)+
     '</td><td>'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
     '<td><button class="gray" style="padding:2px 8px" data-pick="'
-    +esc(u.nick)+'">지명</button></td></tr>').join('');
+    +esc(u.nick)+'">지명</button></td></tr>';}).join('');
   document.querySelectorAll('[data-pick]').forEach(b=>
     b.onclick=()=>pickThis(b.dataset.pick));
 }
