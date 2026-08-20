@@ -274,7 +274,7 @@ function dedupBalloon(who,cnt){
 /* 이모티콘·시그니처 선물의 아이템ID (별풍선으로 사지만 별풍선 집계엔 안 넣음).
    실측으로 확인되는 대로 계속 추가합니다 (같은 사람이 같은 아이템ID 를
    개수만 바꿔 반복 발송하면 이모티콘 신호). */
-const EMOTE_ITEMS=new Set(['537477152','2684436480']);
+const EMOTE_ITEMS=new Set(['537477152','2684436480','2148089856','537477120']);
 function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉 [8]아이템ID
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();

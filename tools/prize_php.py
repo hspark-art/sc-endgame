@@ -757,7 +757,7 @@ function dedupBalloon(who,cnt){
 /* 이모티콘·시그니처 선물의 아이템ID (별풍선으로 사지만 별풍선 집계엔 안 넣음).
    실측으로 확인되는 대로 계속 추가합니다 (같은 사람이 같은 아이템ID 를
    개수만 바꿔 반복 발송하면 이모티콘 신호). */
-const EMOTE_ITEMS=new Set(['537477152','2684436480']);
+const EMOTE_ITEMS=new Set(['537477152','2684436480','2148089856','537477120']);
 function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉 [8]아이템ID
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
@@ -2154,7 +2154,7 @@ function pkt(svc,body){const b=new TextEncoder().encode(body);
 function setFlag(h){document.getElementById('flag').innerHTML=h}
 // 같은 사람이 같은 아이템ID 를 몇 번 보냈는지 (이모티콘 반복 표시용)
 const itemSeen={};
-const EMOTE_ITEMS=new Set(['537477152','2684436480']);
+const EMOTE_ITEMS=new Set(['537477152','2684436480','2148089856','537477120']);
 function classify(svc,f){
   if(svc===109){const it=(f[8]||'').split('|')[0];
     return {k:EMOTE_ITEMS.has(it)?'이모티콘(제외)':'별풍선(svc109)',cls:EMOTE_ITEMS.has(it)?'etc':'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:it};}
