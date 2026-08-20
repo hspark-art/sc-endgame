@@ -110,7 +110,7 @@ def nav(active, depth=0):
         # 상품 추첨은 방송 PC 에서 도는 프로그램(localhost)이라, 다른 PC 에서
         # 누르면 열리지 않는 게 정상입니다 — 제목에 그렇게 적어 둡니다.
         items = ('<a class="navlink" href="%sindex.html">← 사이트로 돌아가기</a>'
-                 '<a class="navlink" href="prize.php">🎁 상품 추첨</a>') % up
+                 '<a class="navlink" href="prize.php">🎁 상품 추첨</a><a class="navlink" href="prize_sheet.php">📒 당첨자 시트</a>') % up
     else:
         items = ''.join(
             '<a class="navlink%s" href="%s%s">%s</a>'

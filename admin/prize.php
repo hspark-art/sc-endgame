@@ -50,6 +50,11 @@ a.top:hover{color:#e8ecf3}
 <a class="top" href="prize_overlay.php" target="_blank">📺 방송 장면 열기 ↗</a>
 <a class="top" href="cg.php">CG 제작 →</a>
 <span class="n">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></div>
+<a href="prize_sheet.php" style="display:flex;align-items:center;gap:10px;margin:0 0 12px;
+padding:12px 16px;border-radius:12px;border:1px solid #2e3a52;text-decoration:none;
+background:linear-gradient(90deg,rgba(28,140,255,.16),rgba(255,198,61,.10));
+color:#e8ecf3;font-weight:800">&#128210; 당첨자 시트
+<span style="color:#8a93a6;font-weight:500;font-size:12.5px">날짜·상품별 정리 · SOOP계정 채우기 · 숲 쪽지 일괄 발송 →</span></a>
 <script>
 function goCh(v){
   if(v==='__demo'){location.href='prize.php?demo';return;}
@@ -93,6 +98,7 @@ function goCh(v){
 <span id="pPhotoName" class="hint"></span>
 <hr>
 <div class="ct">당첨자 시트 <span class="n" id="wcount"></span>
+<a class="top" href="prize_sheet.php">전체 화면 ↗</a>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="copyLedger()">📋 복사</button>
 <button class="gray" style="padding:4px 10px" onclick="downloadLedger()">⬇ CSV</button></div>
 <div class="scroll" style="max-height:260px"><table id="winners"><thead><tr>

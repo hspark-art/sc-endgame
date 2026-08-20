@@ -133,7 +133,7 @@ if ($act === 'winner_update') {
     $w = jread('winners.json', ['list' => []]);
     foreach ($w['list'] as &$x) {
         if (($x['id'] ?? '') === ($body['id'] ?? '')) {
-            foreach (['date', 'nick', 'sid', 'prize'] as $k) {
+            foreach (['date', 'nick', 'sid', 'prize', 'how', 'sent', 'memo'] as $k) {
                 if (array_key_exists($k, $body)) { $x[$k] = (string)$body[$k]; }
             }
             break;
