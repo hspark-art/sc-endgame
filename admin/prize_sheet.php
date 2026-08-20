@@ -82,15 +82,21 @@ text-overflow:ellipsis;white-space:nowrap}
  </div>
  <textarea id="noteTxt" spellcheck="false"></textarea>
  <div class="row" style="margin:6px 0 0">
-  <button onclick="copyIds()">① 받는사람 복사</button>
-  <button onclick="copyNote()">② 내용 복사</button>
-  <button class="gray" onclick="window.open('https://note.sooplive.com/','_blank','noopener')">③ 숲 쪽지함 열기 ↗</button>
-  <button class="green" onclick="markSent()">✅ 선택 보냄 처리</button>
-  <span class="warn" id="noteWarn"></span>
+  <button class="green" onclick="serverSend()">🚀 서버로 바로 보내기</button>
+  <span class="pill" id="sessStat" title="talent 로그인 세션 상태">세션 확인 중…</span>
+  <button class="gray" onclick="registerSession()">🔑 세션 등록</button>
+  <span style="flex:1"></span>
+  <span class="hint" style="margin:0">막혔을 때 수동 →</span>
+  <button class="gray" onclick="copyIds()">받는사람 복사</button>
+  <button class="gray" onclick="copyNote()">내용 복사</button>
+  <button class="gray" onclick="window.open('https://note.sooplive.com/app/index.php','_blank','noopener')">쪽지함 ↗</button>
+  <button class="gray" onclick="markSent()">✅ 보냄 처리</button>
  </div>
- <div class="hint">숲 쪽지함에서 [쪽지 보내기]를 누른 뒤 — 받는사람 칸에 ①을 붙여넣고(여러 명이 쉼표로 들어갑니다),
- 내용 칸에 ②를 붙여넣어 보내면 됩니다. 받는사람 수 제한에 걸리면 나눠서 보내세요.
- 보낸 뒤 ✅ 를 누르면 쪽지 칸에 오늘 날짜가 남아 누구에게 보냈는지 시트에 남습니다.</div>
+ <div class="row" style="margin:2px 0 0"><span class="warn" id="noteWarn"></span></div>
+ <div class="hint"><b>🚀 서버로 바로 보내기</b> — talent 계정으로 이 서버가 직접 보냅니다.
+ 성공하면 쪽지 칸에 오늘 날짜가, 실패하면 메모에 사유가 남습니다. 처음 한 번
+ <b>🔑 세션 등록</b>이 필요하고(만료되면 다시), 계정이 있는 사람만 대상입니다.
+ 오른쪽 수동 경로는 세션이 막혔을 때의 대비책입니다.</div>
 </div></div>
 <script>
 const NL=String.fromCharCode(10),TAB=String.fromCharCode(9);
@@ -259,6 +265,59 @@ async function markSent(){
   if(!confirm(ws.length+'명을 오늘('+today()+') 쪽지 보냄으로 표시할까요?'))return;
   for(const w of ws)await api('winner_update',{id:w.id,sent:today()});
   flash(ws.length+'명 보냄 처리됨 ✓');refresh();}
+async function noteSessionStatus(){
+  try{
+    const st=await api('note_session_status');
+    const el=document.getElementById('sessStat');
+    if(!el)return;
+    if(st&&st.has){el.className='pill ok';
+      el.innerHTML='🔑 세션 등록됨 <span style="color:#8a93a6">'+esc(st.savedAt||'')+'</span>';}
+    else{el.className='pill warn';el.textContent='🔑 세션 미등록';}
+  }catch(e){}
+}
+async function registerSession(){
+  const c=prompt('talent 계정의 쪽지 세션 쿠키를 붙여넣으세요.\n\n'
+    +'로그인된 Chrome 에서 note.sooplive.com 을 연 뒤\n'
+    +'F12(개발자도구) → Application → Cookies → note.sooplive.com 의\n'
+    +'쿠키들을  이름=값; 이름=값  형태로 붙여넣습니다.');
+  if(c===null||!c.trim())return;
+  const el=document.getElementById('sessStat');if(el)el.textContent='세션 확인 중…';
+  const r=await api('note_session_set',{cookie:c.trim()});
+  if(r&&r.valid){flash('세션 등록됨 — 유효합니다 ✓');}
+  else{alert('등록은 했지만 로그인 세션으로 확인되지 않았습니다.\n'
+    +'사유: '+((r&&r.reason)||'?')+'\n쿠키를 다시 복사해 주세요.');}
+  noteSessionStatus();
+}
+async function serverSend(){
+  const ws=selWinners().filter(w=>(w.sid||'').trim());
+  const skipped=selWinners().length-ws.length;
+  if(!ws.length)return alert('SOOP 계정이 있는 당첨자를 선택하세요'
+    +(skipped?' ('+skipped+'명은 계정이 없어 제외됩니다)':''));
+  const bodyTxt=document.getElementById('noteTxt').value.trim();
+  if(!bodyTxt)return alert('보낼 내용이 비었습니다');
+  const st=await api('note_session_status');
+  if(!st||!st.has){if(confirm('talent 세션이 등록돼 있지 않습니다. 지금 등록할까요?'))registerSession();return;}
+  if(!confirm(ws.length+'명에게 talent 계정으로 지금 쪽지를 보냅니다.'
+    +(skipped?'\n(계정 없는 '+skipped+'명은 제외)':'')+'\n진행할까요?'))return;
+  let ok=0,fail=0;
+  const fl=document.getElementById('flash');
+  for(let i=0;i<ws.length;i++){
+    const w=ws[i];
+    fl.textContent='보내는 중… '+(i+1)+'/'+ws.length+' — '+w.nick;
+    const r=await api('note_send',{to:w.sid,content:bodyTxt});
+    if(r&&r.ok){ok++;await api('winner_update',{id:w.id,sent:today()});}
+    else{
+      fail++;
+      if(r&&r.expired){alert('talent 세션이 만료됐습니다. 다시 등록해 주세요.');noteSessionStatus();break;}
+      const memo=((w.memo?w.memo+' · ':'')+'발송실패:'+((r&&r.reason)||'?')).slice(0,190);
+      await api('winner_update',{id:w.id,memo:memo});
+    }
+    await new Promise(res=>setTimeout(res,900));
+  }
+  fl.textContent='';
+  flash('완료 — 성공 '+ok+'명'+(fail?(' · 실패 '+fail+'명(메모 확인)'):'')+' ✓');
+  refresh();
+}
 async function addRow(){
   const nick=prompt('닉네임을 입력하세요');
   if(!nick||!nick.trim())return;
@@ -292,5 +351,5 @@ function downloadLedger(){
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-당첨자-'+today()+'.csv';a.click();}
-refresh();
+refresh();noteSessionStatus();
 </script></body></html>

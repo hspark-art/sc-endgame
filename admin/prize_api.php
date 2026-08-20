@@ -51,6 +51,86 @@ function out($doc, int $code = 200): void
     exit;
 }
 
+
+// ── 숲 쪽지 서버 발송 헬퍼 ────────────────────────────────────
+// SOOP 은 자기 도메인 밖 요청의 응답을 막아 브라우저가 직접 못 보냅니다.
+// talent 로그인 쿠키를 한 번 등록해 두고, 이 서버가 대신 POST 합니다.
+const NOTE_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+    . '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
+function note_write(string $cookie, string $to, string $content): array
+{
+    $ch = curl_init('https://note.sooplive.com/app/index.php?page=write');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query([
+            'szWork' => 'WRITE', 'txt_to' => $to, 'recv_id' => '',
+            'file_key' => '', 'file_size' => '0', 'content' => $content]),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_ENCODING => '',
+        CURLOPT_HTTPHEADER => [
+            'User-Agent: ' . NOTE_UA,
+            'Origin: https://note.sooplive.com',
+            'Referer: https://note.sooplive.com/app/index.php?page=write',
+            'X-Requested-With: XMLHttpRequest',
+            'Cookie: ' . $cookie],
+    ]);
+    $res = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    if ($res === false || $code === 0) {
+        return ['ok' => false, 'reason' => 'SOOP 접속 실패: ' . $err, 'http' => $code];
+    }
+    // 로그인 풀림
+    if ((stripos($res, 'login') !== false && stripos($res, 'member') !== false)
+        || mb_strpos($res, '로그인이 필요') !== false) {
+        return ['ok' => false, 'expired' => true, 'http' => $code,
+                'reason' => 'talent 세션이 만료됐습니다 — 세션을 다시 등록하세요'];
+    }
+    $ok = null; $msg = '';
+    $j = json_decode(trim($res), true);
+    if (is_array($j)) {
+        foreach (['result', 'RESULT', 'success', 'ret', 'code'] as $k) {
+            if (isset($j[$k])) {
+                $ok = in_array((string)$j[$k], ['1', 'true', 'ok', 'success', 'y'], true);
+                break;
+            }
+        }
+        $msg = (string)($j['MESSAGE'] ?? $j['message'] ?? $j['msg'] ?? '');
+    }
+    if ($ok === null) {                          // HTML 응답 — 오류 문구 없으면 성공
+        $bad = ['존재하지 않', '없는 아이디', '없는 회원', '수신거부', '수신을 거부',
+                '차단', '스팸', '실패했', '오류', '에러', '보낼 수 없'];
+        foreach ($bad as $b) {
+            if (mb_strpos($res, $b) !== false) { $ok = false; $msg = $b; break; }
+        }
+        if ($ok === null) { $ok = ($code === 200); }
+    }
+    return ['ok' => (bool)$ok, 'http' => $code,
+            'reason' => $ok ? '' : ($msg ?: '보내지 못했습니다'),
+            'snippet' => mb_substr(trim(preg_replace('/\s+/', ' ',
+                strip_tags((string)$res))), 0, 140)];
+}
+
+function note_check(string $cookie): array
+{
+    $ch = curl_init('https://note.sooplive.com/app/index.php?page=recv_list');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 12, CURLOPT_ENCODING => '',
+        CURLOPT_HTTPHEADER => ['User-Agent: ' . NOTE_UA, 'Cookie: ' . $cookie]]);
+    $res = (string)curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $valid = ($code === 200
+        && (mb_strpos($res, '받은 쪽지') !== false || mb_strpos($res, '쪽지함') !== false)
+        && mb_strpos($res, '로그인이 필요') === false);
+    return ['ok' => true, 'valid' => $valid,
+            'reason' => $valid ? '세션이 유효합니다 ✓'
+                               : '로그인 세션이 아닙니다 — 쿠키를 다시 확인하세요'];
+}
+
 pz_boot();
 $act = $_GET['act'] ?? '';
 $body = [];
@@ -143,6 +223,38 @@ if ($act === 'winner_update') {
     unset($x);
     jwrite('winners.json', $w);
     out(['ok' => true]);
+}
+
+// ── 숲 쪽지 서버 발송 ────────────────────────────────────────
+if ($act === 'note_session_set') {
+    $cookie = trim((string)($body['cookie'] ?? ''));
+    // 여러 줄로 붙여넣어도 한 줄로 정리
+    $cookie = preg_replace('/\s*[\r\n]+\s*/', ' ', $cookie);
+    jwrite('note_session.json', ['cookie' => $cookie, 'savedAt' => date('Y-m-d H:i')]);
+    out($cookie === '' ? ['ok' => true, 'valid' => false, 'reason' => '쿠키가 비었습니다']
+                       : note_check($cookie));
+}
+if ($act === 'note_session_status') {
+    $sSess = jread('note_session.json', ['cookie' => '']);
+    out(['has' => !empty($sSess['cookie']), 'savedAt' => $sSess['savedAt'] ?? '']);
+}
+if ($act === 'note_session_check') {
+    $sSess = jread('note_session.json', ['cookie' => '']);
+    out(empty($sSess['cookie']) ? ['ok' => true, 'valid' => false, 'reason' => '세션 미등록']
+                                : note_check((string)$sSess['cookie']));
+}
+if ($act === 'note_send') {
+    $sSess = jread('note_session.json', ['cookie' => '']);
+    $cookie = (string)($sSess['cookie'] ?? '');
+    if ($cookie === '') {
+        out(['ok' => false, 'reason' => '세션이 없습니다 — 먼저 talent 세션을 등록하세요']);
+    }
+    $to = preg_replace('/[^A-Za-z0-9_]/', '', (string)($body['to'] ?? ''));
+    $content = trim((string)($body['content'] ?? ''));
+    if ($to === '' || $content === '') {
+        out(['ok' => false, 'reason' => '받는사람 또는 내용이 비었습니다']);
+    }
+    out(note_write($cookie, $to, mb_substr($content, 0, 5000)));
 }
 
 // ── 상품 ──
