@@ -117,6 +117,25 @@ function goCh(v){
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
+<div class="ct" data-panel="predict">🔮 승부예측 <span class="n">채팅으로 세트 승자 맞히기</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
+<div class="row"><input id="pdA" placeholder="선수 A 이름" style="flex:1;min-width:90px">
+<span class="n">vs</span><input id="pdB" placeholder="선수 B 이름" style="flex:1;min-width:90px"></div>
+<div class="row">
+<button onclick="pdStart()" id="pdStartBtn">🔮 예측 시작</button>
+<button class="gray" onclick="pdLock()" id="pdLockBtn" disabled>⏸ 마감</button>
+<button class="gray" onclick="pdSettle('a')" id="pdWinA" disabled>A 승</button>
+<button class="gray" onclick="pdSettle('b')" id="pdWinB" disabled>B 승</button>
+<button class="gray" onclick="pdCancel()" id="pdCancelBtn" disabled>취소</button>
+<a class="top" href="../predict.php" target="_blank">리더보드 ↗</a></div>
+<div id="pdBar" style="display:none">
+<div style="display:flex;justify-content:space-between;font-size:12.5px;margin:2px 0">
+<b id="pdCntA" style="color:#7cb6ff"></b><b id="pdCntB" style="color:#ff8fa3"></b></div>
+<div style="height:12px;background:#33202a;border-radius:6px;overflow:hidden;display:flex">
+<div id="pdFillA" style="background:#1c8cff;width:50%;transition:width .4s"></div>
+<div style="background:#ff4d5a;flex:1"></div></div>
+</div>
+<div id="pdStatus" class="hint"></div>
+<hr>
 <div class="ct" data-panel="pick">당첨 만들기<button class="px" style="margin-left:auto" onclick="togglePanel('pick')" title="이 창 닫기">✕</button></div>
 <div class="row"><input id="pickNick" placeholder="닉네임 — 채팅을 눌러도 들어갑니다" style="flex:1">
 <select id="prizeSel" style="flex:1"></select></div>
@@ -238,7 +257,7 @@ function bump(nick,kind,n){
 function onEvent(ev){
   // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
-  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);}
+  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);pdOnChat(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
     // 큰 별풍선이면 방송 장면에 감사 배너를 자동으로 띄웁니다
@@ -495,8 +514,119 @@ function downloadActivity(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
 }
+/* ── 승부예측 — 채팅으로 세트 승자 맞히기 ─────────────────────
+   규칙: 관리자가 시작→시청자가 채팅에 '선수 이름'(첫 입력만 인정)→
+   관리자가 마감→결과 버튼으로 정산. 적중 +100P, 연승 보너스 +20씩(최대+100).
+   진짜 채널이면 서버(prize_api)에 저장·정산, 연습이면 이 창 안에서만. */
+let pd=null;            // 진행 라운드 {id,a,b,state,votes:{계정:{p,n,at}}}
+let pdLocal={};         // 연습 모드 포인트 (휘발성)
+let pdSyncT=null;
+function pdNorm(s){return String(s||'').replace(/\s+/g,'').replace(/[!~.?]+$/,'').toLowerCase()}
+function pdOnChat(ev){
+  if(!pd||pd.state!=='open')return;
+  const key=ev.id||('nick:'+ev.nick);
+  if(pd.votes[key])return;                  // 첫 입력만 인정 (변경 불가)
+  const m=pdNorm(ev.msg);
+  if(!m)return;
+  let p=null;
+  if(m===pdNorm(pd.a))p='a'; else if(m===pdNorm(pd.b))p='b';
+  if(!p)return;
+  pd.votes[key]={p:p,n:ev.nick,at:Date.now()};
+  pdPaint();
+}
+function pdCount(){let a=0,b=0;for(const k in pd.votes){if(pd.votes[k].p==='a')a++;else b++;}return{a:a,b:b};}
+function pdPaint(){
+  const st=document.getElementById('pdStatus'), bar=document.getElementById('pdBar');
+  if(!st)return;
+  const sBtn=document.getElementById('pdStartBtn'), lBtn=document.getElementById('pdLockBtn');
+  const aBtn=document.getElementById('pdWinA'), bBtn=document.getElementById('pdWinB'), cBtn=document.getElementById('pdCancelBtn');
+  if(!pd){
+    sBtn.disabled=false;lBtn.disabled=true;aBtn.disabled=true;bBtn.disabled=true;cBtn.disabled=true;
+    bar.style.display='none';
+    if(!st.dataset.keep)st.innerHTML='대기 중 — 선수 두 명을 넣고 <b>예측 시작</b>. 시청자는 채팅에 <b>선수 이름</b>을 치면 참여(첫 입력만 인정).';
+    return;
+  }
+  st.dataset.keep='';
+  const c=pdCount(), tot=c.a+c.b, pa=tot?Math.round(c.a*100/tot):50;
+  sBtn.disabled=true;lBtn.disabled=(pd.state!=='open');
+  aBtn.disabled=false;bBtn.disabled=false;cBtn.disabled=false;
+  aBtn.textContent=pd.a+' 승';bBtn.textContent=pd.b+' 승';
+  document.getElementById('pdA').value=pd.a;document.getElementById('pdB').value=pd.b;
+  bar.style.display='';
+  document.getElementById('pdCntA').textContent=pd.a+' '+c.a+'표'+(tot?' ('+pa+'%)':'');
+  document.getElementById('pdCntB').textContent=(tot?(100-pa)+'% ':'')+c.b+'표 '+pd.b;
+  document.getElementById('pdFillA').style.width=(tot?pa:50)+'%';
+  st.innerHTML=(pd.state==='open'
+    ?'🟢 <b>집계 중</b> — 시청자는 채팅에 선수 이름(첫 입력만). '
+    :'⏸ <b>마감됨</b> — 세트가 끝나면 결과 버튼으로 정산. ')
+    +'참여 <b>'+tot+'</b>명'+(IS_TEST_CH?' <span class="warn">(연습 — 저장 안 됨)</span>':'');
+}
+function pdSyncStart(){if(pdSyncT||IS_TEST_CH)return;pdSyncT=setInterval(function(){if(pd)api('predict_save',{cur:pd});},4000);}
+function pdSyncStop(){if(pdSyncT){clearInterval(pdSyncT);pdSyncT=null;}}
+async function pdStart(){
+  const a=document.getElementById('pdA').value.trim(), b=document.getElementById('pdB').value.trim();
+  if(!a||!b)return alert('선수 두 명의 이름을 먼저 넣어주세요');
+  if(pdNorm(a)===pdNorm(b))return alert('두 선수 이름이 같습니다');
+  if(pd&&!confirm('진행 중인 예측이 있습니다. 버리고 새로 시작할까요?'))return;
+  pd={id:String(Date.now()),a:a,b:b,state:'open',votes:{},startedAt:new Date().toISOString()};
+  const st=document.getElementById('pdStatus');if(st)delete st.dataset.keep;
+  pdPaint();
+  if(!IS_TEST_CH){
+    await api('predict_save',{cur:pd});pdSyncStart();
+    await api('overlay_set',{overlay:{kind:'predict'}});   // 방송 장면: 실시간 비율
+  }
+}
+async function pdLock(){
+  if(!pd||pd.state!=='open')return;
+  pd.state='locked';pdPaint();
+  if(!IS_TEST_CH)await api('predict_save',{cur:pd});
+}
+async function pdCancel(){
+  if(!pd)return;
+  if(!confirm('예측을 취소할까요? 모인 표는 버려지고 포인트 변화도 없습니다.'))return;
+  pd=null;pdSyncStop();pdPaint();
+  if(!IS_TEST_CH){await api('predict_cancel',{});await api('overlay_set',{overlay:{kind:'none'}});}
+}
+function pdSettleLocal(snap,w){
+  let hit=0,ca=0,cb=0;const top=[];
+  for(const k in snap.votes){const v=snap.votes[k];
+    if(v.p==='a')ca++;else cb++;
+    const q=pdLocal[k]||{n:v.n,pts:0,w:0,l:0,st:0,best:0};q.n=v.n||q.n;
+    if(v.p===w){hit++;q.st++;const gain=100+Math.min((q.st-1)*20,100);
+      q.pts+=gain;q.w++;if(q.st>q.best)q.best=q.st;top.push({n:q.n,gain:gain,st:q.st});}
+    else{q.l++;q.st=0;}
+    pdLocal[k]=q;}
+  top.sort(function(x,y){return y.gain-x.gain});
+  return{ok:true,hit:hit,total:ca+cb,ca:ca,cb:cb,top:top.slice(0,5)};
+}
+async function pdSettle(w){
+  if(!pd)return;
+  const wname=(w==='a'?pd.a:pd.b);
+  if(!confirm(wname+' 승으로 정산할까요? 맞힌 시청자에게 포인트가 들어갑니다.'))return;
+  const snap=pd;
+  let res;
+  if(IS_TEST_CH){res=pdSettleLocal(snap,w);}
+  else{
+    res=await api('predict_settle',{winner:w,cur:snap});
+    if(!res||!res.ok)return alert('정산 실패: '+((res&&res.error)||'서버 오류'));
+  }
+  pd=null;pdSyncStop();pdPaint();
+  const st=document.getElementById('pdStatus');
+  st.dataset.keep='1';
+  st.innerHTML='🔮 '+esc(snap.a+' vs '+snap.b)+' → <b>'+esc(wname)+' 승</b> · 적중 '
+    +res.hit+'/'+res.total+'명'
+    +((res.top&&res.top.length)?' · 🔥 '+esc(res.top.slice(0,3).map(function(t){return t.n+' +'+t.gain+'P'}).join(' · ')):'')
+    +(IS_TEST_CH?' <span class="warn">(연습)</span>':'');
+  if(!IS_TEST_CH)await api('overlay_set',{overlay:{kind:'predict_result',a:snap.a,b:snap.b,
+    wname:wname,hit:res.hit,total:res.total,ca:res.ca,cb:res.cb,top:res.top||[]}});
+}
+async function pdRestore(){
+  if(IS_TEST_CH)return;
+  try{const g=await api('predict_get',{});
+    if(g&&g.cur&&g.cur.votes){pd=g.cur;pdSyncStart();pdPaint();}}catch(e){}
+}
 const PANELS=[['chat','실시간 채팅'],['users','시청자 활약'],['pastdays','지난 방송'],
-  ['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
+  ['predict','승부예측'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
 const panelState={};   // key -> 숨김 여부(true=닫힘)
 function panelNodes(key){
   // data-panel 이 카드면 카드 통째로, 섹션이면 헤더~다음 헤더/구분선 앞까지(앞 <hr> 포함)
@@ -864,6 +994,7 @@ applyRealCh();
 if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
 updateMaskBtn();
 initPanels();
+pdPaint();pdRestore();
 restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){

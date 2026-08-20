@@ -478,6 +478,7 @@ def main():
     write('admin/prize_overlay.php', prize_php.prize_overlay())
     write('admin/prize_sheet.php', prize_php.prize_sheet())
     write('admin/prize_balloon_debug.php', prize_php.prize_balloon_debug())
+    write('predict.php', prize_php.prize_predict_board())
     # 예전 빌드가 남긴 무방비 파일이 있으면 치웁니다.
     old = os.path.join(ROOT, 'admin', 'cg.html')
     if os.path.exists(old):

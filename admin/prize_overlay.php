@@ -80,6 +80,22 @@ animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
         <div class="wprize" id="ckN"></div></div>
       <div><div class="plabel" style="color:#ff8fa3">후원왕</div><div class="pname" id="bkNick"></div>
         <div class="wprize" id="bkN"></div></div></div></div>
+  <div class="box" id="pdBox">
+    <div class="wcap" id="pdCap">🔮 승부예측</div>
+    <div style="display:flex;gap:60px;align-items:center;margin-top:6px">
+      <div style="text-align:center"><div class="pname" id="pdAName" style="color:#7cb6ff"></div>
+        <div class="wprize" id="pdACnt"></div></div>
+      <div class="plabel" style="font-size:30px">VS</div>
+      <div style="text-align:center"><div class="pname" id="pdBName" style="color:#ff8fa3"></div>
+        <div class="wprize" id="pdBCnt"></div></div>
+    </div>
+    <div style="width:72%;height:26px;background:#1a2030;border-radius:13px;overflow:hidden;display:flex;margin-top:16px">
+      <div id="pdBarA" style="background:#1c8cff;height:100%;width:50%;transition:width .5s"></div>
+      <div style="background:#ff4d5a;height:100%;flex:1"></div>
+    </div>
+    <div class="wprize" id="pdHint" style="margin-top:12px"></div>
+    <div class="wprize" id="pdTop" style="margin-top:6px;font-size:24px;color:#ffd24a"></div>
+  </div>
   <div id="drawPrize"></div>
   <canvas id="board" width="1200" height="820"></canvas>
   <div id="lineup"><div class="llabel">🎁 오늘의 상품</div><div class="cards" id="lineupCards"></div></div>
@@ -113,13 +129,15 @@ document.addEventListener('keydown',function(e){
   if(e.key==='m'||e.key==='M'){muted=!muted;
     document.getElementById('hint').textContent=muted?'🔇 소리 꺼짐 (M 키로 켜기)':'화면 클릭 = 배경 초록/어둠 · PIP 클릭 = 중계진 자리 · M = 소리';}});
 let seq=-1, anim=null;
-function show(id){['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){
+function show(id){['idleBox','prizeBox','winBox','kingBox','pdBox'].forEach(function(b){
   document.getElementById(b).classList.toggle('show',b===id);});
   document.getElementById('board').classList.remove('show');
   document.getElementById('lineup').classList.remove('show');
   if(anim){cancelAnimationFrame(anim);anim=null;}
+  if(pdTimer){clearInterval(pdTimer);pdTimer=null;}
 }
 let allPrizes=[];
+let pdTimer=null;
 async function loadPrizes(){
   try{const st=await (await fetch('prize_api.php?act=state')).json();
     allPrizes=(st.prizes&&st.prizes.items)||[];}catch(e){}
@@ -300,6 +318,41 @@ function plinko(st){
   }
   anim=requestAnimationFrame(frame);
 }
+function predictLive(st){
+  show('pdBox');
+  document.getElementById('pdCap').textContent='🔮 승부예측 — 채팅에 선수 이름을 치세요!';
+  document.getElementById('pdHint').textContent='첫 입력만 인정 · 적중 +100P · 연승 보너스 +20씩';
+  document.getElementById('pdTop').textContent='';
+  async function tick(){
+    try{
+      const d=await (await fetch('prize_api.php?act=predict_public')).json();
+      const c=d.cur;if(!c)return;
+      const tot=c.ca+c.cb, pa=tot?Math.round(c.ca*100/tot):50;
+      document.getElementById('pdAName').textContent=c.a;
+      document.getElementById('pdBName').textContent=c.b;
+      document.getElementById('pdACnt').textContent=c.ca+'표'+(tot?' · '+pa+'%':'');
+      document.getElementById('pdBCnt').textContent=c.cb+'표'+(tot?' · '+(100-pa)+'%':'');
+      document.getElementById('pdBarA').style.width=(tot?pa:50)+'%';
+      document.getElementById('pdCap').textContent=(c.state==='locked')
+        ?'⏸ 예측 마감 — 곧 결과가 나옵니다!':'🔮 승부예측 — 채팅에 선수 이름을 치세요!';
+    }catch(e){}
+  }
+  tick();pdTimer=setInterval(tick,2000);
+}
+function predictResult(st){
+  show('pdBox');fireConfetti();winSound();
+  const tot=(st.ca||0)+(st.cb||0), pa=tot?Math.round((st.ca||0)*100/tot):50;
+  document.getElementById('pdCap').textContent='🎉 예측 결과 — '+(st.wname||'')+' 승!';
+  document.getElementById('pdAName').textContent=st.a||'';
+  document.getElementById('pdBName').textContent=st.b||'';
+  document.getElementById('pdACnt').textContent=(st.ca||0)+'표';
+  document.getElementById('pdBCnt').textContent=(st.cb||0)+'표';
+  document.getElementById('pdBarA').style.width=pa+'%';
+  document.getElementById('pdHint').textContent='적중 '+(st.hit||0)+'명 / 참여 '+tot+'명'
+    +(tot?' ('+Math.round((st.hit||0)*100/tot)+'%)':'');
+  document.getElementById('pdTop').textContent=(st.top&&st.top.length)
+    ?('🔥 '+st.top.slice(0,3).map(function(t){return t.n+' +'+t.gain+'P'}).join('  ·  ')):'';
+}
 async function poll(){
   try{
     const st=await (await fetch('prize_api.php?act=overlay')).json();
@@ -310,6 +363,8 @@ async function poll(){
       else if(st.kind==='roulette')roulette(st);
       else if(st.kind==='kings')kings(st);
       else if(st.kind==='prize')prize(st);
+      else if(st.kind==='predict')predictLive(st);
+      else if(st.kind==='predict_result')predictResult(st);
       else idle();
     }
   }catch(e){}

@@ -3,12 +3,6 @@
 declare(strict_types=1);
 require __DIR__ . '/auth.php';
 admin_boot();
-if (!admin_logged_in()) {
-    http_response_code(401);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['error' => '로그인이 필요합니다']);
-    exit;
-}
 
 const PZ = __DIR__ . '/pz';
 
@@ -141,6 +135,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $act = $body['act'] ?? $act;
 }
 
+// 로그인 확인 — 공개 리더보드 읽기(predict_public)만 로그인 없이 허용
+if (!admin_logged_in() && $act !== 'predict_public') {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => '로그인이 필요합니다']);
+    exit;
+}
+
 // ── 방송 정보 (SOOP) — 브라우저는 CORS 로 막혀서 서버가 대신 물어봅니다 ──
 if ($act === 'live') {
     // 기본은 우리 채널(talent). 시험용으로 ?bj=다른아이디 를 받을 수 있습니다.
@@ -184,6 +186,99 @@ if ($act === 'overlay_set') {
     $ov['seq'] = (int)($cur['seq'] ?? 0) + 1;
     jwrite('overlay.json', $ov);
     out(['ok' => true, 'seq' => $ov['seq']]);
+}
+
+// ── 승부예측 — 채팅으로 세트 승자 맞히기, 맞히면 포인트 ──────────
+// predict_cur.json     진행 중 라운드 {id,a,b,state,startedAt,votes:{계정:{p,n,at}}}
+// predict_points.json  누적 포인트 {players:{계정:{n,pts,w,l,st,best}}}
+// predict_rounds.json  끝난 라운드 요약 (최근 60)
+if ($act === 'predict_get') {
+    out(['cur' => jread('predict_cur.json', null),
+         'rounds' => jread('predict_rounds.json', ['list' => []])]);
+}
+if ($act === 'predict_save') {
+    jwrite('predict_cur.json', $body['cur'] ?? null);
+    out(['ok' => true]);
+}
+if ($act === 'predict_cancel') {
+    jwrite('predict_cur.json', null);
+    out(['ok' => true, 'cancelled' => true]);
+}
+if ($act === 'predict_settle') {
+    // 정산은 서버가 합니다. 서버에 진행 라운드가 있고 같은 라운드일 때만
+    // 처리해서, 버튼을 두 번 눌러도 포인트가 두 번 들어가지 않습니다.
+    $srv = jread('predict_cur.json', null);
+    $cur = $body['cur'] ?? $srv;
+    if (!$srv || !$cur || (string)($srv['id'] ?? '') !== (string)($cur['id'] ?? '')) {
+        out(['error' => '정산할 예측이 없습니다 (이미 정산됐을 수 있어요)'], 400);
+    }
+    $winner = (($body['winner'] ?? 'a') === 'b') ? 'b' : 'a';
+    $votes = (array)($cur['votes'] ?? []);
+    $led = jread('predict_points.json', ['players' => []]);
+    $pl = (array)($led['players'] ?? []);
+    $hit = 0; $ca = 0; $cb = 0; $top = [];
+    foreach ($votes as $vid => $v) {
+        $v = (array)$v;
+        $pick = (($v['p'] ?? 'a') === 'b') ? 'b' : 'a';
+        if ($pick === 'a') $ca++; else $cb++;
+        $p = (array)($pl[$vid] ?? ['n' => '', 'pts' => 0, 'w' => 0, 'l' => 0, 'st' => 0, 'best' => 0]);
+        if (($v['n'] ?? '') !== '') $p['n'] = $v['n'];
+        if ($pick === $winner) {
+            $hit++;
+            $p['st'] = (int)($p['st'] ?? 0) + 1;
+            $bonus = min(((int)$p['st'] - 1) * 20, 100);    // 연승 보너스 +20씩, 최대 +100
+            $gain = 100 + $bonus;
+            $p['pts'] = (int)($p['pts'] ?? 0) + $gain;
+            $p['w'] = (int)($p['w'] ?? 0) + 1;
+            if ((int)$p['st'] > (int)($p['best'] ?? 0)) $p['best'] = (int)$p['st'];
+            $top[] = ['n' => (string)$p['n'], 'gain' => $gain, 'st' => (int)$p['st']];
+        } else {
+            $p['l'] = (int)($p['l'] ?? 0) + 1;
+            $p['st'] = 0;
+        }
+        $pl[$vid] = $p;
+    }
+    usort($top, function ($x, $y) { return $y['gain'] <=> $x['gain']; });
+    $led['players'] = $pl;
+    $led['updatedAt'] = date('Y-m-d H:i:s');
+    jwrite('predict_points.json', $led);
+    $rounds = jread('predict_rounds.json', ['list' => []]);
+    array_unshift($rounds['list'], [
+        'id' => (string)($cur['id'] ?? ''), 'a' => (string)($cur['a'] ?? ''),
+        'b' => (string)($cur['b'] ?? ''), 'winner' => $winner,
+        'ca' => $ca, 'cb' => $cb, 'hit' => $hit, 'at' => date('Y-m-d H:i')]);
+    $rounds['list'] = array_slice($rounds['list'], 0, 60);
+    jwrite('predict_rounds.json', $rounds);
+    jwrite('predict_cur.json', null);
+    out(['ok' => true, 'hit' => $hit, 'total' => $ca + $cb, 'ca' => $ca, 'cb' => $cb,
+         'top' => array_slice($top, 0, 5)]);
+}
+if ($act === 'predict_public') {
+    // 공개 리더보드 — 읽기 전용, 닉네임만 내보냅니다 (SOOP 계정은 비공개)
+    $led = jread('predict_points.json', ['players' => []]);
+    $rows = [];
+    foreach ((array)($led['players'] ?? []) as $pid => $p) {
+        $p = (array)$p;
+        $rows[] = ['n' => (string)($p['n'] ?? ''), 'pts' => (int)($p['pts'] ?? 0),
+                   'w' => (int)($p['w'] ?? 0), 'l' => (int)($p['l'] ?? 0),
+                   'st' => (int)($p['st'] ?? 0), 'best' => (int)($p['best'] ?? 0)];
+    }
+    usort($rows, function ($x, $y) { return $y['pts'] <=> $x['pts']; });
+    $cur = jread('predict_cur.json', null);
+    $curPub = null;
+    if (is_array($cur)) {
+        $ca = 0; $cb = 0;
+        foreach ((array)($cur['votes'] ?? []) as $v) {
+            $v = (array)$v;
+            if ((($v['p'] ?? 'a')) === 'b') $cb++; else $ca++;
+        }
+        $curPub = ['a' => (string)($cur['a'] ?? ''), 'b' => (string)($cur['b'] ?? ''),
+                   'state' => (string)($cur['state'] ?? ''), 'ca' => $ca, 'cb' => $cb];
+    }
+    $rl = jread('predict_rounds.json', ['list' => []]);
+    out(['players' => array_slice($rows, 0, 200),
+         'rounds' => array_slice((array)($rl['list'] ?? []), 0, 20),
+         'cur' => $curPub, 'updatedAt' => (string)($led['updatedAt'] ?? '')]);
 }
 
 // ── 당첨자 장부 ──
