@@ -85,6 +85,7 @@ text-overflow:ellipsis;white-space:nowrap}
   <button class="green" onclick="serverSend()">🚀 서버로 바로 보내기</button>
   <span class="pill" id="sessStat" title="talent 로그인 세션 상태">세션 확인 중…</span>
   <button class="gray" onclick="registerSession()">🔑 세션 등록</button>
+  <button class="gray" onclick="testNote()">✉ 테스트</button>
   <span style="flex:1"></span>
   <span class="hint" style="margin:0">막혔을 때 수동 →</span>
   <button class="gray" onclick="copyIds()">받는사람 복사</button>
@@ -265,6 +266,19 @@ async function markSent(){
   if(!confirm(ws.length+'명을 오늘('+today()+') 쪽지 보냄으로 표시할까요?'))return;
   for(const w of ws)await api('winner_update',{id:w.id,sent:today()});
   flash(ws.length+'명 보냄 처리됨 ✓');refresh();}
+async function testNote(){
+  const st=await api('note_session_status');
+  if(!st||!st.has){if(confirm('세션이 등록돼 있지 않습니다. 지금 등록할까요?'))registerSession();return;}
+  const to=prompt('테스트 쪽지를 받을 SOOP 계정 아이디를 넣으세요.'+NL+'(보통 talent — 자기 자신에게 보내 확인)','talent');
+  if(to===null||!to.trim())return;
+  document.getElementById('flash').textContent='테스트 쪽지 보내는 중…';
+  const r=await api('note_send',{to:to.trim(),
+    content:'[테스트] 끝장전 쪽지 발송 점검입니다. 이 쪽지가 보이면 정상입니다 — 무시하셔도 됩니다.'});
+  if(r&&r.ok)flash('✅ 테스트 쪽지 보냄 → '+to.trim()+' (SOOP 보낸 쪽지함에서 확인)');
+  else alert('테스트 실패: '+((r&&r.reason)||'?')
+    +(r&&r.expired?(NL+NL+'세션이 만료됐습니다 — 다시 등록하세요.'):'')
+    +(r&&r.snippet?(NL+NL+'서버 응답: '+r.snippet):''));
+}
 async function noteSessionStatus(){
   try{
     const st=await api('note_session_status');

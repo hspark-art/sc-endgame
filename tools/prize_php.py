@@ -522,6 +522,14 @@ vertical-align:middle;margin-right:6px;background:#0a0d13}
 hr{border-color:#232a38}
 a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}
 a.top:hover{color:#e8ecf3}
+.modal{position:fixed;inset:0;background:rgba(4,6,10,.66);z-index:50;display:flex;
+align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.modalbox{background:#141821;border:1px solid #2a3446;border-radius:14px;
+padding:16px 18px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.chip{cursor:pointer;user-select:none;background:#1b202b}
+.chip.on{border-color:#1c8cff;color:#cfe6ff;background:#12283f}
+.rwrow{padding:3px 3px;border-bottom:1px solid #171c25;font-size:12.5px;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style></head><body><div class="wrap">
 <h1>🎁 상품 추첨 관제
 <button id="btnStart" class="green" onclick="startSession()">▶ 스타트</button>
@@ -534,6 +542,7 @@ a.top:hover{color:#e8ecf3}
 <button class="gray" onclick="goCh('')">우리 채널(talent)</button>
 <button class="gray" onclick="goCh('__demo')">연습(가짜 채팅)</button>
 <a class="top" href="prize_overlay.php" target="_blank">📺 방송 장면 열기 ↗</a>
+<button class="gray" style="padding:4px 10px" onclick="openSettings()">⚙ 확률·규칙 설정</button>
 <a class="top" href="cg.php">CG 제작 →</a>
 <span class="n">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></div>
 <a href="prize_sheet.php" style="display:flex;align-items:center;gap:10px;margin:0 0 12px;
@@ -597,24 +606,39 @@ function goCh(v){
 <input id="wPrize" placeholder="상품" style="flex:1">
 <button class="gray" onclick="addWinner()">지난 기록 넣기</button></div>
 <hr>
-<div class="ct">확률·규칙 설정</div>
-<div class="row hint">채팅 <input id="sChatFull" style="width:52px"> 개에
-+<input id="sChatMax" style="width:46px"> · 별풍선
-<input id="sBalFull" style="width:60px"> 개에 +<input id="sBalMax" style="width:46px"></div>
-<div class="row hint">
-<label><input type="checkbox" id="sExcl"> 이전 당첨자 전체 제외</label>
-· 최근 <input id="sWeeks" style="width:40px"> 주 당첨자 제외(0=끄기)
-· 별풍선 <input id="sAlert" style="width:52px"> 개 이상이면 감사 배너</div>
-<div class="row hint">구글 문서 ID <input id="sGdoc" style="flex:1;min-width:180px" placeholder="당첨자 문서 주소의 /d/ 다음 부분">
-<span id="gdocInfo" class="pill"></span></div>
-<div class="row hint">슬랙 웹훅 <input id="sSlack" style="flex:1;min-width:180px" placeholder="https://hooks.slack.com/...">
-<button class="gray" onclick="saveSettings()">설정 저장</button></div>
-<div class="row">
-<button class="gray" onclick="copyLedger()">📋 당첨 기록 복사</button>
-<button class="gray" onclick="slackReport()">📨 슬랙으로 요약</button></div>
+<div class="ct">최근 당첨자 <span class="n">중복 방지</span>
+<span style="flex:1"></span>
+<button class="pill chip" onclick="setDupM(1)">1개월</button>
+<button class="pill chip" onclick="setDupM(2)">2개월</button>
+<button class="pill chip" onclick="setDupM(3)">3개월</button></div>
+<div id="dupLegend" class="hint" style="margin:2px 0"></div>
+<div class="scroll" style="max-height:230px"><div id="recentWinners"></div></div>
 </div>
 
 </div></div>
+<div id="settingsModal" class="modal" style="display:none" onclick="if(event.target===this)closeSettings()">
+ <div class="modalbox">
+  <div class="ct">⚙ 확률·규칙 설정 <span style="flex:1"></span>
+   <button class="gray" style="padding:4px 10px" onclick="closeSettings()">✕ 닫기</button></div>
+  <div class="row hint">채팅 <input id="sChatFull" style="width:52px"> 개에
+  +<input id="sChatMax" style="width:46px"> · 별풍선
+  <input id="sBalFull" style="width:60px"> 개에 +<input id="sBalMax" style="width:46px"></div>
+  <div class="row hint">
+  <label><input type="checkbox" id="sExcl"> 이전 당첨자 전체 제외</label>
+  · 최근 <input id="sWeeks" style="width:40px"> 주 당첨자 제외(0=끄기)
+  · 별풍선 <input id="sAlert" style="width:52px"> 개 이상이면 감사 배너</div>
+  <div class="row hint">집계 제외 계정 <input id="sExclAcc" style="flex:1;min-width:220px"
+   placeholder="매크로·스태프 아이디/닉 (스페이스나 쉼표로 여러 개)"></div>
+  <div class="hint" style="margin:-2px 0 6px">우리 방송 계정(<b id="bjName"></b>)은 자동 제외됩니다.
+  자동 매크로 채팅·매니저 계정을 여기 넣으면 시청자 활약 집계에서 빠집니다.</div>
+  <div class="row hint">구글 문서 ID <input id="sGdoc" style="flex:1;min-width:180px" placeholder="당첨자 문서 주소의 /d/ 다음 부분">
+  <span id="gdocInfo" class="pill"></span></div>
+  <div class="row hint">슬랙 웹훅 <input id="sSlack" style="flex:1;min-width:180px" placeholder="https://hooks.slack.com/..."></div>
+  <div class="row"><button onclick="saveSettings()">설정 저장</button>
+  <button class="gray" onclick="copyLedger()">📋 당첨 기록 복사</button>
+  <button class="gray" onclick="slackReport()">📨 슬랙으로 요약</button></div>
+ </div>
+</div>
 <script>
 /* ── 채팅 집계 (이 브라우저 안에서) ─────────────────────────── */
 /* 주소 뒤에 ?bj=아이디 를 붙이면 그 채널에 붙습니다 — 우리 방송이 없을 때
@@ -631,17 +655,31 @@ let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
   excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
 let gdoc={names:[],ids:[]};   // 구글 문서에서 읽어 온 당첨자
+let exclSet=new Set(), macroCount=0;   // 집계 제외 계정, 제외한 채팅 수
+let dupMonths=+(localStorage.getItem('pzDupM')||1)||1;   // 최근 당첨자 표시 기간(개월)
 
 function esc(s){return String(s??'').replace(/[&<>"]/g,
   c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function cleanNick(s){s=(s||'').trim();
   if(s.endsWith(')')&&s.includes('(')) s=s.slice(0,s.lastIndexOf('('));return s.trim()}
+function rebuildExcl(){
+  exclSet=new Set([BJ]);   // 우리 방송 계정은 항상 제외
+  (settings.excludeAccounts||'').toLowerCase().split(/[\s,]+/).filter(Boolean)
+    .forEach(x=>exclSet.add(x));
+}
+function isExcluded(id,nick){
+  const i=(id||'').toLowerCase().trim();
+  if(i&&exclSet.has(i))return true;
+  return exclSet.has((nick||'').replace(/\s+/g,'').toLowerCase());
+}
 function bump(nick,kind,n){
   if(!nick)return;
   const u=users[nick]??(users[nick]={c:0,b:0});
   if(kind==='c')u.c++; else u.b+=n;
 }
 function onEvent(ev){
+  // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
+  if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
   if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
@@ -836,8 +874,55 @@ async function saveSettings(){
     excludeWeeks:+document.getElementById('sWeeks').value||0,
     balloonAlert:+document.getElementById('sAlert').value||100,
     gdocId:(document.getElementById('sGdoc').value.trim().match(/[-\w]{25,}/)||[document.getElementById('sGdoc').value.trim()])[0],
-    slackWebhook:document.getElementById('sSlack').value.trim()});
-  await api('settings_set',{settings});loadGdoc();
+    slackWebhook:document.getElementById('sSlack').value.trim(),
+    excludeAccounts:document.getElementById('sExclAcc').value.trim()});
+  await api('settings_set',{settings});loadGdoc();rebuildExcl();closeSettings();
+}
+function openSettings(){var b=document.getElementById('bjName');if(b)b.textContent=BJ;
+  document.getElementById('settingsModal').style.display='flex';}
+function closeSettings(){document.getElementById('settingsModal').style.display='none';}
+function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
+const PCATS=[
+  {k:'마우스패드',re:/마우스\s*패드|패드|gigantus|mousepad/i,c:'#a78bfa'},
+  {k:'마우스',re:/마우스|viper|razer|mouse/i,c:'#4aa3ff'},
+  {k:'유니폼',re:/유니폼|uniform|jamie/i,c:'#f87171'},
+  {k:'안경',re:/안경|wearwhere|glass/i,c:'#4ade80'},
+  {k:'쿠폰·코드',re:/쿠폰|포인트|코드|coupon|point|code/i,c:'#ffb020'}];
+function prizeCat(p){for(const x of PCATS)if(x.re.test(p||''))return x;return{k:'기타',c:'#8a93a6'};}
+let _rwSig='';
+function renderRecentWinners(){
+  const host=document.getElementById('recentWinners');if(!host||!ST)return;
+  const list=ST.winners.list||[];
+  const sig=dupMonths+'|'+list.length+'|'+list.map(w=>w.date+w.prize).join(',');
+  if(sig===_rwSig)return; _rwSig=sig;
+  const cut=new Date(Date.now()-dupMonths*31*864e5).toISOString().slice(0,10);
+  const byp={};
+  list.forEach(w=>{
+    if(!w.date||w.date<cut)return;
+    if(/연습/.test(w.how||''))return;
+    const key=(w.sid||'').toLowerCase()||norm(w.nick);
+    const pp=byp[key]||(byp[key]={nick:w.nick,sid:w.sid||'',date:w.date,cats:{},prizes:[]});
+    if(w.date>=pp.date){pp.date=w.date;pp.nick=w.nick;}
+    if(w.sid&&!pp.sid)pp.sid=w.sid;
+    const c=prizeCat(w.prize);pp.cats[c.k]=c.c;pp.prizes.push({d:w.date,prize:w.prize,c:c.c});
+  });
+  const arr=Object.values(byp).sort((a,b)=>b.date<a.date?-1:(b.date>a.date?1:0));
+  document.querySelectorAll('[data-dupm],[onclick^=\"setDupM\"]').forEach(()=>{});
+  document.querySelectorAll('.chip').forEach(b=>{
+    const m=(b.getAttribute('onclick')||'').match(/setDupM\((\d)/);
+    if(m)b.classList.toggle('on',+m[1]===dupMonths);});
+  const lg=document.getElementById('dupLegend');
+  if(lg)lg.innerHTML='상품 색 — '+PCATS.map(x=>'<span style=\"color:'+x.c+';font-weight:700\">●</span>'+x.k).join(' &nbsp;');
+  if(!arr.length){host.innerHTML='<div class=\"hint\">최근 '+dupMonths+'개월 당첨자가 없습니다.</div>';return;}
+  host.innerHTML='<div class=\"hint\" style=\"margin:0 0 4px\">최근 '+dupMonths+'개월 '+arr.length+'명 — 다시 뽑지 않는 게 좋습니다</div>'+
+    arr.map(pp=>{
+      const primary=pp.prizes[pp.prizes.length-1].c;
+      const badges=Object.entries(pp.cats).map(([k,c])=>'<span title=\"'+esc(k)+'\" style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:'+c+';margin-right:2px;vertical-align:middle\"></span>').join('');
+      const names=[...new Set(pp.prizes.map(x=>x.prize))].join(', ');
+      return '<div class=\"rwrow\" title=\"'+esc(names)+'\">'+badges+' <b style=\"color:'+primary+'\">'+esc(pp.nick)+'</b>'+
+        (pp.sid?' <span class=\"pill\" style=\"font-size:10px\">'+esc(pp.sid)+'</span>':'')+
+        ' <span class=\"n\" style=\"font-size:10.5px\">'+esc(pp.date)+'</span></div>';
+    }).join('');
 }
 async function loadGdoc(){
   try{const g=await (await fetch('prize_api.php?act=gdoc')).json();
@@ -850,7 +935,7 @@ function clearStats(){
   if(!confirm('집계·계정·채팅 로그를 모두 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
-  recent.length=0;logBuf.length=0;
+  recent.length=0;logBuf.length=0;macroCount=0;
   if(!IS_TEST_CH&&sess.date){
     api('stats_save',{date:sess.date,title:liveTitle,users:{},rawUnknown:[],uid:{}});
     api('chat_clear',{date:sess.date});
@@ -901,6 +986,7 @@ document.getElementById('pickNick').addEventListener('keydown',function(e){if(e.
 async function refresh(){
   try{ST=await (await fetch('prize_api.php?act=state')).json();}catch(e){return}
   if(ST.settings&&ST.settings.chatFull)settings=Object.assign(settings,ST.settings);
+  rebuildExcl();
   const sel=document.getElementById('prizeSel'),cur=sel.value;
   sel.innerHTML='<option value="">상품 없이</option>'+ST.prizes.items.map(x=>
     '<option value="'+x.id+'">'+esc(x.name)+'</option>').join('');
@@ -952,11 +1038,13 @@ async function refresh(){
   for(const [id,v] of [['sChatFull',settings.chatFull],['sChatMax',settings.chatBonusMax],
     ['sBalFull',settings.balloonFull],['sBalMax',settings.balloonBonusMax],
     ['sWeeks',settings.excludeWeeks||0],['sAlert',settings.balloonAlert||100],
-    ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||'']]){
+    ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||''],
+    ['sExclAcc',settings.excludeAccounts||'']]){
     const el=document.getElementById(id);
     if(el&&document.activeElement!==el)el.value=v;
   }
-  document.getElementById('sExcl').checked=!!settings.excludeWinners;
+  const ex=document.getElementById('sExcl');if(ex)ex.checked=!!settings.excludeWinners;
+  rebuildExcl();
   try{
     const pl=await (await fetch('prize_api.php?act=stats_list')).json();
     document.getElementById('pastdays').innerHTML='<tbody>'+pl.list.map(r=>
@@ -969,7 +1057,7 @@ function paint(){
   document.getElementById('totline').textContent='시청자 '
     +Object.keys(users).length+' · 채팅 '
     +Object.values(users).reduce((a,u)=>a+u.c,0)+' · 별풍선 '
-    +Object.values(users).reduce((a,u)=>a+u.b,0);
+    +Object.values(users).reduce((a,u)=>a+u.b,0)+(macroCount?' · 방송채팅 '+macroCount+' 제외':'');
   const chatEl=document.getElementById('chat');
   // 이미 맨 아래를 보고 있으면 새 글에 맞춰 따라 내려갑니다 (위로 올려 읽는 중이면 안 건드림)
   const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
@@ -997,6 +1085,7 @@ function paint(){
     +esc(u.nick)+'">지명</button></td></tr>';}).join('');
   document.querySelectorAll('[data-pick]').forEach(b=>
     b.onclick=()=>pickThis(b.dataset.pick));
+  renderRecentWinners();
 }
 /* 45초마다 오늘 집계를 서버에 남깁니다 — 지난 방송 기록이 됩니다 */
 async function snapshot(){
@@ -1535,6 +1624,7 @@ text-overflow:ellipsis;white-space:nowrap}
   <button class="green" onclick="serverSend()">🚀 서버로 바로 보내기</button>
   <span class="pill" id="sessStat" title="talent 로그인 세션 상태">세션 확인 중…</span>
   <button class="gray" onclick="registerSession()">🔑 세션 등록</button>
+  <button class="gray" onclick="testNote()">✉ 테스트</button>
   <span style="flex:1"></span>
   <span class="hint" style="margin:0">막혔을 때 수동 →</span>
   <button class="gray" onclick="copyIds()">받는사람 복사</button>
@@ -1715,6 +1805,19 @@ async function markSent(){
   if(!confirm(ws.length+'명을 오늘('+today()+') 쪽지 보냄으로 표시할까요?'))return;
   for(const w of ws)await api('winner_update',{id:w.id,sent:today()});
   flash(ws.length+'명 보냄 처리됨 ✓');refresh();}
+async function testNote(){
+  const st=await api('note_session_status');
+  if(!st||!st.has){if(confirm('세션이 등록돼 있지 않습니다. 지금 등록할까요?'))registerSession();return;}
+  const to=prompt('테스트 쪽지를 받을 SOOP 계정 아이디를 넣으세요.'+NL+'(보통 talent — 자기 자신에게 보내 확인)','talent');
+  if(to===null||!to.trim())return;
+  document.getElementById('flash').textContent='테스트 쪽지 보내는 중…';
+  const r=await api('note_send',{to:to.trim(),
+    content:'[테스트] 끝장전 쪽지 발송 점검입니다. 이 쪽지가 보이면 정상입니다 — 무시하셔도 됩니다.'});
+  if(r&&r.ok)flash('✅ 테스트 쪽지 보냄 → '+to.trim()+' (SOOP 보낸 쪽지함에서 확인)');
+  else alert('테스트 실패: '+((r&&r.reason)||'?')
+    +(r&&r.expired?(NL+NL+'세션이 만료됐습니다 — 다시 등록하세요.'):'')
+    +(r&&r.snippet?(NL+NL+'서버 응답: '+r.snippet):''));
+}
 async function noteSessionStatus(){
   try{
     const st=await api('note_session_status');
