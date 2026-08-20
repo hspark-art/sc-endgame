@@ -73,6 +73,9 @@ def _clean_nick(s):
     return s.strip()
 
 
+EMOTE_ITEMS = {'537477152'}   # 이모티콘·시그니처 아이템ID (별풍선 집계 제외, 계속 추가)
+
+
 def _parse_balloon(fields):
     """별풍선 칸 해석 (svc 109). 실측: [3]=메시지ID [4]=개수 [6]=보낸이ID [7]=보낸이닉.
 
@@ -84,6 +87,9 @@ def _parse_balloon(fields):
     cnt = fields[4].strip()
     if not (cnt.isdigit() and int(cnt) > 0):
         return None
+    item = (fields[8] if len(fields) > 8 else '').split('|')[0]
+    if item in EMOTE_ITEMS:
+        return None                          # 이모티콘/시그니처 — 별풍선 아님
     nick = _clean_nick(fields[7])
     uid = _clean_nick(fields[6])
     if not nick:

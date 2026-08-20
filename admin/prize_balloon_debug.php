@@ -51,8 +51,10 @@ function pkt(svc,body){const b=new TextEncoder().encode(body);
 function setFlag(h){document.getElementById('flag').innerHTML=h}
 // 같은 사람이 같은 아이템ID 를 몇 번 보냈는지 (이모티콘 반복 표시용)
 const itemSeen={};
+const EMOTE_ITEMS=new Set(['537477152']);
 function classify(svc,f){
-  if(svc===109) return {k:'별풍선(svc109)',cls:'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:(f[8]||'').split('|')[0]};
+  if(svc===109){const it=(f[8]||'').split('|')[0];
+    return {k:EMOTE_ITEMS.has(it)?'이모티콘(제외)':'별풍선(svc109)',cls:EMOTE_ITEMS.has(it)?'etc':'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:it};}
   if(svc===18)  return {k:'별풍선(svc18)', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:'(svc18)'};
   if(svc===87)  return {k:'애드벌룬',       cls:'ad',  nick:clean(f[4]||f[3]),id:clean(f[3]),cnt:(f[5]||'').replace(/[^0-9]/g,'')||'?',item:'ad'};
   if(svc===54)  return {k:'구독',           cls:'sub', nick:clean(f[2]),id:'',cnt:'',item:'sub'};

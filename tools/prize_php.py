@@ -754,10 +754,16 @@ function dedupBalloon(who,cnt){
   if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
   return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
 }
-function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉
+/* 이모티콘·시그니처 선물의 아이템ID (별풍선으로 사지만 별풍선 집계엔 안 넣음).
+   실측으로 확인되는 대로 계속 추가합니다 (같은 사람이 같은 아이템ID 를
+   개수만 바꿔 반복 발송하면 이모티콘 신호). */
+const EMOTE_ITEMS=new Set(['537477152']);
+function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉 [8]아이템ID
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
+  const item=(f[8]||'').split('|')[0];
+  if(EMOTE_ITEMS.has(item))return null;   // 이모티콘/시그니처 — 별풍선 아님
   const nick=cleanNick(f[7]); if(!nick)return null;
   const id=cleanNick(f[6]);
   return dedupBalloon(id||nick,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
@@ -2148,8 +2154,10 @@ function pkt(svc,body){const b=new TextEncoder().encode(body);
 function setFlag(h){document.getElementById('flag').innerHTML=h}
 // 같은 사람이 같은 아이템ID 를 몇 번 보냈는지 (이모티콘 반복 표시용)
 const itemSeen={};
+const EMOTE_ITEMS=new Set(['537477152']);
 function classify(svc,f){
-  if(svc===109) return {k:'별풍선(svc109)',cls:'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:(f[8]||'').split('|')[0]};
+  if(svc===109){const it=(f[8]||'').split('|')[0];
+    return {k:EMOTE_ITEMS.has(it)?'이모티콘(제외)':'별풍선(svc109)',cls:EMOTE_ITEMS.has(it)?'etc':'b109',nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:it};}
   if(svc===18)  return {k:'별풍선(svc18)', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:'(svc18)'};
   if(svc===87)  return {k:'애드벌룬',       cls:'ad',  nick:clean(f[4]||f[3]),id:clean(f[3]),cnt:(f[5]||'').replace(/[^0-9]/g,'')||'?',item:'ad'};
   if(svc===54)  return {k:'구독',           cls:'sub', nick:clean(f[2]),id:'',cnt:'',item:'sub'};

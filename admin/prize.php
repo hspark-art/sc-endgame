@@ -271,10 +271,16 @@ function dedupBalloon(who,cnt){
   if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
   return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
 }
-function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉
+/* 이모티콘·시그니처 선물의 아이템ID (별풍선으로 사지만 별풍선 집계엔 안 넣음).
+   실측으로 확인되는 대로 계속 추가합니다 (같은 사람이 같은 아이템ID 를
+   개수만 바꿔 반복 발송하면 이모티콘 신호). */
+const EMOTE_ITEMS=new Set(['537477152']);
+function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉 [8]아이템ID
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
+  const item=(f[8]||'').split('|')[0];
+  if(EMOTE_ITEMS.has(item))return null;   // 이모티콘/시그니처 — 별풍선 아님
   const nick=cleanNick(f[7]); if(!nick)return null;
   const id=cleanNick(f[6]);
   return dedupBalloon(id||nick,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
