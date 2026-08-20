@@ -145,6 +145,20 @@ if ($act === 'winner_del') {
     jwrite('winners.json', $w);
     out(['ok' => true]);
 }
+if ($act === 'winner_update') {
+    $w = jread('winners.json', ['list' => []]);
+    foreach ($w['list'] as &$x) {
+        if (($x['id'] ?? '') === ($body['id'] ?? '')) {
+            foreach (['date', 'nick', 'sid', 'prize'] as $k) {
+                if (array_key_exists($k, $body)) { $x[$k] = (string)$body[$k]; }
+            }
+            break;
+        }
+    }
+    unset($x);
+    jwrite('winners.json', $w);
+    out(['ok' => true]);
+}
 
 // ── 상품 ──
 if ($act === 'prize_add') {
@@ -368,12 +382,14 @@ function goCh(v){
 </script>
 <div class="grid">
 
-<div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span></div>
+<div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()">채팅 지우기</button></div>
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
-<div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span></div>
+<div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearStats()">집계 초기화</button></div>
 <div class="scroll"><table id="users"><thead><tr><th class="num">#</th><th>닉네임</th>
-<th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
+<th>SOOP계정</th><th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
 <th>당첨</th><th></th></tr></thead><tbody></tbody></table></div>
 <hr><div class="ct">지난 방송 <span class="n">저절로 저장됩니다</span></div>
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
@@ -400,8 +416,14 @@ function goCh(v){
 <button onclick="addPrize()">추가</button></div>
 <span id="pPhotoName" class="hint"></span>
 <hr>
-<div class="ct">당첨자 장부 <span class="n" id="wcount"></span></div>
-<div class="scroll" style="max-height:200px"><table id="winners"><tbody></tbody></table></div>
+<div class="ct">당첨자 시트 <span class="n" id="wcount"></span>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="copyLedger()">📋 복사</button>
+<button class="gray" style="padding:4px 10px" onclick="downloadLedger()">⬇ CSV</button></div>
+<div class="scroll" style="max-height:260px"><table id="winners"><thead><tr>
+<th>날짜</th><th>닉네임</th><th>SOOP계정</th><th>상품</th><th>방식</th><th></th>
+</tr></thead><tbody></tbody></table></div>
+<div class="hint">쪽지 ✉ 는 그 계정의 SOOP 방송국을 새 탭으로 엽니다(거기서 쪽지). 계정이
+비었으면 ✏로 넣으세요 — 채팅·별풍선을 친 시청자는 자동으로 채워집니다.</div>
 <div class="row"><input id="wDate" placeholder="2026-08-13" style="width:104px">
 <input id="wNick" placeholder="닉네임" style="flex:1">
 <input id="wPrize" placeholder="상품" style="flex:1">
@@ -648,6 +670,23 @@ async function loadGdoc(){
     gdoc={names:g.names||[],ids:g.ids||[]};
     document.getElementById('gdocInfo').textContent=g.note||'';}catch(e){}
 }
+function clearChat(){recent.length=0;
+  document.getElementById('chat').innerHTML='';}
+function clearStats(){
+  if(!confirm('이번 방송 집계(채팅·별풍선·시청자)를 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
+  for(const k in users)delete users[k];
+  for(const k in uid)delete uid[k];
+  recent.length=0;document.getElementById('chat').innerHTML='';paint();}
+function downloadLedger(){
+  if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
+  const NL=String.fromCharCode(10);
+  const rows=ST.winners.list.map(w=>['"'+(w.date||'')+'"','"'+(w.nick||'').replace(/"/g,'""')+'"',
+    '"'+(w.sid||'')+'"','"'+(w.prize||'').replace(/"/g,'""')+'"','"'+(w.how||'')+'"'].join(','));
+  const csv=String.fromCharCode(0xFEFF)+['날짜,닉네임,SOOP계정,상품,방식'].concat(rows).join(NL);
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='끝장전-당첨자-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();}
 function copyLedger(){
   if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
   const TAB=String.fromCharCode(9),NL=String.fromCharCode(10);
@@ -705,12 +744,30 @@ async function refresh(){
     await api('overlay_set',{overlay:{kind:'prize',prize:pz.name||'',photo:pz.photo||''}});});
   const wl=ST.winners.list;
   document.getElementById('wcount').textContent=wl.length+'건';
-  document.getElementById('winners').innerHTML='<tbody>'+wl.slice().reverse().map(w=>
-    '<tr><td>'+esc(w.date)+'</td><td><b>'+esc(w.nick)+'</b></td><td>'+esc(w.prize)+
-    '</td><td class="pill">'+esc(w.how||'')+'</td><td><button class="red" '+
-    'style="padding:1px 7px" data-wdel="'+w.id+'">×</button></td></tr>').join('')+'</tbody>';
+  document.querySelector('#winners tbody').innerHTML=wl.slice().reverse().map(w=>{
+    const acc=w.sid||'';
+    return '<tr><td>'+esc(w.date)+'</td><td><b>'+esc(w.nick)+'</b></td>'+
+    '<td>'+(acc?'<span class="pill" style="font-size:11px">'+esc(acc)+'</span>'
+      :'<span class="warn" style="font-size:11px">없음</span>')+'</td>'+
+    '<td>'+esc(w.prize)+'</td><td class="pill">'+esc(w.how||'')+'</td>'+
+    '<td style="white-space:nowrap">'+
+    (acc?'<button class="gray" style="padding:1px 6px" data-note="'+esc(acc)+'" title="쪽지">✉</button>':'')+
+    '<button class="gray" style="padding:1px 6px" data-wedit="'+w.id+'" title="편집">✏</button>'+
+    '<button class="red" style="padding:1px 6px" data-wdel="'+w.id+'" title="삭제">×</button></td></tr>';
+  }).join('');
   document.querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('이 당첨 기록을 지울까요?'))return;
     await api('winner_del',{id:b.dataset.wdel});refresh();});
+  document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.note;
+    navigator.clipboard&&navigator.clipboard.writeText(id);
+    window.open('https://www.sooplive.com/station/'+encodeURIComponent(id),'_blank','noopener');});
+  document.querySelectorAll('[data-wedit]').forEach(b=>b.onclick=async()=>{
+    const w=wl.find(x=>x.id===b.dataset.wedit); if(!w)return;
+    const nick=prompt('닉네임',w.nick); if(nick===null)return;
+    const sid=prompt('SOOP 계정 아이디 (쪽지 보낼 본계정)',w.sid||''); if(sid===null)return;
+    const prize=prompt('상품',w.prize||''); if(prize===null)return;
+    await api('winner_update',{id:w.id,nick:nick.trim(),sid:sid.trim(),prize:prize.trim()});refresh();});
   for(const [id,v] of [['sChatFull',settings.chatFull],['sChatMax',settings.chatBonusMax],
     ['sBalFull',settings.balloonFull],['sBalMax',settings.balloonBonusMax],
     ['sWeeks',settings.excludeWeeks||0],['sAlert',settings.balloonAlert||100],
@@ -751,7 +808,8 @@ function paint(){
   document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map((u,i)=>{
     const pct=Math.round((u.b*3+u.c)/maxAct*100);
     return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
-    '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td><td class="num">'+u.c+'</td>'+
+    '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td>'+
+    '<td class="pill" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td><td class="num">'+u.c+'</td>'+
     '<td class="num balloon">'+(u.b||'')+'</td><td class="num">x'+u.w.toFixed(2)+
     '</td><td>'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
     '<td><button class="gray" style="padding:2px 8px" data-pick="'
