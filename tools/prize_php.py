@@ -744,22 +744,32 @@ function pkt(svc,body){
    다른 사람·다른 개수 선물까지 버려 절반 이상을 놓쳤습니다. 이제
    (종류+보낸사람+개수)가 똑같고 8초 안에 다시 온 것만 재전송으로 보고
    건너뜁니다. 다른 사람·다른 개수·시간차 큰 같은 선물은 각각 셉니다. */
-let seenBalloons=new Map();   // key -> 마지막 시각(ms)
+let seenBalloons=new Map();   // (보낸사람|개수) -> 마지막 시각(ms)
 const BAL_WINDOW=8000;
-function parseBalloon(f){
-  // svc 109 — [3]종류ID [4]개수 [6]보낸이ID [7]보낸이닉
+/* 별풍선 중복제거 — 같은 사람이 같은 개수를 8초 안에 다시 보내면 재전송으로 봄.
+   svc109·svc18 을 한 표에서 함께 보므로, 한 선물이 두 svc 로 겹쳐 와도 한 번만 셈. */
+function dedupBalloon(who,cnt){
+  const key=who+'|'+cnt, t=Date.now(), last=seenBalloons.get(key);
+  seenBalloons.set(key,t);
+  if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
+  return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
+}
+function parseBalloon(f){   // svc 109 — [4]개수 [6]보낸이ID [7]보낸이닉
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
-  const nick=cleanNick(f[7]);
-  if(!nick)return null;
+  const nick=cleanNick(f[7]); if(!nick)return null;
   const id=cleanNick(f[6]);
-  const key=(f[3]||'').trim()+'|'+id+'|'+cnt;
-  const t=Date.now(), last=seenBalloons.get(key);
-  seenBalloons.set(key,t);
-  if(last!=null && t-last<BAL_WINDOW)return null;   // 재전송 — 건너뜀
-  if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
-  return {t:'balloon',nick,count:+cnt,id};
+  return dedupBalloon(id||nick,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
+}
+function parseBalloon18(f){  // svc 18 별풍선 — [1]채널 [2]보낸이ID [3]보낸이닉 [4]개수 (talent 실측 2026-08)
+  if(f.length<5)return null;
+  const cnt=(f[4]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>100000)return null;
+  const id=cleanNick(f[2]), nick=cleanNick(f[3]);
+  if(!id||!nick||norm(id)===norm(nick))return null;   // id==닉 은 누적·순위 이벤트라 제외
+  if((f[1]||'').toLowerCase()!==BJ)return null;        // 이 채널로 온 선물만
+  return dedupBalloon(id,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
 }
 async function connectChat(){
   if(!sess.on){setStatus('⏹ 종료 상태 — ▶ 스타트를 누르면 집계를 시작합니다');sessBtns();return;}
@@ -791,6 +801,9 @@ async function connectChat(){
     }else if(svc===109){
       const ev=parseBalloon(f);
       if(ev){ev.at=now();onEvent(ev);}   // null 이면 재전송 — 조용히 건너뜀
+    }else if(svc===18){
+      const ev=parseBalloon18(f);        // 별풍선이 svc18 로도 옵니다 (낭만헌터 100개 건)
+      if(ev){ev.at=now();onEvent(ev);}
 
     }else if(![0,1,2,4].includes(svc)){
       rawUnknown.push({svc,f:f.slice(0,10),at:now()});
