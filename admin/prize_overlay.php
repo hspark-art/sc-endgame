@@ -29,6 +29,12 @@ box-shadow:0 20px 60px rgba(0,0,0,.55);background:rgba(255,255,255,.03)}
 .wprize{color:#cdd6e4;font-weight:700;font-size:40px}
 .idle{color:rgba(255,255,255,.82);font-weight:800;font-size:48px}
 #board{display:none}#board.show{display:block}
+#drawPrize{position:absolute;left:50%;top:120px;transform:translateX(-50%);display:none;
+align-items:center;gap:14px;padding:10px 22px;border-radius:999px;
+background:rgba(20,26,40,.8);border:1px solid #ffc63d;z-index:4}
+#drawPrize.show{display:flex}
+#drawPrize img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+#drawPrize span{color:#ffc63d;font-weight:800;font-size:26px}
 @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
 #pip{position:absolute;left:44px;bottom:44px;width:560px;height:315px;border-radius:16px;
 overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -74,6 +80,7 @@ animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
         <div class="wprize" id="ckN"></div></div>
       <div><div class="plabel" style="color:#ff8fa3">후원왕</div><div class="pname" id="bkNick"></div>
         <div class="wprize" id="bkN"></div></div></div></div>
+  <div id="drawPrize"></div>
   <canvas id="board" width="1200" height="820"></canvas>
   <div id="lineup"><div class="llabel">🎁 오늘의 상품</div><div class="cards" id="lineupCards"></div></div>
 </div>
@@ -102,6 +109,9 @@ function setPip(){
 pip.addEventListener('click',function(e){e.stopPropagation();pipI=(pipI+1)%PIP_MODES.length;setPip();});
 setPip();
 document.body.addEventListener('click',function(){document.body.classList.toggle('chroma');});
+document.addEventListener('keydown',function(e){
+  if(e.key==='m'||e.key==='M'){muted=!muted;
+    document.getElementById('hint').textContent=muted?'🔇 소리 꺼짐 (M 키로 켜기)':'화면 클릭 = 배경 초록/어둠 · PIP 클릭 = 중계진 자리 · M = 소리';}});
 let seq=-1, anim=null;
 function show(id){['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){
   document.getElementById(b).classList.toggle('show',b===id);});
@@ -114,7 +124,14 @@ async function loadPrizes(){
   try{const st=await (await fetch('prize_api.php?act=state')).json();
     allPrizes=(st.prizes&&st.prizes.items)||[];}catch(e){}
 }
+function showDrawPrize(st){
+  const d=document.getElementById('drawPrize');
+  if(st.prize){d.innerHTML=(st.photo?'<img src="'+st.photo+'">':'')+
+    '<span>'+String(st.prize).replace(/[&<>]/g,'')+' 추첨!</span>';d.classList.add('show');}
+  else d.classList.remove('show');
+}
 function idle(){
+  document.getElementById('drawPrize').classList.remove('show');
   const lu=document.getElementById('lineup');
   if(allPrizes.length){
     document.getElementById('lineupCards').innerHTML=allPrizes.slice(0,8).map(function(x){
@@ -139,7 +156,7 @@ function hideKings(){document.getElementById('kingBox').classList.remove('show')
 function roulette(st){
   const slots=st.slots,winIdx=slots.indexOf(st.winner),N=slots.length;
   ['idleBox','prizeBox','winBox','kingBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
-  const cvr=document.getElementById('board');cvr.classList.add('show');
+  const cvr=document.getElementById('board');cvr.classList.add('show');showDrawPrize(st);
   const cxr=cvr.getContext('2d'),cx0=cvr.width/2,cy0=380,R=330;
   const seg=2*Math.PI/N, target=-(winIdx*seg)-seg/2+ -Math.PI/2;
   const spins=5, dur=4200; let t0=null;
@@ -189,6 +206,24 @@ function prize(st){
   if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
   document.getElementById('prizeName').textContent=st.prize||'';
 }
+// 당첨 효과음 — 외부 파일 없이 만들어 냅니다 (밝은 3음 + 반짝임).
+let audioCtx=null, muted=false;
+function initAudio(){ if(!audioCtx){ try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } }
+document.body.addEventListener('click',initAudio,{once:true});
+function winSound(){
+  if(muted||!audioCtx)return;
+  try{
+    const t0=audioCtx.currentTime;
+    [523.25,659.25,783.99,1046.5].forEach(function(f,i){
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='triangle';o.frequency.value=f;
+      const t=t0+i*0.12;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.22,t+0.03);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+      o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+0.5);
+    });
+  }catch(e){}
+}
 function fireConfetti(){
   const c=document.getElementById('confetti'),x=c.getContext('2d');
   c.width=window.innerWidth||1920;c.height=window.innerHeight||1080;
@@ -207,8 +242,10 @@ function fireConfetti(){
   })();
 }
 function winner(st){
+  document.getElementById('drawPrize').classList.remove('show');
   show('winBox');
   fireConfetti();
+  winSound();
   document.getElementById('winCap').textContent={'핀볼':'🎯 핀볼 추첨 당첨','룰렛':'🎡 룰렛 당첨'}[st.how]||'🎉 축하합니다';
   const im=document.getElementById('winImg');
   if(st.photo){im.src=st.photo;im.hidden=false;}else im.hidden=true;
@@ -229,7 +266,7 @@ function plinko(st){
   }
   path[ROWS-1]=winIdx;
   ['idleBox','prizeBox','winBox'].forEach(function(b){document.getElementById(b).classList.remove('show');});
-  cv.classList.add('show');
+  cv.classList.add('show');showDrawPrize(st);
   let t0=null;
   function frame(ts){
     if(!t0)t0=ts;const el=ts-t0,total=ROWS*T+700;

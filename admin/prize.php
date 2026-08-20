@@ -376,11 +376,14 @@ async function refresh(){
   sel.innerHTML='<option value="">상품 없이</option>'+ST.prizes.items.map(x=>
     '<option value="'+x.id+'">'+esc(x.name)+'</option>').join('');
   if([...sel.options].some(o=>o.value===cur))sel.value=cur;
-  document.getElementById('prizes').innerHTML=ST.prizes.items.map(x=>
-    '<div class="row">'+(x.photo?'<img class="thumb" src="'+x.photo+'">':'')+
-    '<span style="flex:1">'+esc(x.name)+'</span>'+
+  const givenCount={};
+  (ST.winners.list||[]).forEach(w=>{if(w.prize)givenCount[w.prize]=(givenCount[w.prize]||0)+1;});
+  document.getElementById('prizes').innerHTML=ST.prizes.items.map(x=>{
+    const g=givenCount[x.name]||0;
+    return '<div class="row">'+(x.photo?'<img class="thumb" src="'+x.photo+'">':'')+
+    '<span style="flex:1">'+esc(x.name)+(g?' <span class="pill" style="color:#4ade80;border-color:#2c6b3f">✓ '+g+'회 지급</span>':'')+'</span>'+
     '<button class="gray" style="padding:3px 9px" data-show="'+x.id+'">📺 보여주기</button>'+
-    '<button class="red" style="padding:3px 9px" data-del="'+x.id+'">지우기</button></div>')
+    '<button class="red" style="padding:3px 9px" data-del="'+x.id+'">지우기</button></div>';})
     .join('')||'<div class="hint">아직 상품이 없습니다.</div>';
   document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
     await api('prize_del',{id:b.dataset.del});refresh();});
