@@ -111,7 +111,8 @@ def listen(bid, info, on_event, should_stop=None):
     ws.send_binary(_pkt(SVC_JOIN, F + chatno + F + F + F + F))
 
     import time as _t
-    seen_balloons = set()                    # 재전송 별풍선 중복 방지 (메시지ID)
+    seen_balloons = {}                       # (종류|보낸사람|개수) -> 마지막 시각
+    BAL_WINDOW = 8.0                         # 초 — 같은 것이 이 안에 다시 오면 재전송
     last_ping = _t.time()
     while True:
         if should_stop and should_stop():
@@ -137,12 +138,17 @@ def listen(bid, info, on_event, should_stop=None):
             ev = _parse_balloon(fields)
             if ev:
                 mid = ev.pop('mid', '')
-                if mid and mid in seen_balloons:
-                    continue                 # 이미 센 별풍선 — 건너뜁니다
-                if mid:
-                    seen_balloons.add(mid)
-                    if len(seen_balloons) > 4000:   # 긴 방송에서 메모리 방지
-                        seen_balloons = set(list(seen_balloons)[-2000:])
+                # [3]은 별풍선 '종류' 해시라 여러 사람이 공유합니다.
+                # 종류+보낸사람+개수가 같고 짧은 시간에 다시 온 것만 재전송.
+                key = '%s|%s|%s' % (mid, ev['id'], ev['count'])
+                now = _t.time()
+                last = seen_balloons.get(key)
+                seen_balloons[key] = now
+                if last is not None and now - last < BAL_WINDOW:
+                    continue                 # 재전송 — 건너뜁니다
+                if len(seen_balloons) > 5000:   # 긴 방송에서 메모리 방지
+                    seen_balloons = {k: v for k, v in seen_balloons.items()
+                                     if now - v < BAL_WINDOW}
                 on_event(ev)
             else:
                 on_event({'t': 'raw', 'svc': svc, 'fields': fields})

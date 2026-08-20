@@ -239,18 +239,27 @@ function pkt(svc,body){
     +String(b.length).padStart(6,'0')+'00');
   const u=new Uint8Array(head.length+b.length);u.set(head);u.set(b,head.length);return u;
 }
-const seenBalloons=new Set();   // 재전송 별풍선 중복 방지 (메시지ID [3])
+/* 별풍선 중복제거 — svc109 의 [3]은 별풍선 '종류' 해시라 여러 사람이
+   공유합니다(실측: 서로 다른 3명이 같은 mid). 그래서 mid 만으로 지우면
+   다른 사람·다른 개수 선물까지 버려 절반 이상을 놓쳤습니다. 이제
+   (종류+보낸사람+개수)가 똑같고 8초 안에 다시 온 것만 재전송으로 보고
+   건너뜁니다. 다른 사람·다른 개수·시간차 큰 같은 선물은 각각 셉니다. */
+let seenBalloons=new Map();   // key -> 마지막 시각(ms)
+const BAL_WINDOW=8000;
 function parseBalloon(f){
-  // 별풍선 svc 109 — 실측(2026-08): [3]메시지ID [4]개수 [6]보낸이ID [7]보낸이닉
+  // svc 109 — [3]종류ID [4]개수 [6]보낸이ID [7]보낸이닉
   if(f.length<8)return null;
   const cnt=(f[4]||'').trim();
   if(!/^\d+$/.test(cnt)||+cnt<=0)return null;
-  const mid=(f[3]||'').trim();
-  if(mid&&seenBalloons.has(mid))return null;   // 이미 센 별풍선
-  if(mid){seenBalloons.add(mid);
-    if(seenBalloons.size>4000)seenBalloons=new Set([...seenBalloons].slice(-2000));}
   const nick=cleanNick(f[7]);
-  return nick?{t:'balloon',nick,count:+cnt,id:cleanNick(f[6])}:null;
+  if(!nick)return null;
+  const id=cleanNick(f[6]);
+  const key=(f[3]||'').trim()+'|'+id+'|'+cnt;
+  const t=Date.now(), last=seenBalloons.get(key);
+  seenBalloons.set(key,t);
+  if(last!=null && t-last<BAL_WINDOW)return null;   // 재전송 — 건너뜀
+  if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
+  return {t:'balloon',nick,count:+cnt,id};
 }
 async function connectChat(){
   if(!sess.on){setStatus('⏹ 종료 상태 — ▶ 스타트를 누르면 집계를 시작합니다');sessBtns();return;}
@@ -281,8 +290,8 @@ async function connectChat(){
       if(nick)onEvent({t:'chat',nick,id:cleanNick(f[2]),msg:f[1],at:now()});
     }else if(svc===109){
       const ev=parseBalloon(f);
-      if(ev){ev.at=now();onEvent(ev);}
-      else rawUnknown.push({svc,f:f.slice(0,12),at:now()});
+      if(ev){ev.at=now();onEvent(ev);}   // null 이면 재전송 — 조용히 건너뜀
+
     }else if(![0,1,2,4].includes(svc)){
       rawUnknown.push({svc,f:f.slice(0,10),at:now()});
       rawUnknown.splice(0,Math.max(0,rawUnknown.length-200));
