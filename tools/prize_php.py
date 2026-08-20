@@ -534,6 +534,8 @@ padding:16px 18px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.
 .rwrow{padding:3px 3px;border-bottom:1px solid #171c25;font-size:12.5px;
 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
+.px{background:transparent;color:#8a93a6;border:0;padding:2px 8px;font-weight:900;font-size:15px;cursor:pointer;line-height:1}
+.px:hover{color:#f87171}
 @media(max-width:760px){
   .wrap{padding:10px 10px}
   body{font-size:15px}
@@ -580,24 +582,25 @@ function goCh(v){
   location.href = v ? ('prize.php?bj='+encodeURIComponent(v)) : 'prize.php';
 }
 </script>
+<div class="row" id="panelBar" style="margin:0 0 10px;gap:5px;flex-wrap:wrap"></div>
 <div class="grid">
 
-<div class="card"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
-<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button></div>
+<div class="card" data-panel="chat"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
+<button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
-<div class="card"><div class="ct">시청자 활약 <span class="n">별풍선·채팅 순</span>
+<div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">별풍선·채팅 순</span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
 <button class="gray" style="padding:4px 10px" onclick="downloadActivity()">⬇ 활약 CSV</button>
-<button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button></div>
+<button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button><button class="px" onclick="togglePanel('users')" title="이 창 닫기">✕</button></div>
 <div class="scroll"><table id="users"><thead><tr><th class="num">#</th><th>닉네임</th>
 <th>SOOP계정</th><th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
 <th>당첨</th><th></th></tr></thead><tbody></tbody></table></div>
-<hr><div class="ct">지난 방송 <span class="n">저절로 저장됩니다</span></div>
+<hr><div class="ct" data-panel="pastdays">지난 방송 <span class="n">저절로 저장됩니다</span><button class="px" style="margin-left:auto" onclick="togglePanel('pastdays')" title="이 창 닫기">✕</button></div>
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
-<div class="ct">당첨 만들기</div>
+<div class="ct" data-panel="pick">당첨 만들기<button class="px" style="margin-left:auto" onclick="togglePanel('pick')" title="이 창 닫기">✕</button></div>
 <div class="row"><input id="pickNick" placeholder="닉네임 — 채팅을 눌러도 들어갑니다" style="flex:1">
 <select id="prizeSel" style="flex:1"></select></div>
 <div id="dupwarn" class="hint"></div>
@@ -610,7 +613,7 @@ function goCh(v){
 <div class="hint">자막은 <b>자막 창</b>(위 링크)에 나옵니다 — 방송 프로그램에서 그 창을
 잡으면 됩니다. 핀볼은 채팅·별풍선에 따라 확률이 조금 올라갑니다.</div>
 <hr>
-<div class="ct">상품 <span class="n">사진도 넣을 수 있습니다</span></div>
+<div class="ct" data-panel="prizes">상품 <span class="n">사진도 넣을 수 있습니다</span><button class="px" style="margin-left:auto" onclick="togglePanel('prizes')" title="이 창 닫기">✕</button></div>
 <div id="prizes"></div>
 <div class="row"><input id="pName" placeholder="상품 이름" style="flex:1">
 <input type="file" id="pPhoto" accept="image/*" style="display:none">
@@ -618,10 +621,10 @@ function goCh(v){
 <button onclick="addPrize()">추가</button></div>
 <span id="pPhotoName" class="hint"></span>
 <hr>
-<div class="ct">당첨자 시트 <span class="n" id="wcount"></span>
+<div class="ct" data-panel="winners">당첨자 시트 <span class="n" id="wcount"></span>
 <a class="top" href="prize_sheet.php">전체 화면 ↗</a>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="copyLedger()">📋 복사</button>
-<button class="gray" style="padding:4px 10px" onclick="downloadLedger()">⬇ CSV</button></div>
+<button class="gray" style="padding:4px 10px" onclick="downloadLedger()">⬇ CSV</button><button class="px" onclick="togglePanel('winners')" title="이 창 닫기">✕</button></div>
 <div class="scroll" style="max-height:260px"><table id="winners"><thead><tr>
 <th>날짜</th><th>닉네임</th><th>SOOP계정</th><th>상품</th><th>방식</th><th></th>
 </tr></thead><tbody></tbody></table></div>
@@ -632,11 +635,11 @@ function goCh(v){
 <input id="wPrize" placeholder="상품" style="flex:1">
 <button class="gray" onclick="addWinner()">지난 기록 넣기</button></div>
 <hr>
-<div class="ct">최근 당첨자 <span class="n">중복 방지</span>
+<div class="ct" data-panel="recent">최근 당첨자 <span class="n">중복 방지</span>
 <span style="flex:1"></span>
 <button class="pill chip" onclick="setDupM(1)">1개월</button>
 <button class="pill chip" onclick="setDupM(2)">2개월</button>
-<button class="pill chip" onclick="setDupM(3)">3개월</button></div>
+<button class="pill chip" onclick="setDupM(3)">3개월</button><button class="px" onclick="togglePanel('recent')" title="이 창 닫기">✕</button></div>
 <div id="dupLegend" class="hint" style="margin:2px 0"></div>
 <div class="scroll" style="max-height:230px"><div id="recentWinners"></div></div>
 </div>
@@ -955,6 +958,42 @@ function downloadActivity(){
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
+}
+const PANELS=[['chat','실시간 채팅'],['users','시청자 활약'],['pastdays','지난 방송'],
+  ['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
+const panelState={};   // key -> 숨김 여부(true=닫힘)
+function panelNodes(key){
+  // data-panel 이 카드면 카드 통째로, 섹션이면 헤더~다음 헤더/구분선 앞까지(앞 <hr> 포함)
+  const el=document.querySelector('[data-panel="'+key+'"]');
+  if(!el)return [];
+  if(el.classList.contains('card'))return [el];
+  const nodes=[]; const prev=el.previousElementSibling;
+  if(prev&&prev.tagName==='HR')nodes.push(prev);
+  nodes.push(el);
+  let n=el.nextElementSibling;
+  while(n&&!(n.classList&&n.classList.contains('ct'))&&n.tagName!=='HR'){nodes.push(n);n=n.nextElementSibling;}
+  return nodes;
+}
+function applyPanel(key){
+  const hide=!!panelState[key];
+  panelNodes(key).forEach(n=>{n.style.display=hide?'none':'';});
+}
+function renderPanelBar(){
+  const bar=document.getElementById('panelBar');if(!bar)return;
+  bar.innerHTML='<span class="n" style="margin-right:2px">창 켜기·끄기:</span>'+PANELS.map(function(pr){
+    return '<button class="pill chip'+(panelState[pr[0]]?'':' on')+'" data-pk="'+pr[0]+'">'+
+      (panelState[pr[0]]?'＋ ':'✓ ')+esc(pr[1])+'</button>';}).join('');
+  bar.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>togglePanel(b.dataset.pk));
+}
+function togglePanel(key){
+  panelState[key]=!panelState[key];
+  try{localStorage.setItem('pzPanels',JSON.stringify(panelState));}catch(e){}
+  applyPanel(key);renderPanelBar();
+}
+function initPanels(){
+  try{Object.assign(panelState,JSON.parse(localStorage.getItem('pzPanels')||'{}'));}catch(e){}
+  PANELS.forEach(pr=>applyPanel(pr[0]));
+  renderPanelBar();
 }
 function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
 const PCATS=[
@@ -1288,6 +1327,7 @@ loadGdoc();setInterval(loadGdoc,300000);
 applyRealCh();
 if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
 updateMaskBtn();
+initPanels();
 restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){
