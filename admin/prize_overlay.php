@@ -95,6 +95,7 @@ animation:slideIn .4s ease, fadeOut .5s ease 5s forwards}
     </div>
     <div class="wprize" id="pdHint" style="margin-top:12px"></div>
     <div class="wprize" id="pdTop" style="margin-top:6px;font-size:24px;color:#ffd24a"></div>
+    <div id="pdFeed" style="margin-top:10px;font-size:19px;color:#aab3c5;line-height:1.6;text-align:center"></div>
   </div>
   <div id="drawPrize"></div>
   <canvas id="board" width="1200" height="820"></canvas>
@@ -318,40 +319,69 @@ function plinko(st){
   }
   anim=requestAnimationFrame(frame);
 }
-function predictLive(st){
+function totoLive(st){
   show('pdBox');
-  document.getElementById('pdCap').textContent='🔮 승부예측 — 채팅에 선수 이름을 치세요!';
-  document.getElementById('pdHint').textContent='첫 입력만 인정 · 적중 +100P · 연승 보너스 +20씩';
   document.getElementById('pdTop').textContent='';
   async function tick(){
     try{
-      const d=await (await fetch('prize_api.php?act=predict_public')).json();
-      const c=d.cur;if(!c)return;
-      const tot=c.ca+c.cb, pa=tot?Math.round(c.ca*100/tot):50;
-      document.getElementById('pdAName').textContent=c.a;
-      document.getElementById('pdBName').textContent=c.b;
-      document.getElementById('pdACnt').textContent=c.ca+'표'+(tot?' · '+pa+'%':'');
-      document.getElementById('pdBCnt').textContent=c.cb+'표'+(tot?' · '+(100-pa)+'%':'');
+      const d=(await (await fetch('prize_api.php?act=toto_public')).json()).day;
+      if(!d)return;
+      const fd=(d.feed||[]).slice(0,3).map(function(f){return f.msg;}).join('   ');
+      document.getElementById('pdFeed').textContent=fd;
+      const r=d.round;
+      if(!r){
+        document.getElementById('pdCap').textContent='🎰 승부토토 — 채팅에 "도전"을 치면 참여! (1인 10,000P)';
+        document.getElementById('pdAName').textContent='참여 '+d.entries+'명';
+        document.getElementById('pdBName').textContent='';
+        document.getElementById('pdACnt').textContent='';
+        document.getElementById('pdBCnt').textContent='';
+        document.getElementById('pdBarA').style.width='50%';
+        document.getElementById('pdHint').textContent='세트마다 "선수이름 금액" 으로 베팅 · 첫 베팅 고정 · 가상 포인트';
+        return;
+      }
+      const tot=r.poolA+r.poolB, pa=tot?Math.round(r.poolA*100/tot):50;
+      const oa=r.poolA>0?(tot/r.poolA).toFixed(2):'-', ob=r.poolB>0?(tot/r.poolB).toFixed(2):'-';
+      document.getElementById('pdCap').textContent=(r.state==='locked')
+        ?'⏸ 베팅 마감 — 결과를 기다립니다!':'💰 베팅 접수 중 — 채팅에 "선수이름 금액"!';
+      document.getElementById('pdAName').textContent=r.a;
+      document.getElementById('pdBName').textContent=r.b;
+      document.getElementById('pdACnt').textContent=r.poolA.toLocaleString()+'P · 배당 '+oa;
+      document.getElementById('pdBCnt').textContent=r.poolB.toLocaleString()+'P · 배당 '+ob;
       document.getElementById('pdBarA').style.width=(tot?pa:50)+'%';
-      document.getElementById('pdCap').textContent=(c.state==='locked')
-        ?'⏸ 예측 마감 — 곧 결과가 나옵니다!':'🔮 승부예측 — 채팅에 선수 이름을 치세요!';
+      document.getElementById('pdHint').textContent='베팅 '+r.bets+'건 · 총 '+tot.toLocaleString()+'P · "이름 올인"도 가능 · 첫 베팅 고정';
     }catch(e){}
   }
   tick();pdTimer=setInterval(tick,2000);
 }
-function predictResult(st){
+function totoResult(st){
   show('pdBox');fireConfetti();winSound();
-  const tot=(st.ca||0)+(st.cb||0), pa=tot?Math.round((st.ca||0)*100/tot):50;
-  document.getElementById('pdCap').textContent='🎉 예측 결과 — '+(st.wname||'')+' 승!';
-  document.getElementById('pdAName').textContent=st.a||'';
-  document.getElementById('pdBName').textContent=st.b||'';
-  document.getElementById('pdACnt').textContent=(st.ca||0)+'표';
-  document.getElementById('pdBCnt').textContent=(st.cb||0)+'표';
-  document.getElementById('pdBarA').style.width=pa+'%';
-  document.getElementById('pdHint').textContent='적중 '+(st.hit||0)+'명 / 참여 '+tot+'명'
-    +(tot?' ('+Math.round((st.hit||0)*100/tot)+'%)':'');
+  const tot=(st.poolA||0)+(st.poolB||0);
+  document.getElementById('pdCap').textContent=st.refund
+    ?'⚖ 적중자 없음 — 전원 환불':'🏆 '+(st.wname||'')+' 승!';
+  document.getElementById('pdAName').textContent=st.refund?'':(st.wname||'');
+  document.getElementById('pdBName').textContent='';
+  document.getElementById('pdACnt').textContent=st.refund?'':'배당 '+(st.odds||0).toFixed(2)+'배';
+  document.getElementById('pdBCnt').textContent='';
+  document.getElementById('pdBarA').style.width='50%';
+  document.getElementById('pdHint').textContent=st.refund
+    ?'건 포인트를 모두 돌려드렸습니다'
+    :'적중 '+(st.hit||0)+'명 · 총 풀 '+tot.toLocaleString()+'P';
   document.getElementById('pdTop').textContent=(st.top&&st.top.length)
-    ?('🔥 '+st.top.slice(0,3).map(function(t){return t.n+' +'+t.gain+'P'}).join('  ·  ')):'';
+    ?('🔥 '+st.top.slice(0,3).map(function(t){return t.n+' +'+t.gain.toLocaleString()+'P'}).join('  ·  ')):'';
+  document.getElementById('pdFeed').textContent='';
+}
+function totoChamp(st){
+  show('pdBox');fireConfetti();winSound();
+  document.getElementById('pdCap').textContent='👑 오늘의 승부토토 우승!';
+  document.getElementById('pdAName').textContent=st.n||'';
+  document.getElementById('pdBName').textContent='';
+  document.getElementById('pdACnt').textContent=(st.bal||0).toLocaleString()+'P';
+  document.getElementById('pdBCnt').textContent='';
+  document.getElementById('pdBarA').style.width='50%';
+  document.getElementById('pdHint').textContent='참여 '+(st.entries||0)+'명';
+  document.getElementById('pdTop').textContent=(st.rank&&st.rank.length>1)
+    ?st.rank.slice(1,4).map(function(r,i){return (i+2)+'위 '+r.n+' '+r.bal.toLocaleString()+'P'}).join('  ·  '):'';
+  document.getElementById('pdFeed').textContent='';
 }
 async function poll(){
   try{
@@ -363,8 +393,9 @@ async function poll(){
       else if(st.kind==='roulette')roulette(st);
       else if(st.kind==='kings')kings(st);
       else if(st.kind==='prize')prize(st);
-      else if(st.kind==='predict')predictLive(st);
-      else if(st.kind==='predict_result')predictResult(st);
+      else if(st.kind==='toto')totoLive(st);
+      else if(st.kind==='toto_result')totoResult(st);
+      else if(st.kind==='toto_champ')totoChamp(st);
       else idle();
     }
   }catch(e){}

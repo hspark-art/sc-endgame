@@ -117,24 +117,29 @@ function goCh(v){
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
-<div class="ct" data-panel="predict">🔮 승부예측 <span class="n">채팅으로 세트 승자 맞히기</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
-<div class="row"><input id="pdA" placeholder="선수 A 이름" style="flex:1;min-width:90px">
-<span class="n">vs</span><input id="pdB" placeholder="선수 B 이름" style="flex:1;min-width:90px"></div>
+<div class="ct" data-panel="predict">🎰 승부토토 <span class="n">채팅 '도전' → 포인트 배팅</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
 <div class="row">
-<button onclick="pdStart()" id="pdStartBtn">🔮 예측 시작</button>
-<button class="gray" onclick="pdLock()" id="pdLockBtn" disabled>⏸ 마감</button>
-<button class="gray" onclick="pdSettle('a')" id="pdWinA" disabled>A 승</button>
-<button class="gray" onclick="pdSettle('b')" id="pdWinB" disabled>B 승</button>
-<button class="gray" onclick="pdCancel()" id="pdCancelBtn" disabled>취소</button>
+<button onclick="ttOpenDay()" id="ttOpenBtn">🎰 오늘 개장</button>
+<span class="pill" id="ttEntry" style="font-size:12px">-</span>
+<button class="gray" onclick="ttCloseDay()" id="ttCloseBtn" disabled>🏁 하루 마감</button>
 <a class="top" href="../predict.php" target="_blank">리더보드 ↗</a></div>
-<div id="pdBar" style="display:none">
+<div class="row"><input id="ttA" placeholder="선수 A 이름" style="flex:1;min-width:80px">
+<span class="n">vs</span><input id="ttB" placeholder="선수 B 이름" style="flex:1;min-width:80px"></div>
+<div class="row">
+<button onclick="ttRoundStart()" id="ttStartBtn" disabled>💰 베팅 오픈</button>
+<button class="gray" onclick="ttLock()" id="ttLockBtn" disabled>⏸ 마감</button>
+<button class="gray" onclick="ttSettle('a')" id="ttWinA" disabled>A 승</button>
+<button class="gray" onclick="ttSettle('b')" id="ttWinB" disabled>B 승</button>
+<button class="gray" onclick="ttCancelRound()" id="ttCancelBtn" disabled>취소</button></div>
+<div id="ttBar" style="display:none">
 <div style="display:flex;justify-content:space-between;font-size:12.5px;margin:2px 0">
-<b id="pdCntA" style="color:#7cb6ff"></b><b id="pdCntB" style="color:#ff8fa3"></b></div>
+<b id="ttCntA" style="color:#7cb6ff"></b><b id="ttCntB" style="color:#ff8fa3"></b></div>
 <div style="height:12px;background:#33202a;border-radius:6px;overflow:hidden;display:flex">
-<div id="pdFillA" style="background:#1c8cff;width:50%;transition:width .4s"></div>
+<div id="ttFillA" style="background:#1c8cff;width:50%;transition:width .4s"></div>
 <div style="background:#ff4d5a;flex:1"></div></div>
 </div>
-<div id="pdStatus" class="hint"></div>
+<div id="ttStatus" class="hint"></div>
+<div id="ttFeed" style="max-height:108px;overflow:auto;font-size:12px;line-height:1.9;color:#aab3c5"></div>
 <hr>
 <div class="ct" data-panel="pick">당첨 만들기<button class="px" style="margin-left:auto" onclick="togglePanel('pick')" title="이 창 닫기">✕</button></div>
 <div class="row"><input id="pickNick" placeholder="닉네임 — 채팅을 눌러도 들어갑니다" style="flex:1">
@@ -257,7 +262,7 @@ function bump(nick,kind,n){
 function onEvent(ev){
   // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
-  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);pdOnChat(ev);}
+  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);ttOnChat(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
     // 큰 별풍선이면 방송 장면에 감사 배너를 자동으로 띄웁니다
@@ -516,119 +521,194 @@ function downloadActivity(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
 }
-/* ── 승부예측 — 채팅으로 세트 승자 맞히기 ─────────────────────
-   규칙: 관리자가 시작→시청자가 채팅에 '선수 이름'(첫 입력만 인정)→
-   관리자가 마감→결과 버튼으로 정산. 적중 +100P, 연승 보너스 +20씩(최대+100).
-   진짜 채널이면 서버(prize_api)에 저장·정산, 연습이면 이 창 안에서만. */
-let pd=null;            // 진행 라운드 {id,a,b,state,votes:{계정:{p,n,at}}}
-let pdLocal={};         // 연습 모드 포인트 (휘발성)
-let pdSyncT=null;
-function pdNorm(s){return String(s||'').replace(/\s+/g,'').replace(/[!~.?]+$/,'').toLowerCase()}
-function pdOnChat(ev){
-  if(!pd||pd.state!=='open')return;
-  const key=ev.id||('nick:'+ev.nick);
-  if(pd.votes[key])return;                  // 첫 입력만 인정 (변경 불가)
-  const m=pdNorm(ev.msg);
-  if(!m)return;
-  let p=null;
-  if(m===pdNorm(pd.a))p='a'; else if(m===pdNorm(pd.b))p='b';
-  if(!p)return;
-  pd.votes[key]={p:p,n:ev.nick,at:Date.now()};
-  pdPaint();
+/* ── 승부토토 — 하루 가상 포인트 배팅 ────────────────────────
+   '도전' → 10,000P 지급(계정당 1회). '이름 금액'/'이름 올인' — 첫 베팅 고정.
+   배당 = 총풀/승자풀(합동배당), 승자 없으면 전원 환불. 파산 = 그날 끝.
+   접수/실패는 피드로 안내(관제·방송 장면·공개 페이지). 정산·하루마감은
+   서버가 단독 수행(이중 방지). 연습 채널이면 전부 이 창 안에서만. */
+const TT_START=10000, TT_MIN=100;
+let tt=null;            // {date,open,players,round,rounds,feed}
+let ttSyncT=null, ttLocalSeason={players:{},days:[]};
+function ttNorm(s){return String(s||'').replace(/\s+/g,'').replace(/[!~.?]+$/,'').toLowerCase()}
+function ttFeed(type,msg){
+  if(!tt)return;
+  tt.feed=tt.feed||[];
+  tt.feed.unshift({type:type,msg:msg,at:new Date().toTimeString().slice(0,8)});
+  tt.feed.splice(80);
 }
-function pdCount(){let a=0,b=0;for(const k in pd.votes){if(pd.votes[k].p==='a')a++;else b++;}return{a:a,b:b};}
-function pdPaint(){
-  const st=document.getElementById('pdStatus'), bar=document.getElementById('pdBar');
-  if(!st)return;
-  const sBtn=document.getElementById('pdStartBtn'), lBtn=document.getElementById('pdLockBtn');
-  const aBtn=document.getElementById('pdWinA'), bBtn=document.getElementById('pdWinB'), cBtn=document.getElementById('pdCancelBtn');
-  if(!pd){
-    sBtn.disabled=false;lBtn.disabled=true;aBtn.disabled=true;bBtn.disabled=true;cBtn.disabled=true;
-    bar.style.display='none';
-    if(!st.dataset.keep)st.innerHTML='대기 중 — 선수 두 명을 넣고 <b>예측 시작</b>. 시청자는 채팅에 <b>선수 이름</b>을 치면 참여(첫 입력만 인정).';
-    return;
+function ttOnChat(ev){
+  if(!tt)return;
+  const key=ev.id||('nick:'+ev.nick);
+  const raw=String(ev.msg||'').trim();
+  if(ttNorm(raw)==='도전'){                     // ① 참여
+    if(!tt.open)return;
+    const p0=tt.players[key];
+    if(p0){if(p0.bust)ttFeed('fail','❌ '+ev.nick+' — 오늘은 파산! 내일 다시 도전하세요');return;}
+    tt.players[key]={n:ev.nick,bal:TT_START,betW:0,betL:0,bust:false};
+    ttFeed('join','🙋 '+ev.nick+' 참여! ('+TT_START.toLocaleString()+'P 지급)');
+    ttPaint();return;
+  }
+  if(!tt.round)return;                          // ② 베팅 — '이름 금액'
+  const m=raw.split(/\s+/);
+  if(m.length!==2)return;
+  const amtRaw=m[1].replace(/,/g,'');
+  const allin=(amtRaw==='올인');
+  if(!allin&&!/^[0-9]+$/.test(amtRaw))return;   // 베팅 형태 아님 → 조용히 무시
+  const nm=ttNorm(m[0]);
+  let pick=null;
+  if(nm===ttNorm(tt.round.a))pick='a'; else if(nm===ttNorm(tt.round.b))pick='b';
+  if(tt.round.state!=='open'){const pl0=tt.players[key];if(pick&&pl0&&!pl0.bust)ttFeed('fail','❌ '+ev.nick+' — 베팅 마감! 다음 세트에 참여하세요');return;}
+  const p=tt.players[key];
+  if(!pick){if(p&&!p.bust)ttFeed('fail','❌ '+ev.nick+' — 선수 이름을 정확히! ('+tt.round.a+' / '+tt.round.b+')');return;}
+  if(!p){ttFeed('fail','❌ '+ev.nick+' — 먼저 채팅에 "도전"을 쳐서 참여하세요');return;}
+  if(p.bust){ttFeed('fail','❌ '+ev.nick+' — 파산! 오늘은 관전만');return;}
+  if(tt.round.bets[key]){ttFeed('fail','❌ '+ev.nick+' — 이미 베팅했어요 (변경 불가)');return;}
+  const amt=allin?p.bal:parseInt(amtRaw,10);
+  if(!allin&&amt>p.bal){ttFeed('fail','❌ '+ev.nick+' — 잔액 부족 (보유 '+p.bal.toLocaleString()+'P)');return;}
+  if(amt<TT_MIN){ttFeed('fail','❌ '+ev.nick+' — 최소 '+TT_MIN+'P부터');return;}
+  p.bal-=amt;
+  tt.round.bets[key]={p:pick,amt:amt,n:ev.nick};
+  ttFeed('bet','✅ '+ev.nick+' '+amt.toLocaleString()+'P → '+(pick==='a'?tt.round.a:tt.round.b)+(allin?' (올인!)':''));
+  ttPaint();
+}
+function ttPools(){
+  let a=0,b=0,n=0;
+  if(tt&&tt.round)for(const k in tt.round.bets){const v=tt.round.bets[k];n++;if(v.p==='a')a+=v.amt;else b+=v.amt;}
+  return{a:a,b:b,n:n};
+}
+function ttOdds(pool,total){return pool>0?(total/pool).toFixed(2):'-';}
+function ttPaint(){
+  const st=document.getElementById('ttStatus');if(!st)return;
+  const bar=document.getElementById('ttBar'),fd=document.getElementById('ttFeed');
+  const oBtn=document.getElementById('ttOpenBtn'),cBtn=document.getElementById('ttCloseBtn');
+  const sBtn=document.getElementById('ttStartBtn'),lBtn=document.getElementById('ttLockBtn');
+  const aBtn=document.getElementById('ttWinA'),bBtn=document.getElementById('ttWinB'),xBtn=document.getElementById('ttCancelBtn');
+  const en=document.getElementById('ttEntry');
+  if(!tt){
+    oBtn.disabled=false;cBtn.disabled=true;sBtn.disabled=true;lBtn.disabled=true;
+    aBtn.disabled=true;bBtn.disabled=true;xBtn.disabled=true;
+    en.textContent='개장 전';bar.style.display='none';
+    if(!st.dataset.keep)st.innerHTML='<b>🎰 오늘 개장</b>을 누르면 시청자가 채팅에 <b>도전</b>을 쳐서 참여합니다 (1인 '+TT_START.toLocaleString()+'P).';
+    fd.innerHTML='';return;
   }
   st.dataset.keep='';
-  const c=pdCount(), tot=c.a+c.b, pa=tot?Math.round(c.a*100/tot):50;
-  sBtn.disabled=true;lBtn.disabled=(pd.state!=='open');
-  aBtn.disabled=false;bBtn.disabled=false;cBtn.disabled=false;
-  aBtn.textContent=pd.a+' 승';bBtn.textContent=pd.b+' 승';
-  document.getElementById('pdA').value=pd.a;document.getElementById('pdB').value=pd.b;
-  bar.style.display='';
-  document.getElementById('pdCntA').textContent=pd.a+' '+c.a+'표'+(tot?' ('+pa+'%)':'');
-  document.getElementById('pdCntB').textContent=(tot?(100-pa)+'% ':'')+c.b+'표 '+pd.b;
-  document.getElementById('pdFillA').style.width=(tot?pa:50)+'%';
-  st.innerHTML=(pd.state==='open'
-    ?'🟢 <b>집계 중</b> — 시청자는 채팅에 선수 이름(첫 입력만). '
-    :'⏸ <b>마감됨</b> — 세트가 끝나면 결과 버튼으로 정산. ')
-    +'참여 <b>'+tot+'</b>명'+(IS_TEST_CH?' <span class="warn">(연습 — 저장 안 됨)</span>':'');
-}
-function pdSyncStart(){if(pdSyncT||IS_TEST_CH)return;pdSyncT=setInterval(function(){if(pd)api('predict_save',{cur:pd});},4000);}
-function pdSyncStop(){if(pdSyncT){clearInterval(pdSyncT);pdSyncT=null;}}
-async function pdStart(){
-  const a=document.getElementById('pdA').value.trim(), b=document.getElementById('pdB').value.trim();
-  if(!a||!b)return alert('선수 두 명의 이름을 먼저 넣어주세요');
-  if(pdNorm(a)===pdNorm(b))return alert('두 선수 이름이 같습니다');
-  if(pd&&!confirm('진행 중인 예측이 있습니다. 버리고 새로 시작할까요?'))return;
-  pd={id:String(Date.now()),a:a,b:b,state:'open',votes:{},startedAt:new Date().toISOString()};
-  const st=document.getElementById('pdStatus');if(st)delete st.dataset.keep;
-  pdPaint();
-  if(!IS_TEST_CH){
-    await api('predict_save',{cur:pd});pdSyncStart();
-    await api('overlay_set',{overlay:{kind:'predict'}});   // 방송 장면: 실시간 비율
+  let np=0,nb=0;for(const k in tt.players){np++;if(tt.players[k].bust)nb++;}
+  en.textContent='참여 '+np+'명'+(nb?' · 파산 '+nb:'');
+  oBtn.disabled=true;cBtn.disabled=false;
+  const r=tt.round;
+  sBtn.disabled=!!r;lBtn.disabled=!r||r.state!=='open';
+  aBtn.disabled=!r;bBtn.disabled=!r;xBtn.disabled=!r;
+  if(r){
+    aBtn.textContent=r.a+' 승';bBtn.textContent=r.b+' 승';
+    document.getElementById('ttA').value=r.a;document.getElementById('ttB').value=r.b;
+    const c=ttPools(),tot=c.a+c.b,pa=tot?Math.round(c.a*100/tot):50;
+    bar.style.display='';
+    document.getElementById('ttCntA').textContent=r.a+' '+c.a.toLocaleString()+'P (배당 '+ttOdds(c.a,tot)+')';
+    document.getElementById('ttCntB').textContent='(배당 '+ttOdds(c.b,tot)+') '+c.b.toLocaleString()+'P '+r.b;
+    document.getElementById('ttFillA').style.width=(tot?pa:50)+'%';
+    st.innerHTML=(r.state==='open'?'🟢 <b>베팅 접수 중</b> — 채팅에 "이름 금액" 또는 "이름 올인". ':'⏸ <b>마감</b> — 결과 버튼으로 정산. ')
+      +'베팅 '+c.n+'건 · 총 '+tot.toLocaleString()+'P'+(IS_TEST_CH?' <span class="warn">(연습)</span>':'');
+  }else{
+    aBtn.textContent='A 승';bBtn.textContent='B 승';bar.style.display='none';
+    st.innerHTML='참여 접수 중 — 세트 전에 선수 두 명을 넣고 <b>베팅 오픈</b>.'+(IS_TEST_CH?' <span class="warn">(연습 — 저장 안 됨)</span>':'');
   }
+  fd.innerHTML=(tt.feed||[]).slice(0,10).map(function(f){
+    return '<div>'+esc(f.at+' '+f.msg)+'</div>';}).join('');
 }
-async function pdLock(){
-  if(!pd||pd.state!=='open')return;
-  pd.state='locked';pdPaint();
-  if(!IS_TEST_CH)await api('predict_save',{cur:pd});
+function ttSyncStart(){if(ttSyncT||IS_TEST_CH)return;ttSyncT=setInterval(function(){if(tt)api('toto_save',{day:tt});},4000);}
+function ttSyncStop(){if(ttSyncT){clearInterval(ttSyncT);ttSyncT=null;}}
+async function ttOpenDay(){
+  if(tt)return;
+  tt={date:todayStr(),open:true,players:{},round:null,rounds:[],feed:[]};
+  ttFeed('info','🎰 오늘의 승부토토 개장! 채팅에 "도전"');
+  const st=document.getElementById('ttStatus');if(st)delete st.dataset.keep;
+  ttPaint();
+  if(!IS_TEST_CH){await api('toto_save',{day:tt});ttSyncStart();}
 }
-async function pdCancel(){
-  if(!pd)return;
-  if(!confirm('예측을 취소할까요? 모인 표는 버려지고 포인트 변화도 없습니다.'))return;
-  pd=null;pdSyncStop();pdPaint();
-  if(!IS_TEST_CH){await api('predict_cancel',{});await api('overlay_set',{overlay:{kind:'none'}});}
+async function ttRoundStart(){
+  if(!tt||tt.round)return;
+  const a=document.getElementById('ttA').value.trim(),b=document.getElementById('ttB').value.trim();
+  if(!a||!b)return alert('선수 두 명의 이름을 넣어주세요');
+  if(ttNorm(a)===ttNorm(b))return alert('두 이름이 같습니다');
+  tt.round={id:String(Date.now()),a:a,b:b,state:'open',bets:{}};
+  ttFeed('info','💰 베팅 오픈 — '+a+' vs '+b);
+  ttPaint();
+  if(!IS_TEST_CH){await api('toto_save',{day:tt});await api('overlay_set',{overlay:{kind:'toto'}});}
 }
-function pdSettleLocal(snap,w){
-  let hit=0,ca=0,cb=0;const top=[];
-  for(const k in snap.votes){const v=snap.votes[k];
-    if(v.p==='a')ca++;else cb++;
-    const q=pdLocal[k]||{n:v.n,pts:0,w:0,l:0,st:0,best:0};q.n=v.n||q.n;
-    if(v.p===w){hit++;q.st++;const gain=100+Math.min((q.st-1)*20,100);
-      q.pts+=gain;q.w++;if(q.st>q.best)q.best=q.st;top.push({n:q.n,gain:gain,st:q.st});}
-    else{q.l++;q.st=0;}
-    pdLocal[k]=q;}
+async function ttLock(){
+  if(!tt||!tt.round||tt.round.state!=='open')return;
+  tt.round.state='locked';
+  ttFeed('info','⏸ 베팅 마감 ('+ttPools().n+'건)');
+  ttPaint();
+  if(!IS_TEST_CH)await api('toto_save',{day:tt});
+}
+async function ttCancelRound(){
+  if(!tt||!tt.round)return;
+  if(!confirm('이 베팅 라운드를 취소할까요? 건 포인트는 전부 돌려줍니다.'))return;
+  for(const k in tt.round.bets){const v=tt.round.bets[k];const p=tt.players[k];if(p){p.bal+=v.amt;p.bust=false;}}
+  ttFeed('info','↩ 라운드 취소 — 전원 환불');
+  tt.round=null;ttPaint();
+  if(!IS_TEST_CH){await api('toto_save',{day:tt});await api('overlay_set',{overlay:{kind:'none'}});}
+}
+function ttSettleLocal(day,winner){
+  const r=day.round,bets=r.bets;let pa=0,pb=0;
+  for(const k in bets){if(bets[k].p==='a')pa+=bets[k].amt;else pb+=bets[k].amt;}
+  const tot=pa+pb,pw=winner==='a'?pa:pb,refund=pw<=0;
+  const odds=refund?0:+(tot/pw).toFixed(2);let hit=0;const top=[];
+  for(const k in bets){const v=bets[k],p=day.players[k];
+    if(refund)p.bal+=v.amt;
+    else if(v.p===winner){const gain=Math.floor(v.amt*tot/pw);p.bal+=gain;p.betW++;hit++;top.push({n:v.n,gain:gain-v.amt});}
+    else p.betL++;
+    if(p.bal<=0){p.bal=0;p.bust=true;}}
   top.sort(function(x,y){return y.gain-x.gain});
-  return{ok:true,hit:hit,total:ca+cb,ca:ca,cb:cb,top:top.slice(0,5)};
+  const wname=winner==='a'?r.a:r.b;
+  day.rounds.unshift({a:r.a,b:r.b,winner:winner,poolA:pa,poolB:pb,odds:odds,hit:hit,bets:Object.keys(bets).length,refund:refund,at:new Date().toTimeString().slice(0,5)});
+  day.round=null;
+  return{ok:true,refund:refund,odds:odds,hit:hit,poolA:pa,poolB:pb,wname:wname,top:top.slice(0,5)};
 }
-async function pdSettle(w){
-  if(!pd)return;
-  const wname=(w==='a'?pd.a:pd.b);
-  if(!confirm(wname+' 승으로 정산할까요? 맞힌 시청자에게 포인트가 들어갑니다.'))return;
-  const snap=pd;
+async function ttSettle(w){
+  if(!tt||!tt.round)return;
+  const wname=(w==='a'?tt.round.a:tt.round.b);
+  if(!confirm(wname+' 승으로 정산할까요?'))return;
   let res;
-  if(IS_TEST_CH){res=pdSettleLocal(snap,w);}
+  if(IS_TEST_CH){res=ttSettleLocal(tt,w);ttFeed('settle',res.refund?'⚖ 적중자 없음 — 전원 환불':'🏆 '+wname+' 승 · 배당 '+res.odds.toFixed(2)+'배 · 적중 '+res.hit+'명');}
   else{
-    res=await api('predict_settle',{winner:w,cur:snap});
+    res=await api('toto_settle',{winner:w,day:tt});
     if(!res||!res.ok)return alert('정산 실패: '+((res&&res.error)||'서버 오류'));
+    const g=await api('toto_get',{});if(g&&g.day)tt=g.day;   // 서버 정산 결과로 동기화
   }
-  pd=null;pdSyncStop();pdPaint();
-  const st=document.getElementById('pdStatus');
-  st.dataset.keep='1';
-  st.innerHTML='🔮 '+esc(snap.a+' vs '+snap.b)+' → <b>'+esc(wname)+' 승</b> · 적중 '
-    +res.hit+'/'+res.total+'명'
-    +((res.top&&res.top.length)?' · 🔥 '+esc(res.top.slice(0,3).map(function(t){return t.n+' +'+t.gain+'P'}).join(' · ')):'')
-    +(IS_TEST_CH?' <span class="warn">(연습)</span>':'');
-  if(!IS_TEST_CH)await api('overlay_set',{overlay:{kind:'predict_result',a:snap.a,b:snap.b,
-    wname:wname,hit:res.hit,total:res.total,ca:res.ca,cb:res.cb,top:res.top||[]}});
+  ttPaint();
+  if(!IS_TEST_CH)await api('overlay_set',{overlay:{kind:'toto_result',
+    wname:res.wname||wname,odds:res.odds,hit:res.hit,refund:res.refund,poolA:res.poolA,poolB:res.poolB,top:res.top||[]}});
 }
-async function pdRestore(){
+async function ttCloseDay(){
+  if(!tt)return;
+  if(tt.round)return alert('진행 중인 베팅 라운드를 먼저 정산하거나 취소해 주세요');
+  if(!confirm('오늘 토토를 마감하고 순위를 확정할까요?'))return;
+  let res;
+  if(IS_TEST_CH){
+    const rows=Object.keys(tt.players).map(function(k){const p=tt.players[k];return{n:p.n,bal:p.bal};});
+    rows.sort(function(x,y){return y.bal-x.bal});
+    res={ok:true,entries:rows.length,rank:rows.slice(0,10)};
+  }else{
+    res=await api('toto_closeday',{day:tt});
+    if(!res||!res.ok)return alert('마감 실패: '+((res&&res.error)||'서버 오류'));
+  }
+  const champ=res.rank&&res.rank[0];
+  tt=null;ttSyncStop();
+  const st=document.getElementById('ttStatus');
+  st.dataset.keep='1';
+  st.innerHTML='🏁 오늘 마감 — 참여 '+res.entries+'명'+(champ?' · 🥇 <b>'+esc(champ.n)+'</b> '+champ.bal.toLocaleString()+'P':'')+(IS_TEST_CH?' <span class="warn">(연습)</span>':'');
+  ttPaint();
+  if(!IS_TEST_CH&&champ)await api('overlay_set',{overlay:{kind:'toto_champ',n:champ.n,bal:champ.bal,entries:res.entries,rank:res.rank||[]}});
+}
+async function ttRestore(){
   if(IS_TEST_CH)return;
-  try{const g=await api('predict_get',{});
-    if(g&&g.cur&&g.cur.votes){pd=g.cur;pdSyncStart();pdPaint();}}catch(e){}
+  try{const g=await api('toto_get',{});
+    if(g&&g.day&&g.day.players){tt=g.day;ttSyncStart();ttPaint();}}catch(e){}
 }
 const PANELS=[['chat','실시간 채팅'],['users','시청자 활약'],['pastdays','지난 방송'],
-  ['predict','승부예측'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
+  ['predict','승부토토'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
 const panelState={};   // key -> 숨김 여부(true=닫힘)
 function panelNodes(key){
   // data-panel 이 카드면 카드 통째로, 섹션이면 헤더~다음 헤더/구분선 앞까지(앞 <hr> 포함)
@@ -996,7 +1076,7 @@ applyRealCh();
 if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
 updateMaskBtn();
 initPanels();
-pdPaint();pdRestore();
+ttPaint();ttRestore();
 restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
 if(location.search.includes('demo')){
