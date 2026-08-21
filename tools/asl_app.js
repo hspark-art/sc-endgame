@@ -40,6 +40,7 @@ $('#strip').innerHTML = [
 var TABS = [
   { id: 'season', label: '대회' },
   { id: 'rank', label: '선수 랭킹' },
+  { id: 'mu', label: '종족전 랭킹' },
   { id: 'roster', label: '선수 명단' },
   { id: 'maps', label: '맵 통계' },
   { id: 'matches', label: '경기 기록' },
@@ -51,6 +52,7 @@ var TAB_IDS = TABS.map(function (t) { return t.id; });
 var state = {
   tab: 'season', tour: 'ALL', race: 'ALL', round: 'ALL', q: '', touchedTour: false,
   h2h: { pa: '', pb: '', ra: '', rb: '', map: '', tour: '' },
+  mu: { my: 'T', op: 'Z', min: 10 },
   sort: { rank: { key: 'setWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 } },
   open: {}
 };
@@ -567,6 +569,96 @@ function renderRecords() {
   view.innerHTML = html;
 }
 
+/* ── 종족전 랭킹 ───────────────────────────────────────────────
+   "테란 선수들 중 저그전을 잘하는 순서" — 종족 × 상대 종족 승률 순위.
+   종족은 세트에 적힌 종족 기준이라 랜덤 출전도 그 세트의 종족으로
+   집계됩니다. 동족전(테란의 테란전)도 그대로 셉니다. */
+function muChips(label, key, opts) {
+  var el = document.createElement('div');
+  el.className = 'chips';
+  el.innerHTML = '<span class="chiplabel">' + label + '</span>' +
+    opts.map(function (o) {
+      return '<div class="chip' + (String(state.mu[key]) === String(o[0]) ? ' on' : '') +
+        '" data-v="' + o[0] + '">' + o[1] + '</div>';
+    }).join('');
+  el.querySelectorAll('[data-v]').forEach(function (c) {
+    c.addEventListener('click', function () {
+      state.mu[key] = (key === 'min') ? +c.dataset.v : c.dataset.v;
+      render();
+    });
+  });
+  return el;
+}
+
+function muRows() {
+  var myI = SL.races.indexOf(state.mu.my);
+  var opI = state.mu.op === 'ALL' ? -1 : SL.races.indexOf(state.mu.op);
+  var tourI = state.tour === 'ALL' ? -1 :
+    D.tournaments.map(function (t) { return t.name; }).indexOf(state.tour);
+  var acc = {};
+  function hit(pi, win) {
+    var a = acc[pi] || (acc[pi] = { w: 0, l: 0 });
+    if (win) a.w++; else a.l++;
+  }
+  SL.rows.forEach(function (r) {
+    if (tourI >= 0 && r[3] !== tourI) return;
+    if (r[5] === myI && (opI < 0 || r[6] === opI)) hit(r[0], r[7] === 0);
+    if (r[6] === myI && (opI < 0 || r[5] === opI)) hit(r[1], r[7] === 1);
+  });
+  return Object.keys(acc).map(function (k) {
+    var p = D.players[+k], a = acc[k];
+    return { name: p.name, slug: p.slug, race: p.race,
+             w: a.w, l: a.l, sets: a.w + a.l, rate: pctNum(a.w, a.l) };
+  }).filter(function (r) { return r.sets >= state.mu.min; })
+    .sort(function (x, y) { return y.rate - x.rate || y.sets - x.sets; });
+}
+
+function renderMu() {
+  view.appendChild(tourChips());
+  var R = [['T', '테란'], ['P', '프로토스'], ['Z', '저그']];
+  view.appendChild(muChips('선수 종족', 'my', R));
+  view.appendChild(muChips('상대 종족', 'op', R.concat([['ALL', '전체 상대']])));
+  view.appendChild(muChips('최소 세트', 'min',
+    [[5, '5세트+'], [10, '10세트+'], [20, '20세트+'], [30, '30세트+']]));
+
+  var rows = muRows();
+  var head = document.createElement('div');
+  head.className = 'note';
+  head.innerHTML = '<b>' + esc(RACE_LABEL[state.mu.my]) + '</b> 선수들의 <b>' +
+    (state.mu.op === 'ALL' ? '전체 상대' : esc(RACE_LABEL[state.mu.op]) + '전') +
+    '</b> 승률 순위 — ' + rows.length + '명 (세트 ' + state.mu.min + '개 이상, 승률순)';
+  view.appendChild(head);
+
+  var table = document.createElement('div');
+  var body = rows.length ? rows.map(function (p, i) {
+    var barW = Math.round(p.rate);
+    return '<tr class="rowlink" data-href="' + pageOf(p.slug) + '">' +
+      '<td><span class="rk">' + (i + 1) + '</span>' + raceBadge(p.race) +
+      '<span class="nm">' + esc(p.name) + '</span></td>' +
+      '<td class="num">' + p.w + '-' + p.l + '</td>' +
+      '<td class="num"><b>' + pct(p.w, p.l) + '</b></td>' +
+      '<td class="num">' + p.sets + '</td>' +
+      '<td class="hide-mobile"><div style="height:8px;border-radius:4px;background:#232a38;overflow:hidden">' +
+      '<div style="height:100%;width:' + barW + '%;background:linear-gradient(90deg,#22c55e,#4ade80)"></div>' +
+      '</div></td></tr>';
+  }).join('') :
+    '<tr><td colspan="5" class="dim" style="text-align:center;padding:26px 0">' +
+    '조건에 맞는 선수가 없습니다 — 최소 세트를 낮춰 보세요.</td></tr>';
+  table.innerHTML = '<div class="tablewrap"><table><thead><tr>' +
+    '<th>선수</th><th class="num">승-패</th><th class="num">승률</th>' +
+    '<th class="num">세트</th><th class="hide-mobile" style="min-width:120px"></th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>';
+  view.appendChild(table);
+  table.querySelectorAll('[data-href]').forEach(function (el) {
+    el.addEventListener('click', function () { location.href = el.dataset.href; });
+  });
+
+  var note = document.createElement('div');
+  note.className = 'note';
+  note.textContent = '종족은 각 세트에 적힌 종족 기준입니다 — 랜덤 출전 선수는 그 세트의 종족으로 집계되고, 동족전도 포함됩니다.';
+  view.appendChild(note);
+}
+
 /* ── 상대 전적 ─────────────────────────────────────────────── */
 /* 세트 한 줄 = [a, b, map, tour, round, aRace, bRace, winner]
    a·b·map·tour 는 D.players / D.maps / D.tournaments 의 자리 번호,
@@ -949,6 +1041,7 @@ function render() {
   view.innerHTML = '';
   if (state.tab === 'season') renderSeason();
   else if (state.tab === 'rank') renderRank();
+  else if (state.tab === 'mu') renderMu();
   else if (state.tab === 'roster') renderRoster();
   else if (state.tab === 'maps') renderMaps();
   else if (state.tab === 'matches') renderMatches();
