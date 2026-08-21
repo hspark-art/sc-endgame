@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>승부토토 — 끝장전</title><style>
+<title>시청자 승부예측 — 끝장전</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:15px}
 .wrap{max-width:880px;margin:0 auto;padding:18px 14px 60px}
@@ -37,8 +37,8 @@ font-size:13px;color:#8a93a6;cursor:pointer;font-weight:700}
 .tab.on{background:#1c8cff;border-color:#1c8cff;color:#fff}
 @media(max-width:560px){td,th{padding:7px 5px;font-size:13px}.hidem{display:none}}
 </style></head><body><div class="wrap">
-<h1>🎰 끝장전 승부토토</h1>
-<div class="sub">채팅으로 참여하는 가상 포인트 배팅 · <span id="upd" class="pill">불러오는 중…</span>
+<h1>🔮 끝장전 시청자 승부예측</h1>
+<div class="sub">채팅으로 참여하는 가상 포인트 승부예측 · <span id="upd" class="pill">불러오는 중…</span>
  · <a href="index.html">← 끝장전 기록실</a></div>
 
 <div class="card live" id="liveCard" style="display:none">

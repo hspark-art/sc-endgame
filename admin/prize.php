@@ -117,9 +117,9 @@ function goCh(v){
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
-<div class="ct" data-panel="predict">🎰 승부토토 <span class="n">채팅 '도전' → 포인트 배팅</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
+<div class="ct" data-panel="predict">🔮 시청자 승부예측 <span class="n">채팅 '도전' → 포인트 베팅</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
 <div class="row">
-<button onclick="ttOpenDay()" id="ttOpenBtn">🎰 오늘 개장</button>
+<button onclick="ttOpenDay()" id="ttOpenBtn">🔮 오늘 시작</button>
 <span class="pill" id="ttEntry" style="font-size:12px">-</span>
 <button class="gray" onclick="ttCloseDay()" id="ttCloseBtn" disabled>🏁 하루 마감</button>
 <a class="top" href="../predict.php" target="_blank">리더보드 ↗</a></div>
@@ -521,7 +521,7 @@ function downloadActivity(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
 }
-/* ── 승부토토 — 하루 가상 포인트 배팅 ────────────────────────
+/* ── 시청자 승부예측 — 하루 가상 포인트 베팅 (내부 코드명 toto 유지) ──
    '도전' → 10,000P 지급(계정당 1회). '이름 금액'/'이름 올인' — 첫 베팅 고정.
    배당 = 총풀/승자풀(합동배당), 승자 없으면 전원 환불. 파산 = 그날 끝.
    접수/실패는 피드로 안내(관제·방송 장면·공개 페이지). 정산·하루마감은
@@ -587,8 +587,8 @@ function ttPaint(){
   if(!tt){
     oBtn.disabled=false;cBtn.disabled=true;sBtn.disabled=true;lBtn.disabled=true;
     aBtn.disabled=true;bBtn.disabled=true;xBtn.disabled=true;
-    en.textContent='개장 전';bar.style.display='none';
-    if(!st.dataset.keep)st.innerHTML='<b>🎰 오늘 개장</b>을 누르면 시청자가 채팅에 <b>도전</b>을 쳐서 참여합니다 (1인 '+TT_START.toLocaleString()+'P).';
+    en.textContent='시작 전';bar.style.display='none';
+    if(!st.dataset.keep)st.innerHTML='<b>🔮 오늘 시작</b>을 누르면 시청자가 채팅에 <b>도전</b>을 쳐서 참여합니다 (1인 '+TT_START.toLocaleString()+'P).';
     fd.innerHTML='';return;
   }
   st.dataset.keep='';
@@ -620,7 +620,7 @@ function ttSyncStop(){if(ttSyncT){clearInterval(ttSyncT);ttSyncT=null;}}
 async function ttOpenDay(){
   if(tt)return;
   tt={date:todayStr(),open:true,players:{},round:null,rounds:[],feed:[]};
-  ttFeed('info','🎰 오늘의 승부토토 개장! 채팅에 "도전"');
+  ttFeed('info','🔮 시청자 승부예측 시작! 채팅에 "도전"');
   const st=document.getElementById('ttStatus');if(st)delete st.dataset.keep;
   ttPaint();
   if(!IS_TEST_CH){await api('toto_save',{day:tt});ttSyncStart();}
@@ -684,7 +684,7 @@ async function ttSettle(w){
 async function ttCloseDay(){
   if(!tt)return;
   if(tt.round)return alert('진행 중인 베팅 라운드를 먼저 정산하거나 취소해 주세요');
-  if(!confirm('오늘 토토를 마감하고 순위를 확정할까요?'))return;
+  if(!confirm('오늘 승부예측을 마감하고 순위를 확정할까요?'))return;
   let res;
   if(IS_TEST_CH){
     const rows=Object.keys(tt.players).map(function(k){const p=tt.players[k];return{n:p.n,bal:p.bal};});
@@ -708,7 +708,7 @@ async function ttRestore(){
     if(g&&g.day&&g.day.players){tt=g.day;ttSyncStart();ttPaint();}}catch(e){}
 }
 const PANELS=[['chat','실시간 채팅'],['users','시청자 활약'],['pastdays','지난 방송'],
-  ['predict','승부토토'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
+  ['predict','승부예측'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
 const panelState={};   // key -> 숨김 여부(true=닫힘)
 function panelNodes(key){
   // data-panel 이 카드면 카드 통째로, 섹션이면 헤더~다음 헤더/구분선 앞까지(앞 <hr> 포함)

@@ -743,9 +743,9 @@ function goCh(v){
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
-<div class="ct" data-panel="predict">🎰 승부토토 <span class="n">채팅 '도전' → 포인트 배팅</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
+<div class="ct" data-panel="predict">🔮 시청자 승부예측 <span class="n">채팅 '도전' → 포인트 베팅</span><button class="px" style="margin-left:auto" onclick="togglePanel('predict')" title="이 창 닫기">✕</button></div>
 <div class="row">
-<button onclick="ttOpenDay()" id="ttOpenBtn">🎰 오늘 개장</button>
+<button onclick="ttOpenDay()" id="ttOpenBtn">🔮 오늘 시작</button>
 <span class="pill" id="ttEntry" style="font-size:12px">-</span>
 <button class="gray" onclick="ttCloseDay()" id="ttCloseBtn" disabled>🏁 하루 마감</button>
 <a class="top" href="../predict.php" target="_blank">리더보드 ↗</a></div>
@@ -1147,7 +1147,7 @@ function downloadActivity(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='끝장전-활약-'+(sess.date||todayStr())+'.csv';a.click();
 }
-/* ── 승부토토 — 하루 가상 포인트 배팅 ────────────────────────
+/* ── 시청자 승부예측 — 하루 가상 포인트 베팅 (내부 코드명 toto 유지) ──
    '도전' → 10,000P 지급(계정당 1회). '이름 금액'/'이름 올인' — 첫 베팅 고정.
    배당 = 총풀/승자풀(합동배당), 승자 없으면 전원 환불. 파산 = 그날 끝.
    접수/실패는 피드로 안내(관제·방송 장면·공개 페이지). 정산·하루마감은
@@ -1213,8 +1213,8 @@ function ttPaint(){
   if(!tt){
     oBtn.disabled=false;cBtn.disabled=true;sBtn.disabled=true;lBtn.disabled=true;
     aBtn.disabled=true;bBtn.disabled=true;xBtn.disabled=true;
-    en.textContent='개장 전';bar.style.display='none';
-    if(!st.dataset.keep)st.innerHTML='<b>🎰 오늘 개장</b>을 누르면 시청자가 채팅에 <b>도전</b>을 쳐서 참여합니다 (1인 '+TT_START.toLocaleString()+'P).';
+    en.textContent='시작 전';bar.style.display='none';
+    if(!st.dataset.keep)st.innerHTML='<b>🔮 오늘 시작</b>을 누르면 시청자가 채팅에 <b>도전</b>을 쳐서 참여합니다 (1인 '+TT_START.toLocaleString()+'P).';
     fd.innerHTML='';return;
   }
   st.dataset.keep='';
@@ -1246,7 +1246,7 @@ function ttSyncStop(){if(ttSyncT){clearInterval(ttSyncT);ttSyncT=null;}}
 async function ttOpenDay(){
   if(tt)return;
   tt={date:todayStr(),open:true,players:{},round:null,rounds:[],feed:[]};
-  ttFeed('info','🎰 오늘의 승부토토 개장! 채팅에 "도전"');
+  ttFeed('info','🔮 시청자 승부예측 시작! 채팅에 "도전"');
   const st=document.getElementById('ttStatus');if(st)delete st.dataset.keep;
   ttPaint();
   if(!IS_TEST_CH){await api('toto_save',{day:tt});ttSyncStart();}
@@ -1310,7 +1310,7 @@ async function ttSettle(w){
 async function ttCloseDay(){
   if(!tt)return;
   if(tt.round)return alert('진행 중인 베팅 라운드를 먼저 정산하거나 취소해 주세요');
-  if(!confirm('오늘 토토를 마감하고 순위를 확정할까요?'))return;
+  if(!confirm('오늘 승부예측을 마감하고 순위를 확정할까요?'))return;
   let res;
   if(IS_TEST_CH){
     const rows=Object.keys(tt.players).map(function(k){const p=tt.players[k];return{n:p.n,bal:p.bal};});
@@ -1334,7 +1334,7 @@ async function ttRestore(){
     if(g&&g.day&&g.day.players){tt=g.day;ttSyncStart();ttPaint();}}catch(e){}
 }
 const PANELS=[['chat','실시간 채팅'],['users','시청자 활약'],['pastdays','지난 방송'],
-  ['predict','승부토토'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
+  ['predict','승부예측'],['pick','당첨 만들기'],['prizes','상품'],['winners','당첨자 시트'],['recent','최근 당첨자']];
 const panelState={};   // key -> 숨김 여부(true=닫힘)
 function panelNodes(key){
   // data-panel 이 카드면 카드 통째로, 섹션이면 헤더~다음 헤더/구분선 앞까지(앞 <hr> 포함)
@@ -2070,7 +2070,7 @@ function totoLive(st){
       document.getElementById('pdFeed').textContent=fd;
       const r=d.round;
       if(!r){
-        document.getElementById('pdCap').textContent='🎰 승부토토 — 채팅에 "도전"을 치면 참여! (1인 10,000P)';
+        document.getElementById('pdCap').textContent='🔮 시청자 승부예측 — 채팅에 "도전"을 치면 참여! (1인 10,000P)';
         document.getElementById('pdAName').textContent='참여 '+d.entries+'명';
         document.getElementById('pdBName').textContent='';
         document.getElementById('pdACnt').textContent='';
@@ -2112,7 +2112,7 @@ function totoResult(st){
 }
 function totoChamp(st){
   show('pdBox');fireConfetti();winSound();
-  document.getElementById('pdCap').textContent='👑 오늘의 승부토토 우승!';
+  document.getElementById('pdCap').textContent='👑 오늘의 승부예측 우승!';
   document.getElementById('pdAName').textContent=st.n||'';
   document.getElementById('pdBName').textContent='';
   document.getElementById('pdACnt').textContent=(st.bal||0).toLocaleString()+'P';
@@ -2656,7 +2656,7 @@ connect();
 def prize_predict_board():
     return r'''<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>승부토토 — 끝장전</title><style>
+<title>시청자 승부예측 — 끝장전</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:15px}
 .wrap{max-width:880px;margin:0 auto;padding:18px 14px 60px}
@@ -2693,8 +2693,8 @@ font-size:13px;color:#8a93a6;cursor:pointer;font-weight:700}
 .tab.on{background:#1c8cff;border-color:#1c8cff;color:#fff}
 @media(max-width:560px){td,th{padding:7px 5px;font-size:13px}.hidem{display:none}}
 </style></head><body><div class="wrap">
-<h1>🎰 끝장전 승부토토</h1>
-<div class="sub">채팅으로 참여하는 가상 포인트 배팅 · <span id="upd" class="pill">불러오는 중…</span>
+<h1>🔮 끝장전 시청자 승부예측</h1>
+<div class="sub">채팅으로 참여하는 가상 포인트 승부예측 · <span id="upd" class="pill">불러오는 중…</span>
  · <a href="index.html">← 끝장전 기록실</a></div>
 
 <div class="card live" id="liveCard" style="display:none">

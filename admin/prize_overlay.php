@@ -330,7 +330,7 @@ function totoLive(st){
       document.getElementById('pdFeed').textContent=fd;
       const r=d.round;
       if(!r){
-        document.getElementById('pdCap').textContent='🎰 승부토토 — 채팅에 "도전"을 치면 참여! (1인 10,000P)';
+        document.getElementById('pdCap').textContent='🔮 시청자 승부예측 — 채팅에 "도전"을 치면 참여! (1인 10,000P)';
         document.getElementById('pdAName').textContent='참여 '+d.entries+'명';
         document.getElementById('pdBName').textContent='';
         document.getElementById('pdACnt').textContent='';
@@ -372,7 +372,7 @@ function totoResult(st){
 }
 function totoChamp(st){
   show('pdBox');fireConfetti();winSound();
-  document.getElementById('pdCap').textContent='👑 오늘의 승부토토 우승!';
+  document.getElementById('pdCap').textContent='👑 오늘의 승부예측 우승!';
   document.getElementById('pdAName').textContent=st.n||'';
   document.getElementById('pdBName').textContent='';
   document.getElementById('pdACnt').textContent=(st.bal||0).toLocaleString()+'P';
