@@ -508,6 +508,20 @@ if ($act === 'session_set') {
 }
 
 // ── 채팅 로그 — 방송 날짜별 파일에 이어 붙입니다 (초기화 전까지 보존) ──
+if ($act === 'toto_chatlog') {
+    // 승부예측 진행 중 전 채팅 원본 + 운영 이벤트 마커 (검증·분쟁 근거)
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
+    $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);
+    if ($lines && $date !== '') {
+        $txt = '';
+        foreach ($lines as $l) {
+            $txt .= json_encode($l, JSON_UNESCAPED_UNICODE) . "
+";
+        }
+        file_put_contents(PZ . '/toto_chatlog-' . $date . '.jsonl', $txt, FILE_APPEND | LOCK_EX);
+    }
+    out(['ok' => true]);
+}
 if ($act === 'chat_log') {
     $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
     $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);

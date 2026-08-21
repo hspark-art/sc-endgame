@@ -524,6 +524,20 @@ if ($act === 'session_set') {
 }
 
 // ── 채팅 로그 — 방송 날짜별 파일에 이어 붙입니다 (초기화 전까지 보존) ──
+if ($act === 'toto_chatlog') {
+    // 승부예측 진행 중 전 채팅 원본 + 운영 이벤트 마커 (검증·분쟁 근거)
+    $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
+    $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);
+    if ($lines && $date !== '') {
+        $txt = '';
+        foreach ($lines as $l) {
+            $txt .= json_encode($l, JSON_UNESCAPED_UNICODE) . "
+";
+        }
+        file_put_contents(PZ . '/toto_chatlog-' . $date . '.jsonl', $txt, FILE_APPEND | LOCK_EX);
+    }
+    out(['ok' => true]);
+}
 if ($act === 'chat_log') {
     $date = preg_replace('/[^0-9-]/', '', (string)($body['date'] ?? date('Y-m-d')));
     $lines = array_slice(is_array($body['lines'] ?? null) ? $body['lines'] : [], 0, 2000);
@@ -956,6 +970,7 @@ async function connectChat(){
   }
   liveOn=true;liveTitle=info.TITLE||'';
   setStatus('<span class="live">● LIVE</span> '+esc(liveTitle)+(IS_TEST_CH?' <span class="warn">['+BJ+' 채널 시험 중 — 기록 저장 안 함]</span>':''));
+  ttGapCheck();
   try{
     ws=new WebSocket('wss://'+info.CHDOMAIN+':'+(+info.CHPT+1)+'/Websocket/'+BJ,['chat']);
   }catch(e){setStatus('채팅 연결 실패');return setTimeout(connectChat,15000);}
@@ -986,6 +1001,7 @@ async function connectChat(){
     }
   };
   ws.onclose=()=>{clearInterval(pingT);
+    if(tt&&!window.ttDropAt)window.ttDropAt=Date.now();   // 예측 중 끊김 시각 기록
     setStatus(liveOn?'연결 끊김 — 다시 붙는 중…':'방송 대기 중');
     setTimeout(connectChat,8000);};
   ws.onerror=()=>{try{ws.close()}catch(e){}};
@@ -1154,6 +1170,23 @@ function downloadActivity(){
    서버가 단독 수행(이중 방지). 연습 채널이면 전부 이 창 안에서만. */
 const TT_START=10000, TT_MIN=100;
 let tt=null;            // {date,open,players,round,rounds,feed}
+let ttLogBuf=[];        // 예측 중 전 채팅 원본 (서버 기록 대기)
+function ttLog(o){ if(tt&&!IS_TEST_CH)ttLogBuf.push(Object.assign({at:Date.now()},o)); }
+function ttLogFlush(){
+  if(!ttLogBuf.length||IS_TEST_CH||!tt)return;
+  api('toto_chatlog',{date:tt.date,lines:ttLogBuf.splice(0,2000)});
+}
+function ttGapCheck(){
+  // 채팅이 끊겼다 다시 붙었을 때 — 그 사이 채팅은 못 받았으니 크게 알립니다.
+  if(!window.ttDropAt)return;
+  const gap=Math.round((Date.now()-window.ttDropAt)/1000);
+  window.ttDropAt=null;
+  if(tt&&gap>=3){
+    ttFeed('info','⚠ 채팅 연결이 '+gap+'초 끊겼습니다 — 그 사이 도전·베팅은 못 받았을 수 있어요. 방송에서 안내해 주세요!');
+    ttLog({ctl:'gap',sec:gap});
+    ttPaint();
+  }
+}
 let ttSyncT=null, ttLocalSeason={players:{},days:[]};
 function ttNorm(s){return String(s||'').replace(/\s+/g,'').replace(/[!~.?]+$/,'').toLowerCase()}
 function ttFeed(type,msg){
@@ -1164,6 +1197,7 @@ function ttFeed(type,msg){
 }
 function ttOnChat(ev){
   if(!tt)return;
+  ttLog({id:ev.id||'',n:ev.nick,m:ev.msg});     // 전 채팅 원본 기록
   const key=ev.id||('nick:'+ev.nick);
   const raw=String(ev.msg||'').trim();
   if(ttNorm(raw)==='도전'){                     // ① 참여
@@ -1241,12 +1275,13 @@ function ttPaint(){
   fd.innerHTML=(tt.feed||[]).slice(0,10).map(function(f){
     return '<div>'+esc(f.at+' '+f.msg)+'</div>';}).join('');
 }
-function ttSyncStart(){if(ttSyncT||IS_TEST_CH)return;ttSyncT=setInterval(function(){if(tt)api('toto_save',{day:tt});},4000);}
+function ttSyncStart(){if(ttSyncT||IS_TEST_CH)return;ttSyncT=setInterval(function(){if(tt){api('toto_save',{day:tt});ttLogFlush();}},4000);}
 function ttSyncStop(){if(ttSyncT){clearInterval(ttSyncT);ttSyncT=null;}}
 async function ttOpenDay(){
   if(tt)return;
   tt={date:todayStr(),open:true,players:{},round:null,rounds:[],feed:[]};
   ttFeed('info','🔮 시청자 승부예측 시작! 채팅에 "도전"');
+  ttLog({ctl:'open_day'});
   const st=document.getElementById('ttStatus');if(st)delete st.dataset.keep;
   ttPaint();
   if(!IS_TEST_CH){await api('toto_save',{day:tt});ttSyncStart();}
@@ -1258,6 +1293,7 @@ async function ttRoundStart(){
   if(ttNorm(a)===ttNorm(b))return alert('두 이름이 같습니다');
   tt.round={id:String(Date.now()),a:a,b:b,state:'open',bets:{}};
   ttFeed('info','💰 베팅 오픈 — '+a+' vs '+b);
+  ttLog({ctl:'round_open',a:a,b:b});
   ttPaint();
   if(!IS_TEST_CH){await api('toto_save',{day:tt});await api('overlay_set',{overlay:{kind:'toto'}});}
 }
@@ -1265,6 +1301,7 @@ async function ttLock(){
   if(!tt||!tt.round||tt.round.state!=='open')return;
   tt.round.state='locked';
   ttFeed('info','⏸ 베팅 마감 ('+ttPools().n+'건)');
+  ttLog({ctl:'lock'});
   ttPaint();
   if(!IS_TEST_CH)await api('toto_save',{day:tt});
 }
@@ -1273,6 +1310,7 @@ async function ttCancelRound(){
   if(!confirm('이 베팅 라운드를 취소할까요? 건 포인트는 전부 돌려줍니다.'))return;
   for(const k in tt.round.bets){const v=tt.round.bets[k];const p=tt.players[k];if(p){p.bal+=v.amt;p.bust=false;}}
   ttFeed('info','↩ 라운드 취소 — 전원 환불');
+  ttLog({ctl:'cancel'});
   tt.round=null;ttPaint();
   if(!IS_TEST_CH){await api('toto_save',{day:tt});await api('overlay_set',{overlay:{kind:'none'}});}
 }
@@ -1296,6 +1334,7 @@ async function ttSettle(w){
   if(!tt||!tt.round)return;
   const wname=(w==='a'?tt.round.a:tt.round.b);
   if(!confirm(wname+' 승으로 정산할까요?'))return;
+  ttLog({ctl:'settle',winner:w,wname:wname});ttLogFlush();
   let res;
   if(IS_TEST_CH){res=ttSettleLocal(tt,w);ttFeed('settle',res.refund?'⚖ 적중자 없음 — 전원 환불':'🏆 '+wname+' 승 · 배당 '+res.odds.toFixed(2)+'배 · 적중 '+res.hit+'명');}
   else{
@@ -1311,6 +1350,7 @@ async function ttCloseDay(){
   if(!tt)return;
   if(tt.round)return alert('진행 중인 베팅 라운드를 먼저 정산하거나 취소해 주세요');
   if(!confirm('오늘 승부예측을 마감하고 순위를 확정할까요?'))return;
+  ttLog({ctl:'close_day'});ttLogFlush();
   let res;
   if(IS_TEST_CH){
     const rows=Object.keys(tt.players).map(function(k){const p=tt.players[k];return{n:p.n,bal:p.bal};});
