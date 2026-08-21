@@ -308,6 +308,10 @@ ol.steps li{margin-bottom:4px}
   background:var(--panel2);border:1px solid var(--line);cursor:pointer}
 .strow select:focus,.strow input:focus{border-color:var(--accent);outline:none}
 .row-inline{display:flex;gap:9px;align-items:center}
+.ovrow{display:flex;align-items:center;gap:6px;margin:6px 0}
+.ovrow img{width:34px;height:34px;object-fit:contain;background:#20242e;border-radius:6px}
+.ovrow input[type=range]{flex:1;min-width:60px}
+.ovname{font-size:12px;color:#9aa3b5;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .filebtn{display:inline-block;padding:7px 11px;border-radius:7px;background:var(--panel2);
   border:1px solid var(--line);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer}
 .filebtn:hover{color:var(--txt);border-color:var(--accent)}
@@ -502,12 +506,16 @@ tbody tr.grouphead:first-child td{border-top:none}
 <div data-for="stats score"><div class="fld"><label>최근 전적 목록 (한 줄에 하나씩 · [줄] 은 굵게)</label><textarea id="vs2" rows="5"></textarea></div>
 </div>
 </div>
-<div class="card"><div class="cardtitle">배경색</div>
-<div class="row2"><div class="fld"><label>왼쪽</label><input type="color" id="bgLeft"></div>
-<div class="fld"><label>오른쪽</label><input type="color" id="bgRight"></div>
-</div>
+<div class="card"><div class="cardtitle">배경</div>
+<div class="row2"><div class="fld"><label>왼쪽 색</label><input type="color" id="bgLeft"></div>
+<div class="fld"><label>오른쪽 색</label><input type="color" id="bgRight"></div>
+</div><div class="fld"><label>배경 이미지 (올리면 색 대신 이미지가 깔립니다)</label><div class="row-inline"><label class="filebtn">파일 선택<input type="file" id="bgImage" accept="image/*"></label><button class="btn danger" id="bgImageClear" type="button">지우기</button></div></div>
+<div class="fld"><label>배경 이미지 어둡게 (글씨가 잘 보이게)</label><input type="range" id="bgImageDim" min="0" max="80" step="5"></div>
 <button class="btn" id="swap" type="button">좌우 선수 바꾸기</button><button class="btn" id="resetPos" type="button">위치 초기화</button>
 </div>
+<div class="card"><div class="cardtitle">이미지·아이콘 올리기</div>
+<div class="fld"><label>이미지 추가 (여러 개 한번에 가능)</label><label class="filebtn">파일 선택<input type="file" id="ovAdd" accept="image/*" multiple></label></div>
+<div id="ovList"></div><div class="helptxt">올린 이미지는 미리보기에서 <b>끌어서 위치</b>를 잡고 <b>휠로 크기</b>를 바꿉니다. 배경이 투명한 PNG 아이콘도 그대로 됩니다. '앞/뒤'로 겹치는 순서를 바꿉니다. 큰 사진을 많이 올리면 자동 저장이 안 될 수 있으니(내려받기는 정상) 그때는 설정 내보내기를 쓰세요.</div></div>
 <div class="helptxt">미리보기에서 <b>글상자·판을 그대로 끌어</b> 옮길 수 있습니다. 빈 자리를 끌면 선수 사진이 움직입니다. 어긋나면 위치 초기화를 누르세요.</div><div class="card" data-for="matchup"><div class="cardtitle">상자 1</div>
 <div class="fld"><label>제목</label><input type="text" id="boxTitle0"></div>
 <div class="fld"><label>내용 (한 줄에 하나씩)</label><textarea id="boxBody0" rows="5"></textarea></div>
@@ -654,6 +662,9 @@ function defaults() {
     sponsorText: '',
     bgLeft: '#8c1f2a',
     bgRight: '#123a78',
+    bgImage: null,       // 직접 올린 배경 이미지 (올리면 색 그라데이션 대신 깔림)
+    bgImageDim: 35,      // 배경 이미지 어둡게 (0~80%) — 글씨가 묻히지 않게
+    overlays: [],        // 직접 올린 이미지·아이콘 [{src,x,y,scale,name}]
     logoSponsor: null,
     logoBroadcast: null,
     liveBadge: '',
@@ -823,9 +834,16 @@ function parseLine(raw) {
 function lines(s) { return String(s || '').split('\n').map(parseLine); }
 
 /* ── 공통 영역 ─────────────────────────────────────────────── */
-function drawBackground() {
+function drawBackground(bgIm) {
   ctx.fillStyle = '#15171c';
   ctx.fillRect(0, 0, W, H);
+  if (bgIm) {
+    // 직접 올린 배경 — 꽉 채워 깔고, 글씨가 보이게 살짝 어둡게 덮습니다.
+    drawCover(bgIm, 0, 0, W, H, 1, 0, 0);
+    var d = Math.max(0, Math.min(80, S.bgImageDim || 0)) / 100;
+    if (d > 0) { ctx.fillStyle = 'rgba(9,11,15,' + d + ')'; ctx.fillRect(0, 0, W, H); }
+    return;
+  }
   var side = 760;
   [[0, S.bgLeft, 0], [W - side, S.bgRight, 1]].forEach(function (p) {
     var x = p[0], i = p[2];
@@ -1328,11 +1346,25 @@ function drawNext() {
 
 /* ── 그리기 ────────────────────────────────────────────────── */
 function draw() {
-  var need = [S.logoSponsor, S.logoBroadcast, S.players[0].photo, S.players[1].photo];
-  var got = [null, null, null, null];
+  var need = [S.logoSponsor, S.logoBroadcast, S.players[0].photo, S.players[1].photo,
+              S.bgImage].concat(S.overlays.map(function (o) { return o.src; }));
+  var got = need.map(function () { return null; });
   var left = need.length;
   need.forEach(function (src, i) {
     loadImage(src, function (im) { got[i] = im; if (--left === 0) paint(got); });
+  });
+}
+
+/* 직접 올린 이미지·아이콘 — 맨 위에 얹고, 끌어서 옮기고 휠로 키웁니다. */
+function drawOverlays(imgs) {
+  S.overlays.forEach(function (o, i) {
+    var im = imgs[i];
+    if (!im) return;
+    var sc = o.scale || 1, w = im.width * sc, h = im.height * sc;
+    var x = (o.x == null ? W / 2 : o.x), y = (o.y == null ? H / 2 : o.y);
+    ctx.drawImage(im, x - w / 2, y - h / 2, w, h);
+    reg('ov__' + i, x - Math.max(24, w / 2), y - Math.max(24, h / 2),
+        Math.max(48, w), Math.max(48, h));
   });
 }
 
@@ -1340,7 +1372,7 @@ function paint(g) {
   HIT = [];
   ctx.clearRect(0, 0, W, H);
   // 배경을 끄면 투명하게 남깁니다 — 방송에서 루핑백 위에 그대로 얹을 수 있습니다.
-  if (S.showBg) drawBackground();
+  if (S.showBg) drawBackground(g[4]);
   var dim = [false, false];
   if (S.type === 'winner') { dim[1 - S.winner.side] = true; }
   drawPhoto(0, g[2], dim[0]);
@@ -1369,6 +1401,7 @@ function paint(g) {
   } else if (S.type === 'next') {
     drawNext();
   }
+  drawOverlays(g.slice(5));
   save();
 }
 
@@ -1482,6 +1515,23 @@ function setupControls() {
   bind('bgLeft', function () { return S.bgLeft; }, function (v) { S.bgLeft = v; });
   bind('bgRight', function () { return S.bgRight; }, function (v) { S.bgRight = v; });
 
+  bindPhoto('bgImage', function (d) { S.bgImage = d; });
+  var bic = $('bgImageClear');
+  if (bic) bic.addEventListener('click', function () { S.bgImage = null; draw(); });
+  bind('bgImageDim', function () { return S.bgImageDim; },
+    function (v) { S.bgImageDim = parseInt(v, 10) || 0; });
+  var ova = $('ovAdd');
+  if (ova) ova.addEventListener('change', function () {
+    Array.prototype.slice.call(ova.files || []).forEach(function (f) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        S.overlays.push({ src: fr.result, x: W / 2, y: H / 2, scale: 1, name: f.name });
+        renderOvList(); draw();
+      };
+      fr.readAsDataURL(f);
+    });
+    ova.value = '';
+  });
   bindPhoto('logoSponsor', function (d) { S.logoSponsor = d; });
   bindPhoto('logoBroadcast', function (d) { S.logoBroadcast = d; });
   $('logoSponsorClear').addEventListener('click', function () { S.logoSponsor = null; draw(); });
@@ -1595,6 +1645,52 @@ function setupControls() {
   $('importJson').addEventListener('change', importJson);
 }
 
+function renderOvList() {
+  var box = $('ovList');
+  if (!box) return;
+  box.innerHTML = S.overlays.map(function (o, i) {
+    var nm = String(o.name || '이미지 ' + (i + 1)).replace(/[<>&"]/g, '');
+    return '<div class="ovrow">' +
+      '<img src="' + o.src + '" alt="">' +
+      '<span class="ovname">' + nm + '</span>' +
+      '<input type="range" min="5" max="400" value="' + Math.round((o.scale || 1) * 100) + '" data-ovscale="' + i + '">' +
+      '<button type="button" class="btn" data-ovup="' + i + '" title="앞으로 (다른 것 위에)">앞</button>' +
+      '<button type="button" class="btn" data-ovdn="' + i + '" title="뒤로">뒤</button>' +
+      '<button type="button" class="btn danger" data-ovdel="' + i + '">✕</button>' +
+      '</div>';
+  }).join('') || '<div class="helptxt">아직 올린 이미지가 없습니다.</div>';
+  box.querySelectorAll('[data-ovscale]').forEach(function (r) {
+    r.addEventListener('input', function () {
+      var o = S.overlays[+r.getAttribute('data-ovscale')];
+      if (o) { o.scale = (parseInt(r.value, 10) || 100) / 100; draw(); }
+    });
+  });
+  box.querySelectorAll('[data-ovdel]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      S.overlays.splice(+b.getAttribute('data-ovdel'), 1);
+      renderOvList(); draw();
+    });
+  });
+  box.querySelectorAll('[data-ovup]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = +b.getAttribute('data-ovup');
+      if (i < S.overlays.length - 1) {
+        var t = S.overlays[i]; S.overlays[i] = S.overlays[i + 1]; S.overlays[i + 1] = t;
+        renderOvList(); draw();
+      }
+    });
+  });
+  box.querySelectorAll('[data-ovdn]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = +b.getAttribute('data-ovdn');
+      if (i > 0) {
+        var t = S.overlays[i]; S.overlays[i] = S.overlays[i - 1]; S.overlays[i - 1] = t;
+        renderOvList(); draw();
+      }
+    });
+  });
+}
+
 function fillForm() {
   [0, 1].forEach(function (i) {
     var n = i + 1, p = S.players[i];
@@ -1603,7 +1699,7 @@ function fillForm() {
     });
     fillSeasons(i);
   });
-  ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight'].forEach(function (k) {
+  ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight', 'bgImageDim'].forEach(function (k) {
     var el = $(k); if (el) el.value = S[k];
   });
   ['showBg', 'showSponsor', 'showRibbon'].forEach(function (k) {
@@ -1682,6 +1778,12 @@ function setupCanvasDrag() {
     if (drag.photo != null) {
       S.players[drag.photo].ox += dx;
       S.players[drag.photo].oy += dy;
+    } else if (drag.key && drag.key.indexOf('ov__') === 0) {
+      var ov = S.overlays[+drag.key.slice(4)];
+      if (ov) {
+        ov.x = (ov.x == null ? W / 2 : ov.x) + dx;
+        ov.y = (ov.y == null ? H / 2 : ov.y) + dy;
+      }
     } else {
       if (!S.off) S.off = {};
       var o = S.off[drag.key] || { x: 0, y: 0 };
@@ -1693,7 +1795,21 @@ function setupCanvasDrag() {
     drag = null; cv.style.cursor = '';
   });
   cv.addEventListener('wheel', function (e) {
-    var i = hitPhoto(canvasPos(e));
+    var pos = canvasPos(e);
+    for (var k = HIT.length - 1; k >= 0; k--) {
+      var it = HIT[k];
+      if (it.key.indexOf('ov__') === 0 && pos.x >= it.x && pos.x <= it.x + it.w &&
+          pos.y >= it.y && pos.y <= it.y + it.h) {
+        e.preventDefault();
+        var ov = S.overlays[+it.key.slice(4)];
+        if (ov) {
+          ov.scale = Math.min(6, Math.max(0.05, (ov.scale || 1) * (e.deltaY < 0 ? 1.06 : 0.94)));
+          renderOvList(); draw();
+        }
+        return;
+      }
+    }
+    var i = hitPhoto(pos);
     if (i < 0) return;
     e.preventDefault();
     var p = S.players[i];
@@ -1784,6 +1900,7 @@ function load() {
 load();
 setupControls();
 fillForm();
+renderOvList();
 showTypeFields();
 setupCanvasDrag();
 draw();

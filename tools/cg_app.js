@@ -55,6 +55,9 @@ function defaults() {
     sponsorText: '',
     bgLeft: '#8c1f2a',
     bgRight: '#123a78',
+    bgImage: null,       // 직접 올린 배경 이미지 (올리면 색 그라데이션 대신 깔림)
+    bgImageDim: 35,      // 배경 이미지 어둡게 (0~80%) — 글씨가 묻히지 않게
+    overlays: [],        // 직접 올린 이미지·아이콘 [{src,x,y,scale,name}]
     logoSponsor: null,
     logoBroadcast: null,
     liveBadge: '',
@@ -224,9 +227,16 @@ function parseLine(raw) {
 function lines(s) { return String(s || '').split('\n').map(parseLine); }
 
 /* ── 공통 영역 ─────────────────────────────────────────────── */
-function drawBackground() {
+function drawBackground(bgIm) {
   ctx.fillStyle = '#15171c';
   ctx.fillRect(0, 0, W, H);
+  if (bgIm) {
+    // 직접 올린 배경 — 꽉 채워 깔고, 글씨가 보이게 살짝 어둡게 덮습니다.
+    drawCover(bgIm, 0, 0, W, H, 1, 0, 0);
+    var d = Math.max(0, Math.min(80, S.bgImageDim || 0)) / 100;
+    if (d > 0) { ctx.fillStyle = 'rgba(9,11,15,' + d + ')'; ctx.fillRect(0, 0, W, H); }
+    return;
+  }
   var side = 760;
   [[0, S.bgLeft, 0], [W - side, S.bgRight, 1]].forEach(function (p) {
     var x = p[0], i = p[2];
@@ -729,11 +739,25 @@ function drawNext() {
 
 /* ── 그리기 ────────────────────────────────────────────────── */
 function draw() {
-  var need = [S.logoSponsor, S.logoBroadcast, S.players[0].photo, S.players[1].photo];
-  var got = [null, null, null, null];
+  var need = [S.logoSponsor, S.logoBroadcast, S.players[0].photo, S.players[1].photo,
+              S.bgImage].concat(S.overlays.map(function (o) { return o.src; }));
+  var got = need.map(function () { return null; });
   var left = need.length;
   need.forEach(function (src, i) {
     loadImage(src, function (im) { got[i] = im; if (--left === 0) paint(got); });
+  });
+}
+
+/* 직접 올린 이미지·아이콘 — 맨 위에 얹고, 끌어서 옮기고 휠로 키웁니다. */
+function drawOverlays(imgs) {
+  S.overlays.forEach(function (o, i) {
+    var im = imgs[i];
+    if (!im) return;
+    var sc = o.scale || 1, w = im.width * sc, h = im.height * sc;
+    var x = (o.x == null ? W / 2 : o.x), y = (o.y == null ? H / 2 : o.y);
+    ctx.drawImage(im, x - w / 2, y - h / 2, w, h);
+    reg('ov__' + i, x - Math.max(24, w / 2), y - Math.max(24, h / 2),
+        Math.max(48, w), Math.max(48, h));
   });
 }
 
@@ -741,7 +765,7 @@ function paint(g) {
   HIT = [];
   ctx.clearRect(0, 0, W, H);
   // 배경을 끄면 투명하게 남깁니다 — 방송에서 루핑백 위에 그대로 얹을 수 있습니다.
-  if (S.showBg) drawBackground();
+  if (S.showBg) drawBackground(g[4]);
   var dim = [false, false];
   if (S.type === 'winner') { dim[1 - S.winner.side] = true; }
   drawPhoto(0, g[2], dim[0]);
@@ -770,6 +794,7 @@ function paint(g) {
   } else if (S.type === 'next') {
     drawNext();
   }
+  drawOverlays(g.slice(5));
   save();
 }
 
@@ -883,6 +908,23 @@ function setupControls() {
   bind('bgLeft', function () { return S.bgLeft; }, function (v) { S.bgLeft = v; });
   bind('bgRight', function () { return S.bgRight; }, function (v) { S.bgRight = v; });
 
+  bindPhoto('bgImage', function (d) { S.bgImage = d; });
+  var bic = $('bgImageClear');
+  if (bic) bic.addEventListener('click', function () { S.bgImage = null; draw(); });
+  bind('bgImageDim', function () { return S.bgImageDim; },
+    function (v) { S.bgImageDim = parseInt(v, 10) || 0; });
+  var ova = $('ovAdd');
+  if (ova) ova.addEventListener('change', function () {
+    Array.prototype.slice.call(ova.files || []).forEach(function (f) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        S.overlays.push({ src: fr.result, x: W / 2, y: H / 2, scale: 1, name: f.name });
+        renderOvList(); draw();
+      };
+      fr.readAsDataURL(f);
+    });
+    ova.value = '';
+  });
   bindPhoto('logoSponsor', function (d) { S.logoSponsor = d; });
   bindPhoto('logoBroadcast', function (d) { S.logoBroadcast = d; });
   $('logoSponsorClear').addEventListener('click', function () { S.logoSponsor = null; draw(); });
@@ -996,6 +1038,52 @@ function setupControls() {
   $('importJson').addEventListener('change', importJson);
 }
 
+function renderOvList() {
+  var box = $('ovList');
+  if (!box) return;
+  box.innerHTML = S.overlays.map(function (o, i) {
+    var nm = String(o.name || '이미지 ' + (i + 1)).replace(/[<>&"]/g, '');
+    return '<div class="ovrow">' +
+      '<img src="' + o.src + '" alt="">' +
+      '<span class="ovname">' + nm + '</span>' +
+      '<input type="range" min="5" max="400" value="' + Math.round((o.scale || 1) * 100) + '" data-ovscale="' + i + '">' +
+      '<button type="button" class="btn" data-ovup="' + i + '" title="앞으로 (다른 것 위에)">앞</button>' +
+      '<button type="button" class="btn" data-ovdn="' + i + '" title="뒤로">뒤</button>' +
+      '<button type="button" class="btn danger" data-ovdel="' + i + '">✕</button>' +
+      '</div>';
+  }).join('') || '<div class="helptxt">아직 올린 이미지가 없습니다.</div>';
+  box.querySelectorAll('[data-ovscale]').forEach(function (r) {
+    r.addEventListener('input', function () {
+      var o = S.overlays[+r.getAttribute('data-ovscale')];
+      if (o) { o.scale = (parseInt(r.value, 10) || 100) / 100; draw(); }
+    });
+  });
+  box.querySelectorAll('[data-ovdel]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      S.overlays.splice(+b.getAttribute('data-ovdel'), 1);
+      renderOvList(); draw();
+    });
+  });
+  box.querySelectorAll('[data-ovup]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = +b.getAttribute('data-ovup');
+      if (i < S.overlays.length - 1) {
+        var t = S.overlays[i]; S.overlays[i] = S.overlays[i + 1]; S.overlays[i + 1] = t;
+        renderOvList(); draw();
+      }
+    });
+  });
+  box.querySelectorAll('[data-ovdn]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var i = +b.getAttribute('data-ovdn');
+      if (i > 0) {
+        var t = S.overlays[i]; S.overlays[i] = S.overlays[i - 1]; S.overlays[i - 1] = t;
+        renderOvList(); draw();
+      }
+    });
+  });
+}
+
 function fillForm() {
   [0, 1].forEach(function (i) {
     var n = i + 1, p = S.players[i];
@@ -1004,7 +1092,7 @@ function fillForm() {
     });
     fillSeasons(i);
   });
-  ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight'].forEach(function (k) {
+  ['title', 'sponsorText', 'liveBadge', 'bgLeft', 'bgRight', 'bgImageDim'].forEach(function (k) {
     var el = $(k); if (el) el.value = S[k];
   });
   ['showBg', 'showSponsor', 'showRibbon'].forEach(function (k) {
@@ -1083,6 +1171,12 @@ function setupCanvasDrag() {
     if (drag.photo != null) {
       S.players[drag.photo].ox += dx;
       S.players[drag.photo].oy += dy;
+    } else if (drag.key && drag.key.indexOf('ov__') === 0) {
+      var ov = S.overlays[+drag.key.slice(4)];
+      if (ov) {
+        ov.x = (ov.x == null ? W / 2 : ov.x) + dx;
+        ov.y = (ov.y == null ? H / 2 : ov.y) + dy;
+      }
     } else {
       if (!S.off) S.off = {};
       var o = S.off[drag.key] || { x: 0, y: 0 };
@@ -1094,7 +1188,21 @@ function setupCanvasDrag() {
     drag = null; cv.style.cursor = '';
   });
   cv.addEventListener('wheel', function (e) {
-    var i = hitPhoto(canvasPos(e));
+    var pos = canvasPos(e);
+    for (var k = HIT.length - 1; k >= 0; k--) {
+      var it = HIT[k];
+      if (it.key.indexOf('ov__') === 0 && pos.x >= it.x && pos.x <= it.x + it.w &&
+          pos.y >= it.y && pos.y <= it.y + it.h) {
+        e.preventDefault();
+        var ov = S.overlays[+it.key.slice(4)];
+        if (ov) {
+          ov.scale = Math.min(6, Math.max(0.05, (ov.scale || 1) * (e.deltaY < 0 ? 1.06 : 0.94)));
+          renderOvList(); draw();
+        }
+        return;
+      }
+    }
+    var i = hitPhoto(pos);
     if (i < 0) return;
     e.preventDefault();
     var p = S.players[i];
@@ -1185,6 +1293,7 @@ function load() {
 load();
 setupControls();
 fillForm();
+renderOvList();
 showTypeFields();
 setupCanvasDrag();
 draw();

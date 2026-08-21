@@ -726,10 +726,31 @@ def cg_panel(_fld):
     out.append(_player_block(1, _fld))
     out.append(_player_block(2, _fld))
 
-    out.append('<div class="card"><div class="cardtitle">배경색</div>\n<div class="row2">')
-    out.append(_fld('왼쪽', '<input type="color" id="bgLeft">'))
-    out.append(_fld('오른쪽', '<input type="color" id="bgRight">'))
-    out.append('</div>\n<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button><button class="btn" id="resetPos" type="button">위치 초기화</button>\n</div>\n')
+    out.append('<div class="card"><div class="cardtitle">배경</div>\n<div class="row2">')
+    out.append(_fld('왼쪽 색', '<input type="color" id="bgLeft">'))
+    out.append(_fld('오른쪽 색', '<input type="color" id="bgRight">'))
+    out.append('</div>')
+    out.append(_fld('배경 이미지 (올리면 색 대신 이미지가 깔립니다)',
+                    '<div class="row-inline">'
+                    '<label class="filebtn">파일 선택<input type="file" id="bgImage" '
+                    'accept="image/*"></label>'
+                    '<button class="btn danger" id="bgImageClear" type="button">지우기</button>'
+                    '</div>'))
+    out.append(_fld('배경 이미지 어둡게 (글씨가 잘 보이게)',
+                    '<input type="range" id="bgImageDim" min="0" max="80" step="5">'))
+    out.append('<button class="btn" id="swap" type="button">좌우 선수 바꾸기</button>'
+               '<button class="btn" id="resetPos" type="button">위치 초기화</button>\n</div>\n')
+
+    out.append('<div class="card"><div class="cardtitle">이미지·아이콘 올리기</div>\n')
+    out.append(_fld('이미지 추가 (여러 개 한번에 가능)',
+                    '<label class="filebtn">파일 선택<input type="file" id="ovAdd" '
+                    'accept="image/*" multiple></label>'))
+    out.append('<div id="ovList"></div>')
+    out.append('<div class="helptxt">올린 이미지는 미리보기에서 <b>끌어서 위치</b>를 잡고 '
+               '<b>휠로 크기</b>를 바꿉니다. 배경이 투명한 PNG 아이콘도 그대로 됩니다. '
+               '\'앞/뒤\'로 겹치는 순서를 바꿉니다. 큰 사진을 많이 올리면 자동 저장이 '
+               '안 될 수 있으니(내려받기는 정상) 그때는 설정 내보내기를 쓰세요.</div>')
+    out.append('</div>\n')
     out.append('<div class="helptxt">미리보기에서 <b>글상자·판을 그대로 끌어</b> 옮길 수 있습니다. '
                '빈 자리를 끌면 선수 사진이 움직입니다. 어긋나면 위치 초기화를 누르세요.</div>')
 
