@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-08-21T11:28:10.679Z",
-  "updatedAtKo": "2026년 08월 21일 20:28 (KST)",
+  "updatedAt": "2026-08-22T09:23:42.600Z",
+  "updatedAtKo": "2026년 08월 22일 18:23 (KST)",
   "base": "https://pubgin.com/endgame",
   "xlsx": "https://pubgin.com/endgame/xlsx/sc-endgame.xlsx",
   "aslXlsx": "https://pubgin.com/endgame/xlsx/asl.xlsx",
@@ -28,7 +28,7 @@
       "desc": "매치 안의 세트마다 어떤 맵을 썼는지",
       "file": "sets.csv",
       "group": "끝장전",
-      "rows": 2630,
+      "rows": 2638,
       "url": "https://pubgin.com/endgame/csv/sets.csv"
     },
     {

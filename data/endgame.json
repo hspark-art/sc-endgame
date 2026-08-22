@@ -1,7 +1,7 @@
 {
  "builtAt": "2026-08-15T20:10:41.735Z",
  "global": {
-  "totalSets": 2630,
+  "totalSets": 2638,
   "totalMatches": 294,
   "totalPlayers": 31,
   "firstDate": "2019-05-14",
@@ -1931,10 +1931,10 @@
   {
    "name": "김지성",
    "race": "T",
-   "matchWin": 28,
-   "matchLoss": 23,
-   "setWin": 217,
-   "setLoss": 234,
+   "matchWin": 27,
+   "matchLoss": 24,
+   "setWin": 220,
+   "setLoss": 239,
    "appearances": 51,
    "firstDate": "2020-04-27",
    "lastDate": "2026-08-20",
@@ -1948,8 +1948,8 @@
      "l": 113
     },
     "Z": {
-     "w": 132,
-     "l": 121
+     "w": 135,
+     "l": 126
     }
    },
    "vsPlayers": [
@@ -2192,6 +2192,44 @@
      ]
     },
     {
+     "name": "김명운",
+     "race": "Z",
+     "w": 23,
+     "l": 22,
+     "matches": [
+      {
+       "date": "2021-09-03",
+       "w": 3,
+       "l": 6,
+       "result": "패"
+      },
+      {
+       "date": "2022-08-15",
+       "w": 5,
+       "l": 4,
+       "result": "승"
+      },
+      {
+       "date": "2025-02-04",
+       "w": 5,
+       "l": 4,
+       "result": "승"
+      },
+      {
+       "date": "2025-09-24",
+       "w": 6,
+       "l": 3,
+       "result": "승"
+      },
+      {
+       "date": "2026-08-20",
+       "w": 4,
+       "l": 5,
+       "result": "패"
+      }
+     ]
+    },
+    {
      "name": "조일장",
      "race": "Z",
      "w": 26,
@@ -2225,44 +2263,6 @@
        "date": "2026-07-29",
        "w": 6,
        "l": 3,
-       "result": "승"
-      }
-     ]
-    },
-    {
-     "name": "김명운",
-     "race": "Z",
-     "w": 20,
-     "l": 17,
-     "matches": [
-      {
-       "date": "2021-09-03",
-       "w": 3,
-       "l": 6,
-       "result": "패"
-      },
-      {
-       "date": "2022-08-15",
-       "w": 5,
-       "l": 4,
-       "result": "승"
-      },
-      {
-       "date": "2025-02-04",
-       "w": 5,
-       "l": 4,
-       "result": "승"
-      },
-      {
-       "date": "2025-09-24",
-       "w": 6,
-       "l": 3,
-       "result": "승"
-      },
-      {
-       "date": "2026-08-20",
-       "w": 1,
-       "l": 0,
        "result": "승"
       }
      ]
@@ -3722,17 +3722,17 @@
   {
    "name": "김명운",
    "race": "Z",
-   "matchWin": 9,
-   "matchLoss": 22,
-   "setWin": 119,
-   "setLoss": 152,
+   "matchWin": 10,
+   "matchLoss": 21,
+   "setWin": 124,
+   "setLoss": 155,
    "appearances": 31,
    "firstDate": "2019-06-09",
    "lastDate": "2026-08-20",
    "vsRace": {
     "T": {
-     "w": 53,
-     "l": 74
+     "w": 58,
+     "l": 77
     },
     "P": {
      "w": 66,
@@ -3867,8 +3867,8 @@
     {
      "name": "김지성",
      "race": "T",
-     "w": 17,
-     "l": 20,
+     "w": 22,
+     "l": 23,
      "matches": [
       {
        "date": "2021-09-03",
@@ -3896,9 +3896,9 @@
       },
       {
        "date": "2026-08-20",
-       "w": 0,
-       "l": 1,
-       "result": "패"
+       "w": 5,
+       "l": 4,
+       "result": "승"
       }
      ]
     },
@@ -6483,6 +6483,41 @@
    }
   },
   {
+   "name": "KnockOut",
+   "totalSets": 74,
+   "daysUsed": 47,
+   "firstDate": "2025-08-14",
+   "lastDate": "2026-08-20",
+   "matchup": {
+    "Z-P": {
+     "w": 6,
+     "l": 8
+    },
+    "T-Z": {
+     "w": 13,
+     "l": 25
+    },
+    "P-T": {
+     "w": 10,
+     "l": 12
+    }
+   },
+   "byRace": {
+    "T": {
+     "w": 25,
+     "l": 35
+    },
+    "P": {
+     "w": 18,
+     "l": 18
+    },
+    "Z": {
+     "w": 31,
+     "l": 21
+    }
+   }
+  },
+  {
    "name": "Apocalypse",
    "totalSets": 72,
    "daysUsed": 41,
@@ -6513,41 +6548,6 @@
     },
     "Z": {
      "w": 22,
-     "l": 20
-    }
-   }
-  },
-  {
-   "name": "KnockOut",
-   "totalSets": 72,
-   "daysUsed": 46,
-   "firstDate": "2025-08-14",
-   "lastDate": "2026-08-12",
-   "matchup": {
-    "Z-P": {
-     "w": 6,
-     "l": 8
-    },
-    "T-Z": {
-     "w": 12,
-     "l": 24
-    },
-    "P-T": {
-     "w": 10,
-     "l": 12
-    }
-   },
-   "byRace": {
-    "T": {
-     "w": 24,
-     "l": 34
-    },
-    "P": {
-     "w": 18,
-     "l": 18
-    },
-    "Z": {
-     "w": 30,
      "l": 20
     }
    }
@@ -6729,7 +6729,7 @@
   },
   {
    "name": "Octagon",
-   "totalSets": 52,
+   "totalSets": 53,
    "daysUsed": 28,
    "firstDate": "2026-02-09",
    "lastDate": "2026-08-20",
@@ -6739,7 +6739,7 @@
      "l": 8
     },
     "T-Z": {
-     "w": 13,
+     "w": 14,
      "l": 11
     },
     "P-T": {
@@ -6749,7 +6749,7 @@
    },
    "byRace": {
     "T": {
-     "w": 19,
+     "w": 20,
      "l": 21
     },
     "P": {
@@ -6758,7 +6758,7 @@
     },
     "Z": {
      "w": 15,
-     "l": 21
+     "l": 22
     }
    }
   },
@@ -7044,10 +7044,10 @@
   },
   {
    "name": "Attitude",
-   "totalSets": 31,
-   "daysUsed": 16,
+   "totalSets": 33,
+   "daysUsed": 17,
    "firstDate": "2026-02-19",
-   "lastDate": "2026-08-12",
+   "lastDate": "2026-08-20",
    "matchup": {
     "Z-P": {
      "w": 7,
@@ -7055,7 +7055,7 @@
     },
     "T-Z": {
      "w": 8,
-     "l": 13
+     "l": 15
     },
     "P-T": {
      "w": 0,
@@ -7065,14 +7065,14 @@
    "byRace": {
     "T": {
      "w": 10,
-     "l": 13
+     "l": 15
     },
     "P": {
      "w": 1,
      "l": 9
     },
     "Z": {
-     "w": 20,
+     "w": 22,
      "l": 9
     }
    }
@@ -8233,6 +8233,41 @@
    }
   },
   {
+   "name": "Backrooms",
+   "totalSets": 11,
+   "daysUsed": 6,
+   "firstDate": "2026-07-20",
+   "lastDate": "2026-08-20",
+   "matchup": {
+    "Z-P": {
+     "w": 1,
+     "l": 1
+    },
+    "T-Z": {
+     "w": 4,
+     "l": 2
+    },
+    "P-T": {
+     "w": 2,
+     "l": 1
+    }
+   },
+   "byRace": {
+    "T": {
+     "w": 5,
+     "l": 4
+    },
+    "P": {
+     "w": 3,
+     "l": 2
+    },
+    "Z": {
+     "w": 3,
+     "l": 5
+    }
+   }
+  },
+  {
    "name": "Neo Medusa",
    "totalSets": 10,
    "daysUsed": 7,
@@ -8373,6 +8408,41 @@
    }
   },
   {
+   "name": "Aiolos",
+   "totalSets": 10,
+   "daysUsed": 7,
+   "firstDate": "2026-07-16",
+   "lastDate": "2026-08-20",
+   "matchup": {
+    "Z-P": {
+     "w": 1,
+     "l": 1
+    },
+    "T-Z": {
+     "w": 3,
+     "l": 1
+    },
+    "P-T": {
+     "w": 2,
+     "l": 2
+    }
+   },
+   "byRace": {
+    "T": {
+     "w": 5,
+     "l": 3
+    },
+    "P": {
+     "w": 3,
+     "l": 3
+    },
+    "Z": {
+     "w": 2,
+     "l": 4
+    }
+   }
+  },
+  {
    "name": "Whiteout",
    "totalSets": 9,
    "daysUsed": 9,
@@ -8404,76 +8474,6 @@
     "Z": {
      "w": 4,
      "l": 2
-    }
-   }
-  },
-  {
-   "name": "Aiolos",
-   "totalSets": 9,
-   "daysUsed": 6,
-   "firstDate": "2026-07-16",
-   "lastDate": "2026-08-12",
-   "matchup": {
-    "Z-P": {
-     "w": 1,
-     "l": 1
-    },
-    "T-Z": {
-     "w": 3,
-     "l": 0
-    },
-    "P-T": {
-     "w": 2,
-     "l": 2
-    }
-   },
-   "byRace": {
-    "T": {
-     "w": 5,
-     "l": 2
-    },
-    "P": {
-     "w": 3,
-     "l": 3
-    },
-    "Z": {
-     "w": 1,
-     "l": 4
-    }
-   }
-  },
-  {
-   "name": "Backrooms",
-   "totalSets": 9,
-   "daysUsed": 5,
-   "firstDate": "2026-07-20",
-   "lastDate": "2026-08-12",
-   "matchup": {
-    "Z-P": {
-     "w": 1,
-     "l": 1
-    },
-    "T-Z": {
-     "w": 3,
-     "l": 1
-    },
-    "P-T": {
-     "w": 2,
-     "l": 1
-    }
-   },
-   "byRace": {
-    "T": {
-     "w": 4,
-     "l": 3
-    },
-    "P": {
-     "w": 3,
-     "l": 2
-    },
-    "Z": {
-     "w": 2,
-     "l": 4
     }
    }
   },
@@ -8910,12 +8910,20 @@
     "김지성": "T"
    },
    "setWins": {
-    "김명운": 0,
-    "김지성": 1
+    "김명운": 5,
+    "김지성": 4
    },
-   "winner": "김지성",
+   "winner": "김명운",
    "maps": [
-    "Octagon"
+    "Octagon",
+    "KnockOut",
+    "Attitude",
+    "Backrooms",
+    "Aiolos",
+    "Octagon",
+    "Attitude",
+    "KnockOut",
+    "Backrooms"
    ],
    "youtubeUrl": null
   },
