@@ -18,3 +18,4 @@ data/.notify-state.json
 # 채팅 로그·당첨자 명단 — 시청자 닉네임이 있어 이 PC 에만 둡니다
 data/chat/
 data/prizes/
+balloon-catch.log
