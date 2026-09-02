@@ -874,16 +874,20 @@ function dupPersonKeys(){
   findDups().forEach(d=>set.add((d.sid||'').toLowerCase()||norm(d.nick)));
   return set;
 }
+let dupDismissed='';
+function dupSig(dups){return dups.map(d=>d.nick+'|'+d.prize+'|'+d.n).join(',');}
+function dismissDup(){dupDismissed=dupSig(findDups())||'_none_';const el=document.getElementById('dupBanner');if(el)el.style.display='none';}
 function renderDupBanner(){
   const el=document.getElementById('dupBanner'); if(!el)return;
+  // 당첨자 시트 패널을 X로 닫았으면 배너도 숨김
+  if(typeof panelState!=='undefined'&&panelState['winners']){el.style.display='none';return;}
   const dups=findDups();
-  if(!dups.length){
-    el.className='dupbanner ok'; el.style.display='';
-    el.innerHTML='✓ 같은 상품 중복 당첨 없음';
-    return;
-  }
-  el.className='dupbanner'; el.style.display='';
-  el.innerHTML='🚨 <b>같은 상품 중복 당첨 '+dups.length+'건</b> — 확인 필요<br>'+
+  const sig=dupSig(dups)||'_none_';
+  if(sig===dupDismissed){el.style.display='none';return;}   // 사용자가 배너 X로 끈 상태 (내용 바뀌면 다시 뜸)
+  const X='<button class="px" style="float:right;margin:-2px -4px 0 0;color:#ff8fa3" onclick="dismissDup()" title="배너 닫기">✕</button>';
+  if(!dups.length){el.className='dupbanner ok';el.style.display='';el.innerHTML=X+'✓ 같은 상품 중복 당첨 없음';return;}
+  el.className='dupbanner';el.style.display='';
+  el.innerHTML=X+'🚨 <b>같은 상품 중복 당첨 '+dups.length+'건</b> — 확인 필요<br>'+
     dups.slice(0,30).map(d=>'<span class="pill" style="border-color:#ff4d5a;color:#ff8fa3;margin:2px 0;display:inline-block">'+
       esc(d.nick)+(d.sid?' <span style="color:#8a93a6">('+esc(d.sid)+')</span>':'')+' × '+esc(d.prize)+' <b>'+d.n+'회</b></span>').join(' ');
 }
