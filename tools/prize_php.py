@@ -1721,11 +1721,16 @@ function paint(){
   const chatEl=document.getElementById('chat');
   // 이미 맨 아래를 보고 있으면 새 글에 맞춰 따라 내려갑니다 (위로 올려 읽는 중이면 안 건드림)
   const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
+  const _wc={};   // 이 렌더 동안 닉별 당첨 횟수 캐시
+  function wtitle(nick){
+    if(!(nick in _wc))_wc[nick]=winCount(nick)[0];
+    return (_wc[nick]?'🏆 당첨 '+_wc[nick]+'회':'당첨 없음')+' · 눌러서 당첨 만들기에 넣기';
+  }
   chatEl.innerHTML=recent.slice(-80).map(e=>
     e.t==='balloon'
-    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="눌러서 당첨 만들기에 넣기">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
+    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
       +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
-    :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="눌러서 당첨 만들기에 넣기"><span class="pill" style="margin-right:5px">'+e.at
+    :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
       +'</span><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
   if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
