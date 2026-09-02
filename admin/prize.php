@@ -28,6 +28,10 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-
 .chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
 .wtag{color:#ffd166;font-size:calc(11px*var(--cz,1));font-weight:600;margin-left:1px}
+.fb{display:inline-block;font-size:calc(10px*var(--cz,1));font-weight:800;line-height:1.4;border-radius:3px;padding:0 4px;margin-right:3px;vertical-align:middle;letter-spacing:-.3px}
+.fb.yeol{background:#e02e2e;color:#fff;box-shadow:0 0 0 1px #ff9a9a inset}
+.fb.fan{background:#1f9d4d;color:#fff}
+.fb.sub{background:#2f7fe0;color:#fff}
 .wicon{display:inline-block;font-size:calc(11px*var(--cz,1));line-height:calc(16px*var(--cz,1));width:calc(17px*var(--cz,1));height:calc(17px*var(--cz,1));text-align:center;border-radius:50%;vertical-align:middle;margin-left:2px;border:1px solid rgba(0,0,0,.35);overflow:hidden}
 .chatlegend{border-top:1px solid #1d2431;margin-top:8px;padding-top:7px}
 .chatlegend .lgrow{line-height:2;font-size:11.5px}
@@ -290,6 +294,22 @@ function bump(nick,kind,n){
   const u=users[nick]??(users[nick]={c:0,b:0});
   if(kind==='c')u.c++; else u.b+=n;
 }
+// 채팅 등급 플래그: f[7]="flag1|flag2" (라이브 talent 캡처로 검증)
+//   팬클럽 = flag1 bit5(0x20) · 열혈팬 = flag2 bit25(0x2000000)
+//   구독자 비트는 구독자 표본 확인 후 확정 (지금은 off — 오탐 방지)
+function chatFlags(f){
+  const raw=(f[7]||'').split('|');
+  const a=parseInt(raw[0]||'0',10)||0, b=parseInt(raw[1]||'0',10)||0;
+  return {fan:!!(a&0x20), sup:!!(b&0x2000000), sub:false};
+}
+// 채팅 이름 앞 등급 배지 (열혈>팬, 구독은 별개로 맨 앞)
+function fbadges(e){
+  let h='';
+  if(e.sub)h+='<span class="fb sub" title="구독자">구</span>';
+  if(e.sup)h+='<span class="fb yeol" title="열혈팬클럽">열</span>';
+  else if(e.fan)h+='<span class="fb fan" title="팬클럽">F</span>';
+  return h;
+}
 function onEvent(ev){
   // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
@@ -395,7 +415,7 @@ async function connectChat(){
     if(!joined){joined=true;ws.send(pkt(2,F+String(info.CHATNO)+F+F+F+F));}
     if(svc===5&&f.length>6){
       const nick=cleanNick(f[6]);
-      if(nick)onEvent({t:'chat',nick,id:cleanNick(f[2]),msg:f[1],at:now()});
+      if(nick){const fl=chatFlags(f);onEvent({t:'chat',nick,id:cleanNick(f[2]),msg:f[1],at:now(),fan:fl.fan,sup:fl.sup,sub:fl.sub});}
     }else if(svc===18){
       const ev=parseBalloon18(f);        // 별풍선 (공식 SVC_SENDBALLOON)
       if(ev){ev.at=now();onEvent(ev);}
@@ -1176,10 +1196,10 @@ function paint(){
     const prevTop=chatEl.scrollTop;
     chatInner.innerHTML=recent.slice(-CHAT_MAX).map(e=>
       e.t==='balloon'
-      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
+      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
         +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
       :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
-        +'</span><b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
+        +'</span>'+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
     chatEl.scrollTop=atBottom?chatEl.scrollHeight:prevTop;
   }
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
