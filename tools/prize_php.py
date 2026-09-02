@@ -661,6 +661,7 @@ th{color:#8a93a6;font-size:11px}
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:5px}
 .chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
+.wtag{color:#ffd166;font-size:11px;font-weight:600;margin-left:1px}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
 font-weight:700;cursor:pointer;font-family:inherit}
 button.gray{background:#232a38}button.red{background:#e0392b}
@@ -1726,12 +1727,16 @@ function paint(){
     if(!(nick in _wc))_wc[nick]=winCount(nick)[0];
     return (_wc[nick]?'🏆 당첨 '+_wc[nick]+'회':'당첨 없음')+' · 눌러서 당첨 만들기에 넣기';
   }
+  function wtag(nick){
+    if(!(nick in _wc))_wc[nick]=winCount(nick)[0];
+    return _wc[nick]?' <span class="wtag">(당첨 '+_wc[nick]+'회)</span>':'';
+  }
   chatEl.innerHTML=recent.slice(-80).map(e=>
     e.t==='balloon'
-    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b> <span class="balloon">별풍선 '
+    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
       +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
     :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
-      +'</span><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
+      +'</span><b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
   if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
   const medal=['🥇','🥈','🥉'];
