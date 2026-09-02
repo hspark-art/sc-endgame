@@ -22,6 +22,9 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-
 .chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
 .wtag{color:#ffd166;font-size:11px;font-weight:600;margin-left:1px}
+.wicon{font-size:12px;margin-left:2px;vertical-align:middle}
+.chatlegend{border-top:1px solid #1d2431;margin-top:8px;padding-top:7px}
+.chatlegend .lgrow{line-height:2;font-size:11.5px}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
 font-weight:700;cursor:pointer;font-family:inherit}
 button.gray{background:#232a38}button.red{background:#e0392b}
@@ -110,7 +113,8 @@ function goCh(v){
 
 <div class="card" data-panel="chat"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
-<div class="scroll" id="chat" style="max-height:560px"></div></div>
+<div class="scroll" id="chat" style="max-height:560px"></div>
+<div id="chatLegend" class="chatlegend" style="display:none"></div></div>
 
 <div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">채팅왕 · 후원왕</span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
@@ -825,12 +829,12 @@ function initPanels(){
 }
 function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
 const PCATS=[
-  {k:'마우스패드',re:/마우스\s*패드|패드|gigantus|mousepad/i,c:'#a78bfa'},
-  {k:'마우스',re:/마우스|viper|razer|mouse/i,c:'#4aa3ff'},
-  {k:'유니폼',re:/유니폼|uniform|jamie/i,c:'#f87171'},
-  {k:'안경',re:/안경|wearwhere|glass/i,c:'#4ade80'},
-  {k:'쿠폰·코드',re:/쿠폰|포인트|코드|coupon|point|code/i,c:'#ffb020'}];
-function prizeCat(p){for(const x of PCATS)if(x.re.test(p||''))return x;return{k:'기타',c:'#8a93a6'};}
+  {k:'마우스패드',re:/마우스\s*패드|패드|gigantus|mousepad/i,c:'#a78bfa',i:'🟪'},
+  {k:'마우스',re:/마우스|viper|razer|mouse/i,c:'#4aa3ff',i:'🖱️'},
+  {k:'유니폼',re:/유니폼|uniform|jamie/i,c:'#f87171',i:'👕'},
+  {k:'안경',re:/안경|wearwhere|glass/i,c:'#4ade80',i:'👓'},
+  {k:'쿠폰·코드',re:/쿠폰|포인트|코드|coupon|point|code/i,c:'#ffb020',i:'🎟️'}];
+function prizeCat(p){for(const x of PCATS)if(x.re.test(p||''))return x;return{k:'기타',c:'#8a93a6',i:'🎁'};}
 let _rwSig='';
 async function showPastDay(date){
   document.getElementById('pastTitle').textContent=date+' — 최종 시청자 활약';
@@ -891,6 +895,20 @@ function renderDupBanner(){
   el.innerHTML=X+'🚨 <b>같은 상품 중복 당첨 '+dups.length+'건</b> — 확인 필요<br>'+
     dups.slice(0,30).map(d=>'<span class="pill" style="border-color:#ff4d5a;color:#ff8fa3;margin:2px 0;display:inline-block">'+
       esc(d.nick)+(d.sid?' <span style="color:#8a93a6">('+esc(d.sid)+')</span>':'')+' × '+esc(d.prize)+' <b>'+d.n+'회</b></span>').join(' ');
+}
+function renderChatLegend(){
+  const el=document.getElementById('chatLegend'); if(!el||!ST)return;
+  const byCat={};
+  const add=(name)=>{if(!name)return;const c=prizeCat(name);const b=byCat[c.k]||(byCat[c.k]={i:c.i,c:c.c,names:[]});if(!b.names.includes(name))b.names.push(name);};
+  (ST.prizes.items||[]).forEach(x=>add(x.name));
+  (ST.winners.list||[]).forEach(w=>add(w.prize));
+  const keys=Object.keys(byCat);
+  if(!keys.length){el.style.display='none';return;}
+  el.style.display='';
+  el.innerHTML='<div class="hint" style="margin:0 0 3px">🎁 당첨 상품 아이콘 — 채팅 이름 옆에 뜹니다</div>'+
+    keys.map(k=>{const b=byCat[k];
+      return '<div class="lgrow"><span class="wicon">'+b.i+'</span> <b style="color:'+b.c+'">'+esc(k)+'</b> '+
+        '<span class="n" style="font-size:11px">'+esc(b.names.join(', '))+'</span></div>';}).join('');
 }
 function renderRecentWinners(){
   const host=document.getElementById('recentWinners');if(!host||!ST)return;
@@ -1029,6 +1047,7 @@ async function refresh(){
   const wl=ST.winners.list;
   document.getElementById('wcount').textContent=wl.length+'건';
   renderDupBanner();
+  renderChatLegend();
   document.querySelector('#winners tbody').innerHTML=wl.slice().reverse().map(w=>{
     const acc=w.sid||'';
     return '<tr><td>'+esc(w.date)+'</td><td><b>'+esc(w.nick)+'</b></td>'+
@@ -1082,14 +1101,23 @@ function paint(){
   const chatEl=document.getElementById('chat');
   // 이미 맨 아래를 보고 있으면 새 글에 맞춰 따라 내려갑니다 (위로 올려 읽는 중이면 안 건드림)
   const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
-  const _wc={};   // 이 렌더 동안 닉별 당첨 횟수 캐시
+  const _wc={};   // 이 렌더 동안 닉별 당첨 정보 캐시 {n, icons}
+  function winInfo(nick){
+    if(nick in _wc)return _wc[nick];
+    const nn=norm(nick), sid=(uid[nick]||'').toLowerCase();
+    const wins=(ST?ST.winners.list:[]).filter(w=>norm(w.nick)===nn||(sid&&(w.sid||'').toLowerCase()===sid));
+    const cats={};
+    wins.forEach(w=>{const c=prizeCat(w.prize);(cats[c.k]||(cats[c.k]={i:c.i,names:[]})).names.push(w.prize);});
+    const icons=Object.values(cats).map(x=>'<span class="wicon" title="'+esc([...new Set(x.names)].join(', '))+'">'+x.i+'</span>').join('');
+    return (_wc[nick]={n:wins.length, icons:icons});
+  }
   function wtitle(nick){
-    if(!(nick in _wc))_wc[nick]=winCount(nick)[0];
-    return (_wc[nick]?'🏆 당첨 '+_wc[nick]+'회':'당첨 없음')+' · 눌러서 당첨 만들기에 넣기';
+    const w=winInfo(nick);
+    return (w.n?'🏆 당첨 '+w.n+'회':'당첨 없음')+' · 눌러서 당첨 만들기에 넣기';
   }
   function wtag(nick){
-    if(!(nick in _wc))_wc[nick]=winCount(nick)[0];
-    return _wc[nick]?' <span class="wtag">(당첨 '+_wc[nick]+'회)</span>':'';
+    const w=winInfo(nick);
+    return w.n?' <span class="wtag">(당첨 '+w.n+'회)</span>'+w.icons:'';
   }
   chatEl.innerHTML=recent.slice(-80).map(e=>
     e.t==='balloon'
