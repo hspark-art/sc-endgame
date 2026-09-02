@@ -23,7 +23,7 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-
 .chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
 .wtag{color:#ffd166;font-size:11px;font-weight:600;margin-left:1px}
-.wicon{font-size:12px;margin-left:2px;vertical-align:middle}
+.wicon{display:inline-block;font-size:11px;line-height:16px;width:17px;height:17px;text-align:center;border-radius:50%;vertical-align:middle;margin-left:2px;border:1px solid rgba(0,0,0,.35);overflow:hidden}
 .chatlegend{border-top:1px solid #1d2431;margin-top:8px;padding-top:7px}
 .chatlegend .lgrow{line-height:2;font-size:11.5px}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
@@ -860,6 +860,9 @@ function initChatResize(){
 function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
 const PCATS=[
   {k:'마우스패드',re:/마우스\s*패드|패드|gigantus|mousepad/i,c:'#a78bfa',i:'🟪'},
+  {k:'마우스 화이트',re:/viper.*white|razer.*white|화이트/i,c:'#ffffff',i:'🖱️'},
+  {k:'마우스 CS2',re:/viper.*cs2|razer.*cs2/i,c:'#ffd166',i:'🖱️'},
+  {k:'마우스 Faker',re:/faker|페이커/i,c:'#ff4d5a',i:'🖱️'},
   {k:'마우스',re:/마우스|viper|razer|mouse/i,c:'#4aa3ff',i:'🖱️'},
   {k:'유니폼',re:/유니폼|uniform|jamie/i,c:'#f87171',i:'👕'},
   {k:'안경',re:/안경|wearwhere|glass/i,c:'#4ade80',i:'👓'},
@@ -937,7 +940,7 @@ function renderChatLegend(){
   el.style.display='';
   el.innerHTML='<div class="hint" style="margin:0 0 3px">🎁 당첨 상품 아이콘 — 채팅 이름 옆에 뜹니다</div>'+
     keys.map(k=>{const b=byCat[k];
-      return '<div class="lgrow"><span class="wicon">'+b.i+'</span> <b style="color:'+b.c+'">'+esc(k)+'</b> '+
+      return '<div class="lgrow"><span class="wicon" style="background:'+b.c+'">'+b.i+'</span> <b style="color:'+b.c+'">'+esc(k)+'</b> '+
         '<span class="n" style="font-size:11px">'+esc(b.names.join(', '))+'</span></div>';}).join('');
 }
 function renderRecentWinners(){
@@ -1137,8 +1140,8 @@ function paint(){
     const nn=norm(nick), sid=(uid[nick]||'').toLowerCase();
     const wins=(ST?ST.winners.list:[]).filter(w=>norm(w.nick)===nn||(sid&&(w.sid||'').toLowerCase()===sid));
     const cats={};
-    wins.forEach(w=>{const c=prizeCat(w.prize);(cats[c.k]||(cats[c.k]={i:c.i,names:[]})).names.push(w.prize);});
-    const icons=Object.values(cats).map(x=>'<span class="wicon" title="'+esc([...new Set(x.names)].join(', '))+'">'+x.i+'</span>').join('');
+    wins.forEach(w=>{const c=prizeCat(w.prize);(cats[c.k]||(cats[c.k]={i:c.i,c:c.c,names:[]})).names.push(w.prize);});
+    const icons=Object.values(cats).map(x=>'<span class="wicon" style="background:'+x.c+'" title="'+esc([...new Set(x.names)].join(', '))+'">'+x.i+'</span>').join('');
     return (_wc[nick]={n:wins.length, icons:icons});
   }
   function wtitle(nick){
