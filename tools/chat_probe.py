@@ -19,7 +19,7 @@ import soopchat
 ESC = b'\x1b\t'; F = '\x0c'
 # SOOP 플레이어 공식 상수 기준 (LivePlayer.js). 선물이 아닌 제어 이벤트도 포함.
 KNOWN_LABEL = {5: '채팅', 18: '별풍선', 33: '별풍선(중계)', 109: 'OGQ이모티콘',
-               87: '애드벌룬', 105: '영상풍선', 37: '초콜릿', 38: '초콜릿SUB',
+               87: '별풍선(애드벌룬)', 107: '별풍선(방송국애드)', 105: '영상풍선', 37: '초콜릿', 38: '초콜릿SUB',
                108: '구독', 121: '미션', 125: '미션정산', 20: '팬레터', 34: '팬레터SUB',
                30: '팬순위', 35: '팬순위SUB', 39: '클랜순위', 41: '슈퍼챗',
                0: 'ping', 1: 'connect', 2: 'join', 3: '방송종료', 4: '유저목록',
@@ -84,10 +84,10 @@ def main():
             if nick: chatters.add(nick)
             if len(samples_chat) < 5:
                 samples_chat.append('%s(%s): %s' % (nick, uid, f[1][:24]))
-        elif svc in (18, 33):
+        elif svc in (18, 33, 87, 107):
             ev = soopchat._parse_balloon(f, svc)
             if ev:
-                key = '%s|%s' % (ev['id'], ev['count'])
+                key = '%s|%s|%s' % (ev['id'], ev['count'], ev.get('kind', 'star'))
                 now = time.time()
                 if key in seen_bal and now - seen_bal[key] < 8:
                     seen_bal[key] = now; continue      # 재전송

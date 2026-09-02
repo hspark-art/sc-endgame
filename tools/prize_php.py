@@ -934,11 +934,11 @@ const BAL_WINDOW=8000;
    닉==ID 인 시청자도 진짜 별풍선입니다(공식 파서에 제외 규칙 없음).
    순위·누적은 svc 30/39(TOPFAN/TOPCLAN)로 따로 오므로 여기 안 섞입니다.
    중복제거: 같은 사람·같은 개수가 8초 안에 다시 오면 재전송으로 봄. */
-function dedupBalloon(who,cnt){
-  const key=who+'|'+cnt, t=Date.now(), last=seenBalloons.get(key);
+function dedupBalloon(who,cnt,kind){
+  const key=who+'|'+cnt+'|'+(kind||'star'), t=Date.now(), last=seenBalloons.get(key);
   seenBalloons.set(key,t);
   if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
-  return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
+  return last==null || t-last>=BAL_WINDOW;   // true = 새(중복 아닌) 것
 }
 function parseBalloon18(f){  // svc 18 — 공식 SVC_SENDBALLOON
   if(f.length<5)return null;
@@ -956,7 +956,25 @@ function parseBalloon33(f){  // svc 33 — 공식 SVC_SENDBALLOONSUB (중계방 
   const id=cleanNick(f[4]), nick=cleanNick(f[5]);
   if(!id||!nick)return null;
   if((f[2]||'').toLowerCase()!==BJ)return null;
-  return dedupBalloon(id,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
+  return dedupBalloon(id,cnt,'star')?{t:'balloon',nick,count:+cnt,id}:null;
+}
+function parseBalloon87(f){  // 애드벌룬 (SVC_ADCON_EFFECT) — 채널f[2] 아이디f[3] 닉f[4] 개수f[10]. 사장님 방침으로 별풍선 합산.
+  if(f.length<11)return null;
+  const cnt=(f[10]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
+  const id=cleanNick(f[3]), nick=cleanNick(f[4]);
+  if(!id||!nick)return null;
+  if((f[2]||'').toLowerCase()!==BJ)return null;
+  return dedupBalloon(id,cnt,'ad')?{t:'balloon',nick,count:+cnt,id,ad:1}:null;
+}
+function parseBalloon107(f){ // 방송국 애드벌룬 (SVC_STATION_ADCON) — 채널f[1] 아이디f[2] 닉f[3] 개수f[4]
+  if(f.length<5)return null;
+  const cnt=(f[4]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
+  const id=cleanNick(f[2]), nick=cleanNick(f[3]);
+  if(!id||!nick)return null;
+  if((f[1]||'').toLowerCase()!==BJ)return null;
+  return dedupBalloon(id,cnt,'ad')?{t:'balloon',nick,count:+cnt,id,ad:1}:null;
 }
 async function connectChat(){
   if(!sess.on){setStatus('⏹ 종료 상태 — ▶ 스타트를 누르면 집계를 시작합니다');sessBtns();return;}
@@ -991,6 +1009,12 @@ async function connectChat(){
       if(ev){ev.at=now();onEvent(ev);}
     }else if(svc===33){
       const ev=parseBalloon33(f);        // 중계방 별풍선 (공식 SVC_SENDBALLOONSUB)
+      if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===87){
+      const ev=parseBalloon87(f);        // 애드벌룬 — 별풍선에 합산
+      if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===107){
+      const ev=parseBalloon107(f);       // 방송국 애드벌룬 — 별풍선에 합산
       if(ev){ev.at=now();onEvent(ev);}
     }else if(svc===109){
       // OGQ 이모티콘(공식 SVC_OGQ_EMOTICON) — 별풍선 아님, 집계 안 함
@@ -2619,9 +2643,9 @@ mark{background:#3a2b12;color:#ffd24a;padding:0 3px;border-radius:4px}
 <button class="gray" onclick="rows.length=0;document.querySelector('#t tbody').innerHTML=''">지우기</button>
 </div>
 <div class="hint">들어오는 <b>선물 후보</b> 이벤트를 원본 그대로 보여줍니다. 방송의 실제 별풍선/이모티콘과 맞춰 보세요.
-<b class="b18">초록 = 별풍선</b> (SOOP 공식 SVC_SENDBALLOON 18 · 중계 33 — 이것만 집계) ·
-<b class="etc">회색 = OGQ 이모티콘</b> (별풍선 아님, 집계 안 함) ·
-<b class="ad">파랑 = 애드벌룬·영상풍선·초콜릿</b> · <b class="sub">보라 = 구독·미션</b>.
+<b class="b18">초록 = 별풍선</b> (svc18 · 중계33 · <b>애드벌룬87 · 방송국애드107</b> — 모두 집계) ·
+<b class="etc">회색 = OGQ 이모티콘</b> (집계 안 함) ·
+<b class="ad">파랑 = 영상풍선·초콜릿</b> · <b class="sub">보라 = 구독·미션</b>.
 별풍선의 아이템 칸은 시그니처 이미지 파일명입니다 (기본 별풍선은 '기본').</div>
 <table id="t"><thead><tr><th>시각</th><th>svc</th><th>종류</th><th>닉네임</th><th>계정</th>
 <th class="num">개수</th><th>아이템ID</th><th>원본 필드</th></tr></thead><tbody></tbody></table>
@@ -2643,7 +2667,8 @@ function classify(svc,f){
   if(svc===18)  return {k:'별풍선', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:(f[8]||'')||'기본'};
   if(svc===33)  return {k:'별풍선(중계)', cls:'b18', nick:clean(f[5]),id:clean(f[4]),cnt:f[6],item:(f[9]||'')||'기본'};
   if(svc===109) return {k:'OGQ 이모티콘(집계 안함)', cls:'etc', nick:clean(f[7]),id:clean(f[6]),cnt:f[4],item:(f[8]||'').split('|')[0]};
-  if(svc===87)  return {k:'애드벌룬', cls:'ad', nick:clean(f[4]||f[3]),id:clean(f[3]),cnt:(f[5]||'').replace(/[^0-9]/g,'')||'?',item:'adcon'};
+  if(svc===87)  return {k:'별풍선(애드벌룬)', cls:'b18', nick:clean(f[4]),id:clean(f[3]),cnt:f[10],item:'애드'};
+  if(svc===107) return {k:'별풍선(방송국애드)', cls:'b18', nick:clean(f[3]),id:clean(f[2]),cnt:f[4],item:'방송국애드'};
   if(svc===105) return {k:'영상풍선', cls:'ad', nick:'',id:'',cnt:'',item:'video'};
   if(svc===37)  return {k:'초콜릿', cls:'ad', nick:'',id:'',cnt:'',item:'choco'};
   if(svc===108) return {k:'구독', cls:'sub', nick:clean(f[3]||f[2]),id:clean(f[2]),cnt:'',item:'sub'};
@@ -2680,7 +2705,7 @@ async function connect(){
   ws.onmessage=(m)=>{const s=new TextDecoder().decode(m.data);
     if(!s.startsWith('\x1b\t'))return;const svc=+s.slice(2,6),f=s.slice(14).split(F);
     if(!joined){joined=true;ws.send(pkt(2,F+String(info.CHATNO)+F+F+F+F));}
-    if([18,33,37,87,105,108,109,121].includes(svc))add(svc,f);
+    if([18,33,37,87,105,107,108,109,121].includes(svc))add(svc,f);
   };
   ws.onclose=()=>{clearInterval(pingT);setFlag('연결 끊김 — 다시 붙는 중…');setTimeout(connect,6000);};
   ws.onerror=()=>{try{ws.close()}catch(e){}};

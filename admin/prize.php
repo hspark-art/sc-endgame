@@ -294,11 +294,11 @@ const BAL_WINDOW=8000;
    닉==ID 인 시청자도 진짜 별풍선입니다(공식 파서에 제외 규칙 없음).
    순위·누적은 svc 30/39(TOPFAN/TOPCLAN)로 따로 오므로 여기 안 섞입니다.
    중복제거: 같은 사람·같은 개수가 8초 안에 다시 오면 재전송으로 봄. */
-function dedupBalloon(who,cnt){
-  const key=who+'|'+cnt, t=Date.now(), last=seenBalloons.get(key);
+function dedupBalloon(who,cnt,kind){
+  const key=who+'|'+cnt+'|'+(kind||'star'), t=Date.now(), last=seenBalloons.get(key);
   seenBalloons.set(key,t);
   if(seenBalloons.size>5000){for(const [k,v] of seenBalloons)if(t-v>=BAL_WINDOW)seenBalloons.delete(k);}
-  return last==null || t-last>=BAL_WINDOW;   // true = 새 별풍선
+  return last==null || t-last>=BAL_WINDOW;   // true = 새(중복 아닌) 것
 }
 function parseBalloon18(f){  // svc 18 — 공식 SVC_SENDBALLOON
   if(f.length<5)return null;
@@ -316,7 +316,25 @@ function parseBalloon33(f){  // svc 33 — 공식 SVC_SENDBALLOONSUB (중계방 
   const id=cleanNick(f[4]), nick=cleanNick(f[5]);
   if(!id||!nick)return null;
   if((f[2]||'').toLowerCase()!==BJ)return null;
-  return dedupBalloon(id,cnt)?{t:'balloon',nick,count:+cnt,id}:null;
+  return dedupBalloon(id,cnt,'star')?{t:'balloon',nick,count:+cnt,id}:null;
+}
+function parseBalloon87(f){  // 애드벌룬 (SVC_ADCON_EFFECT) — 채널f[2] 아이디f[3] 닉f[4] 개수f[10]. 사장님 방침으로 별풍선 합산.
+  if(f.length<11)return null;
+  const cnt=(f[10]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
+  const id=cleanNick(f[3]), nick=cleanNick(f[4]);
+  if(!id||!nick)return null;
+  if((f[2]||'').toLowerCase()!==BJ)return null;
+  return dedupBalloon(id,cnt,'ad')?{t:'balloon',nick,count:+cnt,id,ad:1}:null;
+}
+function parseBalloon107(f){ // 방송국 애드벌룬 (SVC_STATION_ADCON) — 채널f[1] 아이디f[2] 닉f[3] 개수f[4]
+  if(f.length<5)return null;
+  const cnt=(f[4]||'').trim();
+  if(!/^\d+$/.test(cnt)||+cnt<=0||+cnt>1000000)return null;
+  const id=cleanNick(f[2]), nick=cleanNick(f[3]);
+  if(!id||!nick)return null;
+  if((f[1]||'').toLowerCase()!==BJ)return null;
+  return dedupBalloon(id,cnt,'ad')?{t:'balloon',nick,count:+cnt,id,ad:1}:null;
 }
 async function connectChat(){
   if(!sess.on){setStatus('⏹ 종료 상태 — ▶ 스타트를 누르면 집계를 시작합니다');sessBtns();return;}
@@ -351,6 +369,12 @@ async function connectChat(){
       if(ev){ev.at=now();onEvent(ev);}
     }else if(svc===33){
       const ev=parseBalloon33(f);        // 중계방 별풍선 (공식 SVC_SENDBALLOONSUB)
+      if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===87){
+      const ev=parseBalloon87(f);        // 애드벌룬 — 별풍선에 합산
+      if(ev){ev.at=now();onEvent(ev);}
+    }else if(svc===107){
+      const ev=parseBalloon107(f);       // 방송국 애드벌룬 — 별풍선에 합산
       if(ev){ev.at=now();onEvent(ev);}
     }else if(svc===109){
       // OGQ 이모티콘(공식 SVC_OGQ_EMOTICON) — 별풍선 아님, 집계 안 함

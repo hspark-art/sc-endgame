@@ -33,7 +33,13 @@ SVC_PING, SVC_CONNECT, SVC_JOIN = 0, 1, 2
 SVC_USERLIST, SVC_CHAT = 4, 5
 SVC_BALLOON = 18                             # SVC_SENDBALLOON — 별풍선 (SOOP 공식 상수)
 SVC_BALLOON_SUB = 33                         # SVC_SENDBALLOONSUB — 중계방 별풍선
+SVC_ADBALLOON = 87                           # SVC_ADCON_EFFECT — 애드벌룬 (사장님 방침: 별풍선 합산)
+SVC_STATION_ADBALLOON = 107                  # SVC_STATION_ADCON — 방송국 애드벌룬
 SVC_OGQ = 109                                # SVC_OGQ_EMOTICON — 이모티콘 스티커 (별풍선 아님)
+BALLOON_SVCS = (18, 33, 87, 107)
+# 내 인덱싱(앞 빈칸 포함) 기준 (채널, 아이디, 닉, 개수, 종류) — 공식 LivePlayer.js 배치
+_BAL_LAYOUT = {18: (1, 2, 3, 4, 'star'), 107: (1, 2, 3, 4, 'ad'),
+               33: (2, 4, 5, 6, 'star'), 87: (2, 3, 4, 10, 'ad')}
 
 
 def live_info(bid):
@@ -76,14 +82,13 @@ def _clean_nick(s):
 
 def _parse_balloon(fields, svc=SVC_BALLOON):
     """별풍선 해석 — SOOP 플레이어 공식 레이아웃 (LivePlayer.js 에서 확인).
-      svc 18: [1]채널 [2]보낸이ID [3]닉 [4]개수 [8]시그니처 이미지 파일명
-      svc 33: [2]채널 [4]보낸이ID [5]닉 [6]개수 (중계방)
-    svc 109(OGQ 이모티콘)는 별풍선이 아니므로 여기서 다루지 않습니다.
-    닉==ID 시청자도 진짜 별풍선입니다 (공식 파서에 제외 규칙 없음)."""
-    if svc == SVC_BALLOON_SUB:
-        ci, ui, ni, cc = 2, 4, 5, 6
-    else:
-        ci, ui, ni, cc = 1, 2, 3, 4
+      svc 18/107: [1]채널 [2]ID [3]닉 [4]개수 · svc 33: [2]채널 [4]ID [5]닉 [6]개수
+      svc 87(애드벌룬): [2]채널 [3]ID [4]닉 [10]개수
+    애드벌룬(87·107)도 사장님 방침으로 별풍선에 합산합니다. OGQ(109)는 제외."""
+    lay = _BAL_LAYOUT.get(svc)
+    if not lay:
+        return None
+    ci, ui, ni, cc, kind = lay
     if len(fields) <= cc:
         return None
     c = fields[cc].strip()
@@ -94,7 +99,7 @@ def _parse_balloon(fields, svc=SVC_BALLOON):
     if not nick or not uid:
         return None
     return {'t': 'balloon', 'id': uid, 'nick': nick, 'count': int(c),
-            'ch': (fields[ci] or '').strip().lower()}
+            'ch': (fields[ci] or '').strip().lower(), 'kind': kind}
 
 
 def listen(bid, info, on_event, should_stop=None):
@@ -139,12 +144,12 @@ def listen(bid, info, on_event, should_stop=None):
                   'nick': _clean_nick(fields[6]), 'msg': fields[1]}
             if ev['nick']:
                 on_event(ev)
-        elif svc in (SVC_BALLOON, SVC_BALLOON_SUB):
+        elif svc in BALLOON_SVCS:
             ev = _parse_balloon(fields, svc)
             if ev and ev.pop('ch', '') not in ('', bid.lower()):
                 ev = None                     # 다른 채널로 간 선물
             if ev:
-                key = '%s|%s' % (ev['id'], ev['count'])
+                key = '%s|%s|%s' % (ev['id'], ev['count'], ev.get('kind', 'star'))
                 now = _t.time()
                 last = seen_balloons.get(key)
                 seen_balloons[key] = now
