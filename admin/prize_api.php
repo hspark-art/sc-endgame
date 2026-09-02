@@ -540,7 +540,7 @@ if ($act === 'chat_tail') {
     $rows = [];
     if ($date !== '' && file_exists($p)) {
         $all = explode("\n", trim((string)file_get_contents($p)));
-        foreach (array_slice($all, -300) as $ln) {
+        foreach (array_slice($all, -3000) as $ln) {
             $j = json_decode($ln, true);
             if ($j) { $rows[] = $j; }
         }

@@ -14,16 +14,21 @@ h1{font-size:18px;margin:4px 0 12px;display:flex;gap:10px;align-items:center;fle
 .ct .n{color:#8a93a6;font-weight:500;font-size:11.5px}
 .scroll{overflow:auto;max-height:520px}
 #chat{resize:vertical;max-height:none;min-height:160px}   /* 아래 모서리 드래그로 높이 조절 */
+#chatInner{width:100%}
+#chatInner .pill{font-size:calc(11px*var(--cz,1))}
+.chatzoom{display:flex;align-items:center;gap:8px;margin:2px 0 7px;font-size:12px;color:#8a93a6}
+.chatzoom input[type=range]{flex:1;height:5px;accent-color:#4aa3ff;cursor:pointer}
+.chatzoom .zval{min-width:40px;text-align:right;color:#e8ecf3;font-weight:800;font-variant-numeric:tabular-nums}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
 .num{text-align:right;font-variant-numeric:tabular-nums}
-.chatline{padding:3px 4px;border-bottom:1px solid #12161e;font-size:13px;
+.chatline{padding:3px 4px;border-bottom:1px solid #12161e;font-size:calc(13px*var(--cz,1));
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:5px}
 .chatline:hover{background:#1a2130}
 .chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
-.wtag{color:#ffd166;font-size:11px;font-weight:600;margin-left:1px}
-.wicon{display:inline-block;font-size:11px;line-height:16px;width:17px;height:17px;text-align:center;border-radius:50%;vertical-align:middle;margin-left:2px;border:1px solid rgba(0,0,0,.35);overflow:hidden}
+.wtag{color:#ffd166;font-size:calc(11px*var(--cz,1));font-weight:600;margin-left:1px}
+.wicon{display:inline-block;font-size:calc(11px*var(--cz,1));line-height:calc(16px*var(--cz,1));width:calc(17px*var(--cz,1));height:calc(17px*var(--cz,1));text-align:center;border-radius:50%;vertical-align:middle;margin-left:2px;border:1px solid rgba(0,0,0,.35);overflow:hidden}
 .chatlegend{border-top:1px solid #1d2431;margin-top:8px;padding-top:7px}
 .chatlegend .lgrow{line-height:2;font-size:11.5px}
 button{background:#1c8cff;border:0;color:#fff;border-radius:8px;padding:8px 13px;
@@ -79,7 +84,7 @@ body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
   #kingChat th:nth-child(3),#kingChat td:nth-child(3),
   #kingBal th:nth-child(3),#kingBal td:nth-child(3){display:none}
   #kingChat button,#kingBal button{padding:9px 14px;font-size:14px}
-  .chatline{padding:9px 5px;font-size:14.5px}
+  .chatline{padding:9px 5px;font-size:calc(14.5px*var(--cz,1))}
   .rwrow{padding:8px 4px;font-size:14px}
   #winners td,#winners th{padding:8px 5px}
   #settingsModal .modalbox{padding:13px}
@@ -115,7 +120,8 @@ function goCh(v){
 
 <div class="card" data-panel="chat"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
-<div class="scroll" id="chat" style="height:520px"></div>
+<div class="chatzoom"><span>글자 크기</span><input id="chatZoom" type="range" min="50" max="200" step="10" value="100" oninput="applyChatZoom(this.value)" title="채팅 글자 크기 50%~200%"><span class="zval" id="chatZoomV">100%</span></div>
+<div class="scroll" id="chat" style="height:520px"><div id="chatInner"></div></div>
 <div id="chatLegend" class="chatlegend" style="display:none"></div></div>
 
 <div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">채팅왕 · 후원왕</span>
@@ -254,7 +260,7 @@ function realChSet(){
 /* 우리 채널(기록 저장 대상)이 아니면 휘발성(테스트)으로 봅니다.
    기본은 talent, 설정에서 다른 채널도 추가할 수 있습니다. */
 let IS_TEST_CH = !realChSet().has(BJ) || IS_DEMO;
-const F='\x0c', users={}, recent=[], rawUnknown=[];
+const F='\x0c', users={}, recent=[], rawUnknown=[], CHAT_MAX=3000; let chatSeq=0;
 const sess={on:false,date:'',startedAt:''};   // 스타트/종료 상태
 const logBuf=[];                              // 서버로 보낼 채팅 로그 대기줄
 const LSKEY='pzLive_'+BJ;   // 이 브라우저에 로그·집계 임시 보관 (창을 나가도 유지)
@@ -287,6 +293,7 @@ function bump(nick,kind,n){
 function onEvent(ev){
   // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
+  ev.s=++chatSeq;
   if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);ttOnChat(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
@@ -295,7 +302,7 @@ function onEvent(ev){
       api('toast_add',{nick:ev.nick,count:ev.count});
   }
   if(sess.on&&!IS_TEST_CH&&(ev.t==='chat'||ev.t==='balloon'))logBuf.push(ev);
-  recent.splice(0,Math.max(0,recent.length-200));
+  recent.splice(0,Math.max(0,recent.length-CHAT_MAX));
 }
 const uid={};   // 닉네임 → SOOP 아이디 (지금 방송에서 본 것)
 /* SOOP 채팅 프로토콜 — 시청자용 접속과 같은 방식입니다 */
@@ -847,8 +854,18 @@ function initPanels(){
   reflowGrid();renderPanelBar();
 }
 /* 채팅창 높이 — 드래그한 값을 이 브라우저에 기억 */
+function applyChatZoom(p){
+  p=Math.max(50,Math.min(200,Math.round((+p||100)/10)*10));
+  const inner=document.getElementById('chatInner');
+  if(inner)inner.style.setProperty('--cz',(p/100).toFixed(3));
+  const v=document.getElementById('chatZoomV'); if(v)v.textContent=p+'%';
+  const s=document.getElementById('chatZoom'); if(s&&+s.value!==p)s.value=p;
+  const box=document.getElementById('chat'); if(box)box.scrollTop=box.scrollHeight;
+  try{localStorage.setItem('pzChatZoom',p);}catch(e){}
+}
 function initChatResize(){
   const el=document.getElementById('chat'); if(!el)return;
+  try{const z=localStorage.getItem('pzChatZoom'); applyChatZoom(z||100);}catch(e){applyChatZoom(100);}
   try{const h=localStorage.getItem('pzChatH'); if(h&&+h>=160)el.style.height=h+'px';}catch(e){}
   if(window.ResizeObserver){
     let t; new ResizeObserver(function(){clearTimeout(t);t=setTimeout(function(){
@@ -1132,16 +1149,15 @@ function paint(){
     +Object.values(users).reduce((a,u)=>a+u.c,0)+' · 별풍선 '
     +Object.values(users).reduce((a,u)=>a+u.b,0)+(macroCount?' · 방송채팅 '+macroCount+' 제외':'');
   const chatEl=document.getElementById('chat');
-  // 이미 맨 아래를 보고 있으면 새 글에 맞춰 따라 내려갑니다 (위로 올려 읽는 중이면 안 건드림)
-  const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
+  const chatInner=document.getElementById('chatInner')||chatEl;
   const _wc={};   // 이 렌더 동안 닉별 당첨 정보 캐시 {n, icons}
   function winInfo(nick){
     if(nick in _wc)return _wc[nick];
     const nn=norm(nick), sid=(uid[nick]||'').toLowerCase();
     const wins=(ST?ST.winners.list:[]).filter(w=>norm(w.nick)===nn||(sid&&(w.sid||'').toLowerCase()===sid));
-    const cats={};
-    wins.forEach(w=>{const c=prizeCat(w.prize);(cats[c.k]||(cats[c.k]={i:c.i,c:c.c,names:[]})).names.push(w.prize);});
-    const icons=Object.values(cats).map(x=>'<span class="wicon" style="background:'+x.c+'" title="'+esc([...new Set(x.names)].join(', '))+'">'+x.i+'</span>').join('');
+    // 당첨 건마다 아이콘 하나씩 (같은 종류끼리 모아 정렬) — 8회면 8개 다 보이게
+    const wsorted=wins.slice().sort((a,b)=>prizeCat(a.prize).k.localeCompare(prizeCat(b.prize).k));
+    const icons=wsorted.map(w=>{const c=prizeCat(w.prize);return '<span class="wicon" style="background:'+c.c+'" title="'+esc(w.prize)+'">'+c.i+'</span>';}).join('');
     return (_wc[nick]={n:wins.length, icons:icons});
   }
   function wtitle(nick){
@@ -1152,13 +1168,20 @@ function paint(){
     const w=winInfo(nick);
     return w.n?' <span class="wtag">(당첨 '+w.n+'회)</span>'+w.icons:'';
   }
-  chatEl.innerHTML=recent.slice(-80).map(e=>
-    e.t==='balloon'
-    ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
-      +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
-    :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
-      +'</span><b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
-  if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
+  // 새 메시지나 당첨 변화가 있을 때만 다시 그림 — 위로 올려 읽던 스크롤을 흔들지 않음
+  const _csig=recent.length+'|'+(recent.length?(recent[recent.length-1].s||0):0)+'|'+(ST?ST.winners.list.length:0);
+  if(_csig!==window._chatSig){
+    window._chatSig=_csig;
+    const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
+    const prevTop=chatEl.scrollTop;
+    chatInner.innerHTML=recent.slice(-CHAT_MAX).map(e=>
+      e.t==='balloon'
+      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 <b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
+        +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
+      :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
+        +'</span><b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
+    chatEl.scrollTop=atBottom?chatEl.scrollHeight:prevTop;
+  }
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
   const medal=['🥇','🥈','🥉'];
   function kingRows(list,valKey,cls,maxv){
@@ -1245,7 +1268,7 @@ function saveLive(){
   if(IS_TEST_CH)return;
   try{localStorage.setItem(LSKEY,JSON.stringify({
     v:1,sess:sess,users:users,uid:uid,macroCount:macroCount,
-    recent:recent.slice(-200),savedEpoch:Date.now()}));}catch(e){}
+    recent:recent.slice(-CHAT_MAX),savedEpoch:Date.now()}));}catch(e){}
 }
 function loadLive(){
   if(IS_TEST_CH)return false;
@@ -1285,7 +1308,7 @@ async function restoreSession(){
   try{
     const t=await (await fetch('prize_api.php?act=chat_tail&date='+sess.date)).json();
     const lines=(t&&t.lines)||[];
-    if(lines.length&&recent.length===0)recent.push(...lines.slice(-200));
+    if(lines.length&&recent.length===0)recent.push(...lines.slice(-CHAT_MAX));
   }catch(e){}
   paint();
 }
