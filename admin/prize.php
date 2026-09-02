@@ -294,13 +294,15 @@ function bump(nick,kind,n){
   const u=users[nick]??(users[nick]={c:0,b:0});
   if(kind==='c')u.c++; else u.b+=n;
 }
-// 채팅 등급 플래그: f[7]="flag1|flag2" (라이브 talent 캡처로 검증)
-//   팬클럽 = flag1 bit5(0x20) · 열혈팬 = flag2 bit25(0x2000000)
-//   구독자 비트는 구독자 표본 확인 후 확정 (지금은 off — 오탐 방지)
+// 채팅 등급 플래그 (라이브 talent 캡처 2회·58명으로 검증)
+//   팬클럽 = flag1 bit5(0x20)          [f[7]="flag1|flag2"]
+//   열혈팬 = flag2 bit25(0x2000000)
+//   구독자 = f[8] 이 0 이상 정수(구독 개월수). 미구독은 -1.
+//            (낭만헌터T f[8]="2"=2개월만 보유, 나머지 57명 전부 -1 로 확인)
 function chatFlags(f){
   const raw=(f[7]||'').split('|');
   const a=parseInt(raw[0]||'0',10)||0, b=parseInt(raw[1]||'0',10)||0;
-  return {fan:!!(a&0x20), sup:!!(b&0x2000000), sub:false};
+  return {fan:!!(a&0x20), sup:!!(b&0x2000000), sub:/^\d+$/.test((f[8]||'').trim())};
 }
 // 채팅 이름 앞 등급 배지 (열혈>팬, 구독은 별개로 맨 앞)
 function fbadges(e){
