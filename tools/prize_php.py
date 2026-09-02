@@ -653,6 +653,7 @@ h1{font-size:18px;margin:4px 0 12px;display:flex;gap:10px;align-items:center;fle
 .ct{font-weight:800;margin-bottom:8px;display:flex;gap:8px;align-items:center}
 .ct .n{color:#8a93a6;font-weight:500;font-size:11.5px}
 .scroll{overflow:auto;max-height:520px}
+#chat{resize:vertical;max-height:none;min-height:160px}   /* 아래 모서리 드래그로 높이 조절 */
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
@@ -709,6 +710,7 @@ body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
   .card{padding:11px}
   #chat{max-height:40vh !important}
   .scroll{max-height:48vh}
+  #chat{height:auto;max-height:48vh;resize:none}
   input,select{font-size:16px;padding:10px 11px}
   #pickNick,#prizeSel{flex:1 1 100% !important}
   .row>button{min-height:46px;padding:12px 14px;font-size:15px}
@@ -753,7 +755,7 @@ function goCh(v){
 
 <div class="card" data-panel="chat"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
-<div class="scroll" id="chat" style="max-height:560px"></div>
+<div class="scroll" id="chat" style="height:520px"></div>
 <div id="chatLegend" class="chatlegend" style="display:none"></div></div>
 
 <div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">채팅왕 · 후원왕</span>
@@ -1457,15 +1459,43 @@ function renderPanelBar(){
       (panelState[pr[0]]?'＋ ':'✓ ')+esc(pr[1])+'</button>';}).join('');
   bar.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>togglePanel(b.dataset.pk));
 }
+/* 카드(열) 전체가 닫히면 숨기고, 남은 카드 수에 맞춰 그리드를 좁혀 채팅을 넓힘 */
+function reflowGrid(){
+  const grid=document.querySelector('.grid'); if(!grid)return;
+  const cards=[...grid.children].filter(c=>c.classList&&c.classList.contains('card'));
+  cards.forEach(function(card){
+    const own=card.getAttribute('data-panel');
+    let empty;
+    if(own){empty=!!panelState[own];}   // 채팅 카드(카드 자체가 한 패널)
+    else{const pk=[...card.querySelectorAll('[data-panel]')].map(e=>e.getAttribute('data-panel'));
+      empty=pk.length>0 && pk.every(k=>panelState[k]);}   // 나머지 카드는 안쪽 패널이 모두 닫혔을 때
+    card.style.display=empty?'none':'';
+  });
+  const vis=cards.filter(c=>c.style.display!=='none').length;
+  // 넓은 화면에서만 열 재배치 (좁은 화면은 CSS 미디어쿼리로 1열)
+  grid.style.gridTemplateColumns=(window.innerWidth>1100)
+    ? (vis<=1?'1fr':vis===2?'1.5fr 1fr':'1.1fr .9fr 1fr') : '';
+}
 function togglePanel(key){
   panelState[key]=!panelState[key];
   try{localStorage.setItem('pzPanels',JSON.stringify(panelState));}catch(e){}
-  applyPanel(key);renderPanelBar();
+  applyPanel(key);reflowGrid();renderPanelBar();
 }
 function initPanels(){
   try{Object.assign(panelState,JSON.parse(localStorage.getItem('pzPanels')||'{}'));}catch(e){}
   PANELS.forEach(pr=>applyPanel(pr[0]));
-  renderPanelBar();
+  reflowGrid();renderPanelBar();
+}
+/* 채팅창 높이 — 드래그한 값을 이 브라우저에 기억 */
+function initChatResize(){
+  const el=document.getElementById('chat'); if(!el)return;
+  try{const h=localStorage.getItem('pzChatH'); if(h&&+h>=160)el.style.height=h+'px';}catch(e){}
+  if(window.ResizeObserver){
+    let t; new ResizeObserver(function(){clearTimeout(t);t=setTimeout(function(){
+      try{localStorage.setItem('pzChatH',Math.round(el.offsetHeight));}catch(e){}
+    },400);}).observe(el);
+  }
+  window.addEventListener('resize',function(){clearTimeout(window._rgT);window._rgT=setTimeout(reflowGrid,200);});
 }
 function setDupM(m){dupMonths=m;try{localStorage.setItem('pzDupM',m);}catch(e){}renderRecentWinners();}
 const PCATS=[
@@ -1904,6 +1934,7 @@ applyRealCh();
 if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
 updateMaskBtn();
 initPanels();
+initChatResize();
 ttPaint();ttRestore();
 restoreSession().finally(connectChat);
 /* 연습: 주소 뒤에 ?demo 를 붙이면 가짜 채팅이 흐릅니다 */
