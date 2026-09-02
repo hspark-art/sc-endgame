@@ -114,11 +114,11 @@ function goCh(v){
 <button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button><button class="px" onclick="togglePanel('users')" title="이 창 닫기">✕</button></div>
 <div class="subhead">💬 채팅왕 <span class="n">채팅 많은 순</span></div>
 <div class="scroll" style="max-height:300px"><table id="kingChat"><thead><tr>
-<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">채팅</th><th></th>
+<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">채팅</th><th class="num">당첨</th><th></th>
 </tr></thead><tbody></tbody></table></div>
 <div class="subhead">👑 후원왕 <span class="n">별풍선·애드벌룬 많은 순</span></div>
 <div class="scroll" style="max-height:300px"><table id="kingBal"><thead><tr>
-<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">별풍선</th><th></th>
+<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">별풍선</th><th class="num">당첨</th><th></th>
 </tr></thead><tbody></tbody></table></div>
 <hr><div class="ct" data-panel="pastdays">지난 방송 <span class="n">저절로 저장됩니다</span><button class="px" style="margin-left:auto" onclick="togglePanel('pastdays')" title="이 창 닫기">✕</button></div>
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
@@ -1001,14 +1001,14 @@ function paint(){
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
   const medal=['🥇','🥈','🥉'];
   function kingRows(list,valKey,cls,maxv){
-    if(!list.length)return '<tr><td colspan="5" style="color:#8a93a6;padding:14px 4px">아직 없습니다</td></tr>';
+    if(!list.length)return '<tr><td colspan="6" style="color:#8a93a6;padding:14px 4px">아직 없습니다</td></tr>';
     return list.slice(0,100).map((u,i)=>{
       const val=u[valKey], pct=Math.round(val/maxv*100);
       return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
-      '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+
-      (u.wins?' <span class="warn" style="font-size:10.5px">당첨'+u.wins+'</span>':'')+'</td>'+
+      '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td>'+
       '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td>'+
       '<td class="num '+cls+'">'+val+'</td>'+
+      '<td class="num">'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
       '<td><button class="gray" style="padding:2px 8px" data-pick="'+esc(u.nick)+'">지명</button></td></tr>';
     }).join('');
   }
