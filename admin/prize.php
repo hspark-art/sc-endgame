@@ -413,6 +413,14 @@ function winCount(nick){
   const h=ST.winners.list.filter(w=>norm(w.nick)===n||(sid&&(w.sid||'').toLowerCase()===sid));
   return[h.length,h.length?h[h.length-1].date:''];
 }
+function curPrize(){return (prizeOf(document.getElementById('prizeSel').value)||{}).name||'';}
+function hasWonPrize(nick,prize){
+  // 이 사람이 '이 상품'을 이미 받았는지 (닉 또는 SOOP계정 일치)
+  if(!ST||!prize)return false;
+  const n=norm(nick), sid=(uid[nick]||'').toLowerCase(), pn=norm(prize);
+  return ST.winners.list.some(w=>norm(w.prize)===pn &&
+    (norm(w.nick)===n || (sid&&(w.sid||'').toLowerCase()===sid)));
+}
 function recentWin(nick){
   // 최근 N주 안에 받은 적 있나 (0 이면 제한 없음)
   const wk=settings.excludeWeeks||0; if(!wk||!ST)return false;
@@ -428,7 +436,9 @@ function inGdoc(nick){
   return gdoc.names.some(x=>norm(x)===n)||gdoc.names.some(x=>norm(x).includes(n)&&n.length>=2);
 }
 function drawPool(){
+  const prize=curPrize();
   let pool=Object.keys(users).filter(n=>users[n].c+users[n].b>0);
+  if(prize)pool=pool.filter(n=>!hasWonPrize(n,prize));   // 같은 상품 중복 당첨 방지 (항상)
   if(settings.excludeWinners)pool=pool.filter(n=>winCount(n)[0]===0);
   if(settings.excludeWeeks)pool=pool.filter(n=>!recentWin(n));
   return pool;
@@ -461,6 +471,7 @@ async function manualPick(){
   const nick=document.getElementById('pickNick').value.trim();
   if(!nick)return alert('닉네임을 넣어 주세요');
   const pz=prizeOf(document.getElementById('prizeSel').value)||{};
+  if(hasWonPrize(nick,pz.name)&&!confirm(nick+' 님은 이미 "'+(pz.name||'')+'" 상품에 당첨된 적이 있습니다. 같은 상품에 또 당첨시킬까요?'))return;
   await api('pick',{nick,sid:uid[nick]||'',prize:pz.name||'',how:'지명'+(IS_TEST_CH?'(연습)':'')});
   await api('overlay_set',{overlay:{kind:'winner',nick,prize:pz.name||'',
     photo:pz.photo||'',how:'지명'}});
@@ -898,13 +909,16 @@ function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
   const [cnt,last]=winCount(n);
+  const pz=curPrize();
   const msgs=[];
-  if(cnt)msgs.push('<span class="warn">⚠ 이미 '+cnt+'회 당첨 (마지막 '+esc(last)+')</span>');
+  if(pz&&hasWonPrize(n,pz))msgs.push('<span class="warn" style="font-weight:800">🚫 이미 이 상품('+esc(pz)+')에 당첨 — 중복!</span>');
+  if(cnt)msgs.push('<span class="warn">⚠ 다른 상품 포함 '+cnt+'회 당첨 (마지막 '+esc(last)+')</span>');
   if(settings.excludeWeeks&&recentWin(n))msgs.push('<span class="warn">⚠ 최근 '+settings.excludeWeeks+'주 내 당첨</span>');
   if(inGdoc(n))msgs.push('<span class="warn">⚠ 구글 문서 당첨자 명단에 있음</span>');
   document.getElementById('dupwarn').innerHTML=msgs.length?msgs.join(' '):'<span class="ok">✓ 당첨 기록 없음</span>';
 }
 document.getElementById('pickNick').addEventListener('input',dupCheck);
+document.getElementById('prizeSel').addEventListener('change',dupCheck);
 document.getElementById('pickNick').addEventListener('keydown',function(e){if(e.key==='Enter')manualPick();});
 document.getElementById('chat').addEventListener('click',function(ev){
   const line=ev.target.closest('.chatline[data-nick]');
