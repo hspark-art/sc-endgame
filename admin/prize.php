@@ -46,6 +46,9 @@ a.top{color:#8a93a6;font-size:12.5px;text-decoration:none}
 a.top:hover{color:#e8ecf3}
 .modal{position:fixed;inset:0;background:rgba(4,6,10,.66);z-index:50;display:flex;
 align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.dupbanner{background:#3a1520;border:1px solid #ff4d5a;border-radius:10px;padding:8px 12px;margin:8px 0;font-size:12.5px;line-height:2}
+.dupbanner.ok{background:#12251a;border-color:#2c6b3f;color:#9fe0b4}
+#pastdays tr{cursor:pointer}#pastdays tr:hover{background:#1a2030}
 .modalbox{background:#141821;border:1px solid #2a3446;border-radius:14px;
 padding:16px 18px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .chip{cursor:pointer;user-select:none;background:#1b202b}
@@ -173,6 +176,7 @@ function goCh(v){
 <a class="top" href="prize_sheet.php">전체 화면 ↗</a>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="copyLedger()">📋 복사</button>
 <button class="gray" style="padding:4px 10px" onclick="downloadLedger()">⬇ CSV</button><button class="px" onclick="togglePanel('winners')" title="이 창 닫기">✕</button></div>
+<div id="dupBanner" class="dupbanner" style="display:none"></div>
 <div class="scroll" style="max-height:260px"><table id="winners"><thead><tr>
 <th>날짜</th><th>닉네임</th><th>SOOP계정</th><th>상품</th><th>방식</th><th></th>
 </tr></thead><tbody></tbody></table></div>
@@ -193,6 +197,13 @@ function goCh(v){
 </div>
 
 </div></div>
+<div id="pastModal" class="modal" style="display:none" onclick="if(event.target===this)closePast()">
+ <div class="modalbox">
+  <div class="ct"><span id="pastTitle">지난 방송</span><span style="flex:1"></span>
+   <button class="gray" style="padding:4px 10px" onclick="closePast()">✕ 닫기</button></div>
+  <div id="pastBody"></div>
+ </div>
+</div>
 <div id="settingsModal" class="modal" style="display:none" onclick="if(event.target===this)closeSettings()">
  <div class="modalbox">
   <div class="ct">⚙ 규칙 설정 <span style="flex:1"></span>
@@ -820,6 +831,62 @@ const PCATS=[
   {k:'쿠폰·코드',re:/쿠폰|포인트|코드|coupon|point|code/i,c:'#ffb020'}];
 function prizeCat(p){for(const x of PCATS)if(x.re.test(p||''))return x;return{k:'기타',c:'#8a93a6'};}
 let _rwSig='';
+async function showPastDay(date){
+  document.getElementById('pastTitle').textContent=date+' — 최종 시청자 활약';
+  document.getElementById('pastBody').innerHTML='<div class="hint">불러오는 중…</div>';
+  document.getElementById('pastModal').style.display='flex';
+  let j;
+  try{j=await (await fetch('prize_api.php?act=stats_get&date='+encodeURIComponent(date))).json();}
+  catch(e){document.getElementById('pastBody').innerHTML='<div class="warn">불러오기 실패</div>';return;}
+  const u=j.users||{}, ud=j.uid||{};
+  const arr=Object.entries(u).map(([nick,x])=>({nick:nick,c:(x&&x.c)||0,b:(x&&x.b)||0}));
+  const medal=['🥇','🥈','🥉'];
+  function tbl(valKey,label,cls){
+    const rows=arr.filter(x=>x[valKey]>0).sort((a,b)=>b[valKey]-a[valKey]).slice(0,50);
+    return '<div class="subhead">'+label+'</div><div class="scroll" style="max-height:230px"><table><thead><tr>'+
+      '<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">'+(valKey==='c'?'채팅':'별풍선')+'</th></tr></thead><tbody>'+
+      (rows.length?rows.map((x,i)=>'<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+
+        '</td><td><b>'+esc(x.nick)+'</b></td><td class="pill acc" style="font-size:11px">'+esc(ud[x.nick]||'-')+
+        '</td><td class="num '+cls+'">'+x[valKey]+'</td></tr>').join(''):'<tr><td colspan="4" style="color:#8a93a6;padding:12px">없음</td></tr>')+
+      '</tbody></table></div>';
+  }
+  document.getElementById('pastBody').innerHTML=
+    '<div class="hint">저장 시각 '+esc(j.savedAt||'-')+' · 시청자 '+arr.length+'명'+(j.title?' · '+esc(j.title):'')+'</div>'+
+    tbl('c','💬 채팅왕','')+tbl('b','👑 후원왕','balloon');
+}
+function closePast(){document.getElementById('pastModal').style.display='none';}
+
+/* 중복 당첨 — 같은 사람(닉/계정)이 같은 상품을 2번 이상 받은 것 */
+function findDups(){
+  if(!ST)return [];
+  const map={};
+  (ST.winners.list||[]).forEach(w=>{
+    if(/연습/.test(w.how||'')||!w.prize)return;
+    const person=(w.sid||'').toLowerCase()||norm(w.nick);
+    const key=person+'|'+norm(w.prize);
+    const m=map[key]||(map[key]={nick:w.nick,sid:w.sid||'',prize:w.prize,n:0,dates:[]});
+    m.n++; m.nick=w.nick; if(w.sid)m.sid=w.sid; if(w.date)m.dates.push(w.date);
+  });
+  return Object.values(map).filter(x=>x.n>=2).sort((a,b)=>b.n-a.n);
+}
+function dupPersonKeys(){
+  const set=new Set();
+  findDups().forEach(d=>set.add((d.sid||'').toLowerCase()||norm(d.nick)));
+  return set;
+}
+function renderDupBanner(){
+  const el=document.getElementById('dupBanner'); if(!el)return;
+  const dups=findDups();
+  if(!dups.length){
+    el.className='dupbanner ok'; el.style.display='';
+    el.innerHTML='✓ 같은 상품 중복 당첨 없음';
+    return;
+  }
+  el.className='dupbanner'; el.style.display='';
+  el.innerHTML='🚨 <b>같은 상품 중복 당첨 '+dups.length+'건</b> — 확인 필요<br>'+
+    dups.slice(0,30).map(d=>'<span class="pill" style="border-color:#ff4d5a;color:#ff8fa3;margin:2px 0;display:inline-block">'+
+      esc(d.nick)+(d.sid?' <span style="color:#8a93a6">('+esc(d.sid)+')</span>':'')+' × '+esc(d.prize)+' <b>'+d.n+'회</b></span>').join(' ');
+}
 function renderRecentWinners(){
   const host=document.getElementById('recentWinners');if(!host||!ST)return;
   const list=ST.winners.list||[];
@@ -844,12 +911,14 @@ function renderRecentWinners(){
   const lg=document.getElementById('dupLegend');
   if(lg)lg.innerHTML='상품 색 — '+PCATS.map(x=>'<span style=\"color:'+x.c+';font-weight:700\">●</span>'+x.k).join(' &nbsp;');
   if(!arr.length){host.innerHTML='<div class=\"hint\">최근 '+dupMonths+'개월 당첨자가 없습니다.</div>';return;}
+  const dk=dupPersonKeys();
   host.innerHTML='<div class=\"hint\" style=\"margin:0 0 4px\">최근 '+dupMonths+'개월 '+arr.length+'명 — 다시 뽑지 않는 게 좋습니다</div>'+
     arr.map(pp=>{
-      const primary=pp.prizes[pp.prizes.length-1].c;
+      const isDup=dk.has((pp.sid||'').toLowerCase()||norm(pp.nick));
+      const primary=isDup?'#ff4d5a':pp.prizes[pp.prizes.length-1].c;
       const badges=Object.entries(pp.cats).map(([k,c])=>'<span title=\"'+esc(k)+'\" style=\"display:inline-block;width:10px;height:10px;border-radius:3px;background:'+c+';margin-right:2px;vertical-align:middle\"></span>').join('');
       const names=[...new Set(pp.prizes.map(x=>x.prize))].join(', ');
-      return '<div class=\"rwrow\" title=\"'+esc(names)+'\">'+badges+' <b style=\"color:'+primary+'\">'+esc(pp.nick)+'</b>'+
+      return '<div class=\"rwrow\" title=\"'+esc(names)+(isDup?' — 같은 상품 중복 당첨!':'')+'\">'+(isDup?'🚨':badges)+' <b style=\"color:'+primary+'\">'+esc(pp.nick)+'</b>'+
         (pp.sid?' <span class=\"pill acc\" style=\"font-size:10px\">'+esc(pp.sid)+'</span>':'')+
         ' <span class=\"n\" style=\"font-size:10.5px\">'+esc(pp.date)+'</span></div>';
     }).join('');
@@ -954,6 +1023,7 @@ async function refresh(){
     await api('overlay_set',{overlay:{kind:'prize',prize:pz.name||'',photo:pz.photo||''}});});
   const wl=ST.winners.list;
   document.getElementById('wcount').textContent=wl.length+'건';
+  renderDupBanner();
   document.querySelector('#winners tbody').innerHTML=wl.slice().reverse().map(w=>{
     const acc=w.sid||'';
     return '<tr><td>'+esc(w.date)+'</td><td><b>'+esc(w.nick)+'</b></td>'+
@@ -992,9 +1062,11 @@ async function refresh(){
   try{
     const pl=await (await fetch('prize_api.php?act=stats_list')).json();
     document.getElementById('pastdays').innerHTML='<tbody>'+pl.list.map(r=>
-      '<tr><td>'+esc(r.date)+'</td><td class="num">'+r.users+'명</td>'+
+      '<tr data-date="'+esc(r.date)+'" title="클릭하면 그날 최종 활약을 봅니다"><td>'+esc(r.date)+' ↗</td><td class="num">'+r.users+'명</td>'+
       '<td class="num">'+r.chats+'</td><td class="num balloon">'+r.balloons+
       '</td></tr>').join('')+'</tbody>';
+    document.querySelectorAll('#pastdays [data-date]').forEach(tr=>
+      tr.onclick=()=>showPastDay(tr.dataset.date));
   }catch(e){}
 }
 function paint(){

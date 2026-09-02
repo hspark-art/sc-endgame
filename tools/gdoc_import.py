@@ -263,9 +263,33 @@ def main():
     # 확인 삼아 다시 내려받아 개수를 셉니다
     buf2 = io.BytesIO()
     f.retrbinary('RETR ' + path, buf2.write)
-    n = len(json.loads(buf2.getvalue().decode('utf-8'))['list'])
+    finaldoc = json.loads(buf2.getvalue().decode('utf-8'))
+    n = len(finaldoc['list'])
     f.quit()
     print('업로드 완료 — 서버 시트가 %d건이 되었습니다.' % n)
+    # 같은 사람이 같은 상품을 2번 이상 받았는지 확인 → 있으면 슬랙 알림
+    seen = {}
+    for w in finaldoc['list']:
+        if '연습' in (w.get('how') or '') or not w.get('prize'):
+            continue
+        person = (w.get('sid') or '').lower() or ''.join((w.get('nick') or '').split()).lower()
+        key = (person, ''.join((w.get('prize') or '').split()).lower())
+        seen[key] = seen.get(key, 0) + 1
+        seen.setdefault('_nick_' + str(key), w.get('nick'))
+    dups = [(seen['_nick_' + str(k)], k[1], c) for k, c in seen.items()
+            if isinstance(k, tuple) and c >= 2]
+    if dups:
+        print('  ⚠ 같은 상품 중복 당첨 %d건 발견:' % len(dups))
+        for nick, _, c in dups[:10]:
+            print('     %s (%d회)' % (nick, c))
+        try:
+            import notify
+            notify.notify_problem('당첨자 시트 — 같은 상품 중복 당첨 %d건' % len(dups),
+                ['구글 문서 반영 후 같은 사람이 같은 상품을 2번 이상 받은 것이 있습니다.',
+                 '관리자 당첨자 시트의 빨간 배너에서 확인하세요.']
+                + ['· %s — %d회' % (nick, c) for nick, _, c in dups[:8]])
+        except Exception:
+            pass
 
 
 if __name__ == '__main__':

@@ -29,6 +29,8 @@ td[contenteditable]:hover{background:#181d28}
 td[contenteditable]:focus{outline:2px solid #1c8cff;background:#181d28;border-radius:4px}
 td.saved{outline:2px solid #1f9d55;border-radius:4px}
 td.c-nick{font-weight:700}td.c-sid{color:#7cb6ff;font-size:12px}
+.dupbanner{background:#3a1520;border:1px solid #ff4d5a;border-radius:10px;padding:9px 13px;margin:0 0 10px;font-size:13px;line-height:2}
+.dupbanner.ok{background:#12251a;border-color:#2c6b3f;color:#9fe0b4}
 body.maskacc td.c-sid,body.maskacc #selIds{filter:blur(6px);user-select:none}
 td.c-how{color:#8a93a6;font-size:12px}
 #notebar{position:fixed;left:0;right:0;bottom:0;background:#10141c;
@@ -44,6 +46,7 @@ text-overflow:ellipsis;white-space:nowrap}
  <a class="top" href="cg.php">CG 제작 →</a>
 </h1>
 <div class="row" id="chips"></div>
+<div id="dupBanner" class="dupbanner" style="display:none"></div>
 <div class="card">
  <div class="row">
   <input id="fQ" placeholder="닉네임·계정 검색" style="width:190px">
@@ -144,8 +147,31 @@ function fillSel(id,arr,cur){
   const el=document.getElementById(id),first=el.options[0].outerHTML;
   el.innerHTML=first+arr.map(v=>'<option'+(v===cur?' selected':'')+'>'+esc(v)+'</option>').join('');
   el.value=cur||'';}
+function dupNorm(x){return String(x||'').replace(/\s+/g,'').toLowerCase();}
+function findDups(){
+  if(!ST)return [];
+  const map={};
+  (ST.winners.list||[]).forEach(w=>{
+    if(/연습/.test(w.how||'')||!w.prize)return;
+    const person=(w.sid||'').toLowerCase()||dupNorm(w.nick);
+    const key=person+'|'+dupNorm(w.prize);
+    const m=map[key]||(map[key]={nick:w.nick,sid:w.sid||'',prize:w.prize,n:0});
+    m.n++; m.nick=w.nick; if(w.sid)m.sid=w.sid;
+  });
+  return Object.values(map).filter(x=>x.n>=2).sort((a,b)=>b.n-a.n);
+}
+function renderDupBanner(){
+  const el=document.getElementById('dupBanner'); if(!el)return;
+  const dups=findDups();
+  if(!dups.length){el.className='dupbanner ok';el.style.display='';el.innerHTML='✓ 같은 상품 중복 당첨 없음';return;}
+  el.className='dupbanner';el.style.display='';
+  el.innerHTML='🚨 <b>같은 상품 중복 당첨 '+dups.length+'건</b> — 확인 필요<br>'+
+    dups.slice(0,40).map(d=>'<span class="pill" style="border-color:#ff4d5a;color:#ff8fa3;margin:2px 0;display:inline-block">'+
+      esc(d.nick)+(d.sid?' <span style="color:#8a93a6">('+esc(d.sid)+')</span>':'')+' × '+esc(d.prize)+' <b>'+d.n+'회</b></span>').join(' ');
+}
 function paint(){
   const l=rows(),vis=visible();
+  renderDupBanner();
   document.getElementById('sumline').textContent='전체 '+l.length+'건 · 보이는 중 '+vis.length+'건';
   const cnt={};l.forEach(w=>{const k=w.prize||'(비어 있음)';cnt[k]=(cnt[k]||0)+1;});
   document.getElementById('chips').innerHTML=Object.keys(cnt).sort().map(k=>
