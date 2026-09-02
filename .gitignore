@@ -19,3 +19,4 @@ data/.notify-state.json
 data/chat/
 data/prizes/
 balloon-catch.log
+logs/gdoc-import.log
