@@ -642,7 +642,7 @@ def prize_page():
 <!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>상품 추첨 관제 — 끝장전</title><style>
+<title>끝장전 상품 추첨</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0a0d13;color:#e8ecf3;
 font-family:'Pretendard','Malgun Gothic',sans-serif;font-size:14px}
 .wrap{margin:0 auto;padding:14px 18px}
@@ -672,7 +672,9 @@ border-radius:8px;padding:7px 9px;font-family:inherit;font-size:13px}
 .warn{color:#ffb020;font-weight:700}.ok{color:#4ade80}
 .pill{background:#1b202b;border:1px solid #232a38;border-radius:999px;
 padding:2px 9px;font-size:11.5px;color:#8a93a6}
-#users td:nth-child(2){position:relative;z-index:0}
+#kingChat td:nth-child(2),#kingBal td:nth-child(2){position:relative;z-index:0}
+.subhead{font-weight:800;font-size:13px;margin:10px 0 4px;color:#e8ecf3;display:flex;gap:7px;align-items:center}
+.subhead .n{color:#8a93a6;font-weight:500;font-size:11px}
 .actbar{position:absolute;left:0;top:2px;bottom:2px;z-index:-1;border-radius:5px;
 background:linear-gradient(90deg,rgba(28,140,255,.30),rgba(255,176,32,.14));min-width:2px}
 .live{color:#ff4d5a;font-weight:900}
@@ -703,18 +705,18 @@ body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
   input,select{font-size:16px;padding:10px 11px}
   #pickNick,#prizeSel{flex:1 1 100% !important}
   .row>button{min-height:46px;padding:12px 14px;font-size:15px}
-  #users td,#users th{padding:9px 5px;font-size:14.5px}
-  /* 좁은 화면에선 SOOP계정·확률 열을 숨겨 깔끔하게 */
-  #users th:nth-child(3),#users td:nth-child(3),
-  #users th:nth-child(6),#users td:nth-child(6){display:none}
-  #users button{padding:9px 14px;font-size:14px}
+  #kingChat td,#kingChat th,#kingBal td,#kingBal th{padding:9px 5px;font-size:14.5px}
+  /* 좁은 화면에선 SOOP계정 열을 숨겨 깔끔하게 */
+  #kingChat th:nth-child(3),#kingChat td:nth-child(3),
+  #kingBal th:nth-child(3),#kingBal td:nth-child(3){display:none}
+  #kingChat button,#kingBal button{padding:9px 14px;font-size:14px}
   .chatline{padding:9px 5px;font-size:14.5px}
   .rwrow{padding:8px 4px;font-size:14px}
   #winners td,#winners th{padding:8px 5px}
   #settingsModal .modalbox{padding:13px}
 }
 </style></head><body><div class="wrap">
-<h1>🎁 상품 추첨 관제
+<h1>🎁 끝장전 상품 추첨
 <button id="btnStart" class="green" onclick="startSession()">▶ 스타트</button>
 <button id="btnStop" class="red" onclick="stopSession()" disabled>⏹ 종료</button>
 <span id="liveflag" class="pill">상태 확인 중…</span></h1>
@@ -725,7 +727,7 @@ body.maskacc .acc{filter:blur(6px);user-select:none;pointer-events:none}
 <button class="gray" onclick="goCh('')">우리 채널(talent)</button>
 <button class="gray" onclick="goCh('__demo')">연습(가짜 채팅)</button>
 <a class="top" href="prize_overlay.php" target="_blank">📺 방송 장면 열기 ↗</a>
-<button class="gray" style="padding:4px 10px" onclick="openSettings()">⚙ 확률·규칙 설정</button>
+<button class="gray" style="padding:4px 10px" onclick="openSettings()">⚙ 규칙 설정</button>
 <a class="top" href="cg.php">CG 제작 →</a>
 <span class="n">이 창을 켜 둔 동안만 채팅이 집계됩니다</span></div>
 <a href="prize_sheet.php" style="display:flex;align-items:center;gap:10px;margin:0 0 12px;
@@ -746,13 +748,18 @@ function goCh(v){
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
 <div class="scroll" id="chat" style="max-height:560px"></div></div>
 
-<div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">별풍선·채팅 순</span>
+<div class="card"><div class="ct" data-panel="users">시청자 활약 <span class="n">채팅왕 · 후원왕</span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
 <button class="gray" style="padding:4px 10px" onclick="downloadActivity()">⬇ 활약 CSV</button>
 <button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button><button class="px" onclick="togglePanel('users')" title="이 창 닫기">✕</button></div>
-<div class="scroll"><table id="users"><thead><tr><th class="num">#</th><th>닉네임</th>
-<th>SOOP계정</th><th class="num">채팅</th><th class="num">별풍선</th><th class="num">확률↑</th>
-<th>당첨</th><th></th></tr></thead><tbody></tbody></table></div>
+<div class="subhead">💬 채팅왕 <span class="n">채팅 많은 순</span></div>
+<div class="scroll" style="max-height:300px"><table id="kingChat"><thead><tr>
+<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">채팅</th><th></th>
+</tr></thead><tbody></tbody></table></div>
+<div class="subhead">👑 후원왕 <span class="n">별풍선·애드벌룬 많은 순</span></div>
+<div class="scroll" style="max-height:300px"><table id="kingBal"><thead><tr>
+<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">별풍선</th><th></th>
+</tr></thead><tbody></tbody></table></div>
 <hr><div class="ct" data-panel="pastdays">지난 방송 <span class="n">저절로 저장됩니다</span><button class="px" style="margin-left:auto" onclick="togglePanel('pastdays')" title="이 창 닫기">✕</button></div>
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
@@ -828,7 +835,7 @@ function goCh(v){
 </div></div>
 <div id="settingsModal" class="modal" style="display:none" onclick="if(event.target===this)closeSettings()">
  <div class="modalbox">
-  <div class="ct">⚙ 확률·규칙 설정 <span style="flex:1"></span>
+  <div class="ct">⚙ 규칙 설정 <span style="flex:1"></span>
    <button class="gray" style="padding:4px 10px" onclick="closeSettings()">✕ 닫기</button></div>
   <div class="row hint">채팅 <input id="sChatFull" style="width:52px"> 개에
   +<input id="sChatMax" style="width:46px"> · 별풍선
@@ -1631,21 +1638,24 @@ function paint(){
     :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="눌러서 당첨 만들기에 넣기"><span class="pill" style="margin-right:5px">'+e.at
       +'</span><b>'+esc(e.nick)+'</b> '+esc(e.msg)+'</div>').join('');
   if(atBottom)chatEl.scrollTop=chatEl.scrollHeight;
-  const rows=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,
-    w:weight(nick),wins:winCount(nick)[0]}));
-  // 당첨 확률(가중치) 높은 순 — 같으면 별풍선·채팅 순
-  rows.sort((a,b)=>b.w-a.w||b.b-a.b||b.c-a.c);
+  const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
   const medal=['🥇','🥈','🥉'];
-  const maxAct=Math.max(1,...rows.map(u=>u.b*3+u.c));
-  document.querySelector('#users tbody').innerHTML=rows.slice(0,200).map((u,i)=>{
-    const pct=Math.round((u.b*3+u.c)/maxAct*100);
-    return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
-    '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td>'+
-    '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td><td class="num">'+u.c+'</td>'+
-    '<td class="num balloon">'+(u.b||'')+'</td><td class="num">x'+u.w.toFixed(2)+
-    '</td><td>'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
-    '<td><button class="gray" style="padding:2px 8px" data-pick="'
-    +esc(u.nick)+'">지명</button></td></tr>';}).join('');
+  function kingRows(list,valKey,cls,maxv){
+    if(!list.length)return '<tr><td colspan="5" style="color:#8a93a6;padding:14px 4px">아직 없습니다</td></tr>';
+    return list.slice(0,100).map((u,i)=>{
+      const val=u[valKey], pct=Math.round(val/maxv*100);
+      return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
+      '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+
+      (u.wins?' <span class="warn" style="font-size:10.5px">당첨'+u.wins+'</span>':'')+'</td>'+
+      '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td>'+
+      '<td class="num '+cls+'">'+val+'</td>'+
+      '<td><button class="gray" style="padding:2px 8px" data-pick="'+esc(u.nick)+'">지명</button></td></tr>';
+    }).join('');
+  }
+  const byChat=arr.filter(u=>u.c>0).sort((a,b)=>b.c-a.c||b.b-a.b);
+  const byBal=arr.filter(u=>u.b>0).sort((a,b)=>b.b-a.b||b.c-a.c);
+  document.querySelector('#kingChat tbody').innerHTML=kingRows(byChat,'c','',Math.max(1,...byChat.map(u=>u.c)));
+  document.querySelector('#kingBal tbody').innerHTML=kingRows(byBal,'b','balloon',Math.max(1,...byBal.map(u=>u.b)));
   document.querySelectorAll('[data-pick]').forEach(b=>
     b.onclick=()=>pickThis(b.dataset.pick));
   renderRecentWinners();
