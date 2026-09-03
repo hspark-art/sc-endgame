@@ -369,6 +369,33 @@ if ($act === 'winner_update') {
     jwrite('winners.json', $w);
     out(['ok' => true]);
 }
+if ($act === 'fill_sids') {
+    // 모든 방송의 uid(닉→SOOP아이디)를 모아, 비어 있는 SOOP계정을 닉으로 자동 채웁니다.
+    $map = [];
+    foreach (glob(PZ . '/stats-*.json') ?: [] as $f) {
+        $j = json_decode((string)@file_get_contents($f), true);
+        if (!empty($j['uid']) && is_array($j['uid'])) {
+            foreach ($j['uid'] as $nick => $sid) {
+                $sid = trim((string)$sid);
+                if ($sid === '') { continue; }
+                $key = mb_strtolower(preg_replace('/\s+/u', '', (string)$nick));
+                if ($key !== '') { $map[$key] = $sid; }
+            }
+        }
+    }
+    $w = jread('winners.json', ['list' => []]);
+    $filled = 0;
+    foreach ($w['list'] as &$row) {
+        if (trim((string)($row['sid'] ?? '')) !== '') { continue; }
+        $nick = trim((string)($row['nick'] ?? ''));
+        if ($nick === '') { continue; }
+        $key = mb_strtolower(preg_replace('/\s+/u', '', $nick));
+        if ($key !== '' && isset($map[$key])) { $row['sid'] = $map[$key]; $filled++; }
+    }
+    unset($row);
+    if ($filled > 0) { jwrite('winners.json', $w); }
+    out(['filled' => $filled, 'known' => count($map), 'total' => count($w['list'])]);
+}
 
 // ── 숲 쪽지 서버 발송 ────────────────────────────────────────
 if ($act === 'note_session_set') {

@@ -56,6 +56,7 @@ text-overflow:ellipsis;white-space:nowrap}
    <option value="no">안 보낸 사람</option><option value="yes">보낸 사람</option></select>
   <span style="flex:1"></span>
   <button class="gray" onclick="addRow()">＋ 행 추가</button>
+  <button class="gray" onclick="fillIds()" title="채팅·별풍선 기록에서 빈 SOOP계정을 닉네임으로 자동으로 채웁니다">🆔 아이디 채우기</button>
   <button class="green" onclick="openGoogleSheet()">📗 구글 시트로 열기</button>
   <button class="gray" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
   <button class="gray" onclick="copyLedger()">&#128203; 복사</button>
@@ -277,6 +278,13 @@ document.getElementById('tplSel').onchange=()=>{tplTouched=false;notePanel();};
 document.getElementById('noteTxt').oninput=()=>{tplTouched=true;};
 function flash(m){const el=document.getElementById('flash');
   el.textContent=m;setTimeout(()=>{if(el.textContent===m)el.textContent='';},2500);}
+/* 채팅·별풍선 기록(방송별 uid)에서 빈 SOOP계정을 자동으로 채웁니다 */
+async function fillIds(silent){
+  const r=await api('fill_sids');
+  if(!r||typeof r.filled!=='number'){ if(!silent)flash('아이디 채우기 실패'); return; }
+  if(r.filled){ flash(r.filled+'명 SOOP계정 자동 입력됨 ✓'); await refresh(); }
+  else if(!silent){ flash('채울 빈 계정이 없습니다 (기록 '+r.known+'명 대조)'); }
+}
 function copyToClip(t,msg){
   const done=()=>flash(msg);
   if(navigator.clipboard&&navigator.clipboard.writeText)
@@ -406,5 +414,5 @@ function toggleMask(){document.body.classList.toggle('maskacc');
   updateMaskBtn();}
 if(localStorage.getItem('pzMaskAcc'))document.body.classList.add('maskacc');
 updateMaskBtn();
-refresh();noteSessionStatus();
+(async()=>{await refresh();await fillIds(true);})();noteSessionStatus();
 </script></body></html>
