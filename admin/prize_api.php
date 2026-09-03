@@ -396,6 +396,64 @@ if ($act === 'fill_sids') {
     if ($filled > 0) { jwrite('winners.json', $w); }
     out(['filled' => $filled, 'known' => count($map), 'total' => count($w['list'])]);
 }
+if ($act === 'cumulative') {
+    // 여러 방송(stats-날짜.json)을 모아 누적 순위를 냅니다.
+    //   연속 출석(최근 방송부터 연속으로 온 횟수) · 기간 채팅합 · 기간 후원합.
+    $weeks = max(1, min(104, (int)($_GET['weeks'] ?? $body['weeks'] ?? 8)));
+    $files = glob(PZ . '/stats-*.json') ?: [];
+    sort($files);
+    $dates = [];
+    $perDate = [];
+    $sidOf = [];
+    foreach ($files as $f) {
+        if (!preg_match('/stats-(\d{4}-\d{2}-\d{2})\.json$/', $f, $mm)) { continue; }
+        $j = json_decode((string)@file_get_contents($f), true);
+        $users = (isset($j['users']) && is_array($j['users'])) ? $j['users'] : [];
+        if (!$users) { continue; }
+        $date = $mm[1];
+        $dates[] = $date;
+        $perDate[$date] = $users;
+        if (!empty($j['uid']) && is_array($j['uid'])) {
+            foreach ($j['uid'] as $nk => $sd) {
+                $sd = trim((string)$sd);
+                if ($sd !== '') { $sidOf[$nk] = $sd; }
+            }
+        }
+    }
+    $cutoff = date('Y-m-d', strtotime("-{$weeks} weeks"));
+    $agg = [];
+    foreach ($dates as $date) {
+        foreach ($perDate[$date] as $nick => $u) {
+            $c = (int)($u['c'] ?? 0); $b = (int)($u['b'] ?? 0);
+            if (!isset($agg[$nick])) { $agg[$nick] = ['c'=>0,'b'=>0,'wc'=>0,'wb'=>0,'days'=>0,'present'=>[]]; }
+            $agg[$nick]['present'][$date] = true;
+            $agg[$nick]['days']++;
+            $agg[$nick]['c'] += $c; $agg[$nick]['b'] += $b;
+            if ($date >= $cutoff) { $agg[$nick]['wc'] += $c; $agg[$nick]['wb'] += $b; }
+        }
+    }
+    $rev = array_reverse($dates);
+    $streakList = []; $chatList = []; $balloonList = [];
+    foreach ($agg as $nick => $a) {
+        $streak = 0;
+        foreach ($rev as $d) { if (!empty($a['present'][$d])) { $streak++; } else { break; } }
+        $sid = $sidOf[$nick] ?? '';
+        $streakList[]  = ['nick'=>$nick,'sid'=>$sid,'streak'=>$streak,'days'=>$a['days']];
+        $chatList[]    = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wc'],'days'=>$a['days']];
+        $balloonList[] = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wb'],'days'=>$a['days']];
+    }
+    usort($streakList, fn($x,$y) => ($y['streak'] <=> $x['streak']) ?: ($y['days'] <=> $x['days']));
+    usort($chatList, fn($x,$y) => $y['v'] <=> $x['v']);
+    usort($balloonList, fn($x,$y) => $y['v'] <=> $x['v']);
+    out([
+        'weeks' => $weeks,
+        'broadcasts' => count($dates),
+        'lastDate' => $dates ? end($dates) : '',
+        'streak'  => array_values(array_slice(array_filter($streakList,  fn($x) => $x['streak'] >= 2), 0, 60)),
+        'chat'    => array_values(array_slice(array_filter($chatList,    fn($x) => $x['v'] > 0), 0, 60)),
+        'balloon' => array_values(array_slice(array_filter($balloonList, fn($x) => $x['v'] > 0), 0, 60)),
+    ]);
+}
 
 // ── 숲 쪽지 서버 발송 ────────────────────────────────────────
 if ($act === 'note_session_set') {

@@ -150,7 +150,7 @@ function goCh(v){
 <div class="scroll" style="max-height:300px"><table id="kingBal"><thead><tr>
 <th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">별풍선</th><th class="num">당첨</th><th></th>
 </tr></thead><tbody></tbody></table></div>
-<hr><div class="ct" data-panel="pastdays">지난 방송 <span class="n">저절로 저장됩니다</span><button class="px" style="margin-left:auto" onclick="togglePanel('pastdays')" title="이 창 닫기">✕</button></div>
+<hr><div class="ct" data-panel="pastdays">지난 방송 <span class="n">저절로 저장됩니다</span><button class="gray" style="margin-left:auto;padding:3px 9px" onclick="openCumulative()" title="여러 방송을 모은 연속 출석·기간 채팅·후원 순위">📈 누적 순위</button><button class="px" onclick="togglePanel('pastdays')" title="이 창 닫기">✕</button></div>
 <div class="scroll" style="max-height:150px"><table id="pastdays"><tbody></tbody></table></div></div>
 
 <div class="card">
@@ -229,6 +229,14 @@ function goCh(v){
   <div class="ct"><span id="pastTitle">지난 방송</span><span style="flex:1"></span>
    <button class="gray" style="padding:4px 10px" onclick="closePast()">✕ 닫기</button></div>
   <div id="pastBody"></div>
+ </div>
+</div>
+<div id="cumModal" class="modal" style="display:none" onclick="if(event.target===this)closeCum()">
+ <div class="modalbox" style="max-width:780px">
+  <div class="ct">📈 누적 순위 <span class="n" id="cumMeta"></span><span style="flex:1"></span>
+   <button class="gray" style="padding:4px 10px" onclick="closeCum()">✕ 닫기</button></div>
+  <div class="row hint" style="margin:2px 0 8px;align-items:center">채팅·후원 집계 기간 <span id="cumWeeks"></span></div>
+  <div id="cumBody"></div>
  </div>
 </div>
 <div id="settingsModal" class="modal" style="display:none" onclick="if(event.target===this)closeSettings()">
@@ -954,6 +962,39 @@ async function showPastDay(date){
     tbl('c','💬 채팅왕','')+tbl('b','👑 후원왕','balloon');
 }
 function closePast(){document.getElementById('pastModal').style.display='none';}
+
+/* 누적 순위 — 여러 방송(stats)을 모아 연속 출석·기간 채팅·기간 후원 */
+let cumWeeks=8;
+function closeCum(){document.getElementById('cumModal').style.display='none';}
+function renderCumWeeks(){
+  const el=document.getElementById('cumWeeks'); if(!el)return;
+  el.innerHTML=[2,4,8,12,26].map(w=>'<span class="gchip'+(cumWeeks===w?' on':'')+'" data-w="'+w+'">'+w+'주</span>').join(' ');
+  el.querySelectorAll('[data-w]').forEach(c=>c.onclick=()=>openCumulative(+c.dataset.w));
+}
+async function openCumulative(w){
+  if(w)cumWeeks=w;
+  document.getElementById('cumModal').style.display='flex';
+  renderCumWeeks();
+  document.getElementById('cumBody').innerHTML='<div class="hint">불러오는 중…</div>';
+  let j;
+  try{j=await (await fetch('prize_api.php?act=cumulative&weeks='+cumWeeks)).json();}
+  catch(e){document.getElementById('cumBody').innerHTML='<div class="warn">불러오기 실패</div>';return;}
+  document.getElementById('cumMeta').textContent='방송 '+(j.broadcasts||0)+'회'+(j.lastDate?' · 최근 '+j.lastDate:'');
+  const medal=['🥇','🥈','🥉'];
+  function tbl(title,list,valLabel,valKey,cls,unit){
+    const rows=(list||[]).slice(0,40);
+    return '<div class="subhead">'+title+'</div><div class="scroll" style="max-height:220px"><table><thead><tr>'+
+      '<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">'+valLabel+'</th></tr></thead><tbody>'+
+      (rows.length?rows.map((x,i)=>'<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+
+        '</td><td><b>'+esc(x.nick)+'</b></td><td class="pill acc" style="font-size:11px">'+esc(x.sid||'-')+
+        '</td><td class="num '+cls+'">'+x[valKey]+unit+'</td></tr>').join(''):'<tr><td colspan="4" style="color:#8a93a6;padding:12px">아직 없습니다</td></tr>')+
+      '</tbody></table></div>';
+  }
+  document.getElementById('cumBody').innerHTML=
+    tbl('🔥 연속 출석 <span class="n">최근 방송부터 연속으로 온 횟수</span>',j.streak,'연속','streak','','회')+
+    tbl('💬 기간 채팅왕 <span class="n">최근 '+cumWeeks+'주 채팅 합계</span>',j.chat,'채팅','v','','')+
+    tbl('👑 기간 후원왕 <span class="n">최근 '+cumWeeks+'주 별풍선 합계</span>',j.balloon,'별풍선','v','balloon','');
+}
 
 /* 중복 당첨 — 같은 사람(닉/계정)이 같은 상품을 2번 이상 받은 것 */
 function findDups(){
