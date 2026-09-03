@@ -9,12 +9,12 @@ echo    Auto-import Google Doc winners -^> winners sheet
 echo  ==================================================
 echo.
 echo   What this does
-echo     - Every evening 22:00 to 24:00 (every 30 min)
+echo     - Every evening 22:00 to 01:00 (every 30 min)
 echo       it reads the Google Doc and adds any NEW
 echo       winners to the admin winners sheet.
 echo     - Already-listed winners are skipped (safe).
 echo     - Runs hidden, no console window.
-echo     - This PC must be ON during 22:00-24:00.
+echo     - This PC must be ON during 22:00-01:00.
 echo.
 pause
 
@@ -25,10 +25,10 @@ if not errorlevel 1 (
 )
 
 echo.
-echo  [1/2] Creating task (daily 22:00, repeat every 30 min for 2 hours)...
+echo  [1/2] Creating task (daily 22:00, repeat every 30 min for 3 hours)...
 echo.
 
-schtasks /Create /TN "SC Endgame Winners Doc" /SC DAILY /ST 22:00 /RI 30 /DU 0002:00 /F /TR "wscript.exe //B \"%~dp0tools\run-gdoc-hidden.vbs\""
+schtasks /Create /TN "SC Endgame Winners Doc" /SC DAILY /ST 22:00 /RI 30 /DU 0003:00 /F /TR "wscript.exe //B \"%~dp0tools\run-gdoc-hidden.vbs\""
 
 if errorlevel 1 (
   echo.
@@ -52,7 +52,7 @@ echo  ---- registered task ----
 schtasks /Query /TN "SC Endgame Winners Doc" /FO LIST | findstr /C:"TaskName" /C:"Status" /C:"Next Run"
 
 echo.
-echo   Done. The winners sheet will auto-update every evening 22:00-24:00.
+echo   Done. The winners sheet will auto-update every evening 22:00-01:00.
 echo   This PC needs to be on during that window.
 echo   To run it once right now, use  10_winners-doc.bat  (10_당첨자문서반영.bat).
 echo.

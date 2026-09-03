@@ -659,6 +659,11 @@ h1{font-size:18px;margin:4px 0 12px;display:flex;gap:10px;align-items:center;fle
 .chatzoom{display:flex;align-items:center;gap:8px;margin:2px 0 7px;font-size:12px;color:#8a93a6}
 .chatzoom input[type=range]{flex:1;height:5px;accent-color:#4aa3ff;cursor:pointer}
 .chatzoom .zval{min-width:40px;text-align:right;color:#e8ecf3;font-weight:800;font-variant-numeric:tabular-nums}
+.gradebar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 7px}
+.gchip{cursor:pointer;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#161b26;border:1px solid #232a38;color:#aeb6c4;user-select:none}
+.gchip:hover{border-color:#3a4557}
+.gchip.on{background:#12283f;border-color:#2f6bd8;color:#dbe9ff}
+.gchip b{font-variant-numeric:tabular-nums;margin-left:1px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 7px;text-align:left;border-bottom:1px solid #171c25;white-space:nowrap}
 th{color:#8a93a6;font-size:11px}
@@ -769,6 +774,7 @@ function goCh(v){
 <div class="card" data-panel="chat"><div class="ct">실시간 채팅 <span class="n" id="totline"></span>
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="clearChat()" title="화면만 비웁니다 — 저장된 로그는 그대로 남습니다">채팅 지우기</button><button class="px" onclick="togglePanel('chat')" title="이 창 닫기">✕</button></div>
 <div class="chatzoom"><span>글자 크기</span><input id="chatZoom" type="range" min="50" max="200" step="10" value="100" oninput="applyChatZoom(this.value)" title="채팅 글자 크기 50%~200%"><span class="zval" id="chatZoomV">100%</span></div>
+<div class="gradebar" id="gradeBar"></div>
 <div class="scroll" id="chat" style="height:520px"><div id="chatInner"></div></div>
 <div id="chatLegend" class="chatlegend" style="display:none"></div></div>
 
@@ -891,6 +897,9 @@ function goCh(v){
   <span class="pill">{id}=아이디 자리</span></div>
   <div class="hint" style="margin:-2px 0 6px">채팅 이름 옆 ✉ 를 누르면 그 사람 아이디가 복사되고 이 링크가 새 탭으로 열립니다.
   비워두면 SOOP 방송국 페이지가 열립니다.</div>
+  <div class="row hint">테스트 계정 <input id="sTestAcc" style="width:160px" placeholder="pacas1129">
+  <button class="gray" style="padding:3px 10px" onclick="sendNote((document.getElementById('sTestAcc').value.trim()||settings.testAccount||'pacas1129'))">🧪 이 계정에 쪽지</button>
+  <span class="n">쪽지·각종 테스트용 (닉 onpoong) · 시청자 활약 집계에서 자동 제외</span></div>
   <div class="row"><button onclick="saveSettings()">설정 저장</button>
   <button class="gray" onclick="copyLedger()">📋 당첨 기록 복사</button>
   <button class="gray" onclick="slackReport()">📨 슬랙으로 요약</button></div>
@@ -918,7 +927,9 @@ const logBuf=[];                              // 서버로 보낼 채팅 로그 
 const LSKEY='pzLive_'+BJ;   // 이 브라우저에 로그·집계 임시 보관 (창을 나가도 유지)
 let liveOn=false, liveTitle='', ws=null, pingT=null, ST=null;
 let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
-  excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:''};
+  excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:'',
+  noteUrl:'',testAccount:'pacas1129'};
+let chatGrade='';   // 채팅 등급 필터: ''=전체, sup=열혈, fan=팬, sub=구독
 let gdoc={names:[],ids:[]};   // 구글 문서에서 읽어 온 당첨자
 let exclSet=new Set(), macroCount=0;   // 집계 제외 계정, 제외한 채팅 수
 let dupMonths=+(localStorage.getItem('pzDupM')||1)||1;   // 최근 당첨자 표시 기간(개월)
@@ -931,6 +942,7 @@ function rebuildExcl(){
   exclSet=new Set([BJ]);   // 우리 방송 계정은 항상 제외
   (settings.excludeAccounts||'').toLowerCase().split(/[\s,]+/).filter(Boolean)
     .forEach(x=>exclSet.add(x));
+  if(settings.testAccount)exclSet.add(settings.testAccount.toLowerCase().trim());  // 테스트 계정도 집계 제외
 }
 function isExcluded(id,nick){
   const i=(id||'').toLowerCase().trim();
@@ -1228,6 +1240,7 @@ async function saveSettings(){
     slackWebhook:document.getElementById('sSlack').value.trim(),
     excludeAccounts:document.getElementById('sExclAcc').value.trim(),
     noteUrl:document.getElementById('sNoteUrl').value.trim(),
+    testAccount:document.getElementById('sTestAcc').value.trim(),
     realChannels:document.getElementById('sRealCh').value.trim()});
   await api('settings_set',{settings});loadGdoc();rebuildExcl();applyRealCh();closeSettings();
 }
@@ -1737,6 +1750,14 @@ function pzToast(msg){
   el.textContent=msg;el.classList.add('on');
   clearTimeout(_pzToastT);_pzToastT=setTimeout(function(){el.classList.remove('on');},2800);
 }
+/* 채팅 위 등급 필터 바 — 열혈/팬/구독 인원수 표시 + 클릭하면 그 등급만 보기 */
+function renderGradeBar(nSup,nFan,nSub){
+  const el=document.getElementById('gradeBar'); if(!el)return;
+  function chip(g,label,n){return '<span class="gchip'+(chatGrade===g?' on':'')+'" data-grade="'+g+'">'+label+(g?' <b>'+n+'</b>':'')+'</span>';}
+  el.innerHTML=chip('','전체',0)+chip('sup','🔴 열혈',nSup)+chip('fan','🟢 팬',nFan)+chip('sub','🔵 구독',nSub);
+  el.querySelectorAll('[data-grade]').forEach(c=>c.onclick=()=>setChatGrade(c.dataset.grade));
+}
+function setChatGrade(g){chatGrade=(chatGrade===g?'':g);paint();}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
@@ -1817,6 +1838,7 @@ async function refresh(){
     ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||''],
     ['sExclAcc',settings.excludeAccounts||''],
     ['sNoteUrl',settings.noteUrl||''],
+    ['sTestAcc',settings.testAccount||''],
     ['sRealCh',settings.realChannels||'']]){
     const el=document.getElementById(id);
     if(el&&document.activeElement!==el)el.value=v;
@@ -1858,13 +1880,19 @@ function paint(){
     const w=winInfo(nick);
     return w.n?' <span class="wtag">(당첨 '+w.n+'회)</span>'+w.icons:'';
   }
-  // 새 메시지나 당첨 변화가 있을 때만 다시 그림 — 위로 올려 읽던 스크롤을 흔들지 않음
-  const _csig=recent.length+'|'+(recent.length?(recent[recent.length-1].s||0):0)+'|'+(ST?ST.winners.list.length:0);
+  // 등급 카운트(고유 닉) + 등급 필터
+  const _view=recent.slice(-CHAT_MAX);
+  const _gs={sup:new Set(),fan:new Set(),sub:new Set()};
+  for(const e of _view){if(e.sup)_gs.sup.add(e.nick);if(e.fan)_gs.fan.add(e.nick);if(e.sub)_gs.sub.add(e.nick);}
+  renderGradeBar(_gs.sup.size,_gs.fan.size,_gs.sub.size);
+  const _shown=chatGrade?_view.filter(e=>chatGrade==='sup'?e.sup:chatGrade==='fan'?e.fan:chatGrade==='sub'?e.sub:true):_view;
+  // 새 메시지·당첨·필터 변화가 있을 때만 다시 그림 — 위로 올려 읽던 스크롤을 흔들지 않음
+  const _csig=chatGrade+'|'+_shown.length+'|'+(_view.length?(_view[_view.length-1].s||0):0)+'|'+(ST?ST.winners.list.length:0);
   if(_csig!==window._chatSig){
     window._chatSig=_csig;
     const atBottom=chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<40;
     const prevTop=chatEl.scrollTop;
-    chatInner.innerHTML=recent.slice(-CHAT_MAX).map(e=>
+    chatInner.innerHTML=_shown.map(e=>
       e.t==='balloon'
       ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' <span class="balloon">별풍선 '
         +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
