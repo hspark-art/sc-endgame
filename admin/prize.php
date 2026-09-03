@@ -1456,9 +1456,12 @@ restoreSession().finally(connectChat);
 if(location.search.includes('demo')){
   const NICKS=['별사탕요정','테란만세','저글링1000','프로브혁명','캐리어가요',
     'GG치지마','빌드깎는노인','더블넥좋아','뮤탈짤짤이','벙커링장인'];
+  // 등급 섞기 — 열혈·구독·팬·일반이 골고루 나오게 (아이디 색·배지 확인용)
+  const GRADES=[{sup:true,fan:true},{fan:true},{fan:true},{sub:true},{fan:true,sub:true},
+    {},{sub:true},{},{fan:true},{}];
   const MSGS=['ㅋㅋㅋㅋ','이걸 막네','오늘 폼 미쳤다','9세트 가자','GG','역전각','지리네요'];
   liveOn=true;liveTitle='(연습)';
-  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 (기록 저장 안 함)');
+  setStatus('<span class="live">● 연습 모드</span> 가짜 채팅 — 🔴열혈·🔵구독·🟢팬·⚪일반 섞임 (기록 저장 안 함)');
   sess.on=true;sess.date=todayStr();sessBtns();
   const DIDS=['byeolst4r','terranzzang','zergrun1000','probe1017','carrier4u',
     'ggnooo','buildgm88','doublenex','mutalking','bunkerman'];
@@ -1466,9 +1469,9 @@ if(location.search.includes('demo')){
     if(!sess.on)return;
     const i=Math.floor(Math.random()*NICKS.length), n=NICKS[i];
     if(Math.random()<0.12)onEvent({t:'balloon',nick:n,id:DIDS[i],at:now(),
-      count:[1,5,10,50,100,500][Math.floor(Math.random()*6)]});
-    else onEvent({t:'chat',nick:n,id:DIDS[i],at:now(),
-      msg:MSGS[Math.floor(Math.random()*MSGS.length)]});
+      count:[1,5,10,50,100,500][Math.floor(Math.random()*6)]});   // 별풍선 줄은 gradeOf 로 색 유지
+    else onEvent(Object.assign({t:'chat',nick:n,id:DIDS[i],at:now(),
+      msg:MSGS[Math.floor(Math.random()*MSGS.length)]},GRADES[i]));
   },500);
 }
 </script></body></html>
