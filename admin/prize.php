@@ -32,6 +32,10 @@ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-
 .fb.yeol{background:#e02e2e;color:#fff;box-shadow:0 0 0 1px #ff9a9a inset}
 .fb.fan{background:#1f9d4d;color:#fff}
 .fb.sub{background:#2f7fe0;color:#fff}
+.dm{cursor:pointer;margin-left:5px;opacity:.32;font-size:calc(11px*var(--cz,1));vertical-align:middle;user-select:none}
+.dm:hover,.chatline:hover .dm{opacity:1}
+.pztoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(12px);background:#12283f;border:1px solid #2f6bd8;color:#dbe9ff;padding:9px 15px;border-radius:9px;font-size:13px;font-weight:700;box-shadow:0 6px 22px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.22s;z-index:9999;max-width:90vw;text-align:center}
+.pztoast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .wicon{display:inline-block;font-size:calc(11px*var(--cz,1));line-height:calc(16px*var(--cz,1));width:calc(17px*var(--cz,1));height:calc(17px*var(--cz,1));text-align:center;border-radius:50%;vertical-align:middle;margin-left:2px;border:1px solid rgba(0,0,0,.35);overflow:hidden}
 .chatlegend{border-top:1px solid #1d2431;margin-top:8px;padding-top:7px}
 .chatlegend .lgrow{line-height:2;font-size:11.5px}
@@ -243,6 +247,10 @@ function goCh(v){
   <div class="row hint">구글 문서 ID <input id="sGdoc" style="flex:1;min-width:180px" placeholder="당첨자 문서 주소의 /d/ 다음 부분">
   <span id="gdocInfo" class="pill"></span></div>
   <div class="row hint">슬랙 웹훅 <input id="sSlack" style="flex:1;min-width:180px" placeholder="https://hooks.slack.com/..."></div>
+  <div class="row hint">쪽지 링크 <input id="sNoteUrl" style="flex:1;min-width:200px" placeholder="비우면 SOOP 방송국 페이지 · 쪽지 쓰기창을 바로 열려면 주소에 {id} 포함">
+  <span class="pill">{id}=아이디 자리</span></div>
+  <div class="hint" style="margin:-2px 0 6px">채팅 이름 옆 ✉ 를 누르면 그 사람 아이디가 복사되고 이 링크가 새 탭으로 열립니다.
+  비워두면 SOOP 방송국 페이지가 열립니다.</div>
   <div class="row"><button onclick="saveSettings()">설정 저장</button>
   <button class="gray" onclick="copyLedger()">📋 당첨 기록 복사</button>
   <button class="gray" onclick="slackReport()">📨 슬랙으로 요약</button></div>
@@ -579,6 +587,7 @@ async function saveSettings(){
     gdocId:(document.getElementById('sGdoc').value.trim().match(/[-\w]{25,}/)||[document.getElementById('sGdoc').value.trim()])[0],
     slackWebhook:document.getElementById('sSlack').value.trim(),
     excludeAccounts:document.getElementById('sExclAcc').value.trim(),
+    noteUrl:document.getElementById('sNoteUrl').value.trim(),
     realChannels:document.getElementById('sRealCh').value.trim()});
   await api('settings_set',{settings});loadGdoc();rebuildExcl();applyRealCh();closeSettings();
 }
@@ -1069,6 +1078,25 @@ function pickThis(n){
   el.style.background='#12283f';setTimeout(function(){el.style.background='';},450);
   if(window.innerWidth<=760)el.scrollIntoView({block:'center',behavior:'smooth'});
 }
+/* 채팅 이름 옆 ✉ — SOOP 아이디를 클립보드에 복사하고 쪽지 창을 새 탭으로 엽니다.
+   쪽지 링크는 설정에서 지정(‘{id}’ 자리에 아이디). 비어 있으면 SOOP 방송국 페이지. */
+function sendNote(id){
+  if(!id)return;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(id);}catch(e){}
+  const tpl=(settings.noteUrl||'').trim();
+  const url=tpl?tpl.replace(/\{id\}/g,encodeURIComponent(id))
+               :'https://www.sooplive.com/station/'+encodeURIComponent(id);
+  window.open(url,'_blank','noopener');
+  pzToast('✉ '+id+' 아이디 복사됨 · 쪽지 받는 사람에 붙여넣기(Ctrl+V)');
+}
+function dmBtn(e){return e.id?'<span class="dm" data-dm="'+esc(e.id)+'" title="쪽지: 아이디 복사 + SOOP 열기">✉</span>':'';}
+let _pzToastT;
+function pzToast(msg){
+  let el=document.getElementById('pzToast');
+  if(!el){el=document.createElement('div');el.id='pzToast';el.className='pztoast';document.body.appendChild(el);}
+  el.textContent=msg;el.classList.add('on');
+  clearTimeout(_pzToastT);_pzToastT=setTimeout(function(){el.classList.remove('on');},2800);
+}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
@@ -1085,6 +1113,8 @@ document.getElementById('pickNick').addEventListener('input',dupCheck);
 document.getElementById('prizeSel').addEventListener('change',dupCheck);
 document.getElementById('pickNick').addEventListener('keydown',function(e){if(e.key==='Enter')manualPick();});
 document.getElementById('chat').addEventListener('click',function(ev){
+  const dm=ev.target.closest('[data-dm]');
+  if(dm){sendNote(dm.dataset.dm);return;}   // ✉ 클릭은 쪽지 (지명 안 함)
   const line=ev.target.closest('.chatline[data-nick]');
   if(line&&line.dataset.nick)pickThis(line.dataset.nick);
 });
@@ -1134,10 +1164,7 @@ async function refresh(){
   document.querySelectorAll('[data-wdel]').forEach(b=>b.onclick=async()=>{
     if(!confirm('이 당첨 기록을 지울까요?'))return;
     await api('winner_del',{id:b.dataset.wdel});refresh();});
-  document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>{
-    const id=b.dataset.note;
-    navigator.clipboard&&navigator.clipboard.writeText(id);
-    window.open('https://www.sooplive.com/station/'+encodeURIComponent(id),'_blank','noopener');});
+  document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>sendNote(b.dataset.note));
   document.querySelectorAll('[data-wedit]').forEach(b=>b.onclick=async()=>{
     const w=wl.find(x=>x.id===b.dataset.wedit); if(!w)return;
     const nick=prompt('닉네임',w.nick); if(nick===null)return;
@@ -1149,6 +1176,7 @@ async function refresh(){
     ['sWeeks',settings.excludeWeeks||0],['sAlert',settings.balloonAlert||100],
     ['sGdoc',settings.gdocId||''],['sSlack',settings.slackWebhook||''],
     ['sExclAcc',settings.excludeAccounts||''],
+    ['sNoteUrl',settings.noteUrl||''],
     ['sRealCh',settings.realChannels||'']]){
     const el=document.getElementById(id);
     if(el&&document.activeElement!==el)el.value=v;
@@ -1198,10 +1226,10 @@ function paint(){
     const prevTop=chatEl.scrollTop;
     chatInner.innerHTML=recent.slice(-CHAT_MAX).map(e=>
       e.t==='balloon'
-      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' <span class="balloon">별풍선 '
+      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' <span class="balloon">별풍선 '
         +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
       :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
-        +'</span>'+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+' '+esc(e.msg)+'</div>').join('');
+        +'</span>'+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' '+esc(e.msg)+'</div>').join('');
     chatEl.scrollTop=atBottom?chatEl.scrollHeight:prevTop;
   }
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
