@@ -31,7 +31,10 @@ th{color:#8a93a6;font-size:11px}
 .chatline{padding:3px 4px;border-bottom:1px solid #12161e;font-size:calc(13px*var(--cz,1));
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:5px}
 .chatline:hover{background:#1a2130}
-.chatline b{color:#7cb6ff;font-weight:600}.balloon{color:#ffb020;font-weight:700}
+.chatline b{color:#b9c1cf;font-weight:600}.balloon{color:#ffb020;font-weight:700}
+.chatline b.nk-yeol{color:#ff6b6b;font-weight:800}   /* 열혈 = 빨강(강조) */
+.chatline b.nk-sub{color:#5aa9ff}                    /* 구독 = 파랑 */
+.chatline b.nk-fan{color:#4ade80}                    /* 팬 = 초록, 일반 = 회색(기본) */
 .wtag{color:#ffd166;font-size:calc(11px*var(--cz,1));font-weight:600;margin-left:1px}
 .fb{display:inline-block;font-size:calc(10px*var(--cz,1));font-weight:800;line-height:1.4;border-radius:3px;padding:0 4px;margin-right:3px;vertical-align:middle;letter-spacing:-.3px}
 .fb.yeol{background:#e02e2e;color:#fff;box-shadow:0 0 0 1px #ff9a9a inset}
@@ -298,6 +301,7 @@ let settings={chatFull:50,chatBonusMax:0.3,balloonFull:1000,balloonBonusMax:0.5,
   excludeWinners:false,excludeWeeks:0,balloonAlert:100,gdocId:'',slackWebhook:'',
   noteUrl:'',testAccount:'pacas1129'};
 let chatGrade='';   // 채팅 등급 필터: ''=전체, sup=열혈, fan=팬, sub=구독
+const gradeOf={};   // 닉 → 등급(sup/sub/fan) — 별풍선 줄 등 플래그 없는 곳 색칠용
 let gdoc={names:[],ids:[]};   // 구글 문서에서 읽어 온 당첨자
 let exclSet=new Set(), macroCount=0;   // 집계 제외 계정, 제외한 채팅 수
 let dupMonths=+(localStorage.getItem('pzDupM')||1)||1;   // 최근 당첨자 표시 기간(개월)
@@ -344,6 +348,7 @@ function onEvent(ev){
   // 우리 방송 계정(매크로)·제외 계정은 시청자 활약에 넣지 않습니다
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
   ev.s=++chatSeq;
+  if(ev.t==='chat'){const _g=ev.sup?'sup':ev.sub?'sub':ev.fan?'fan':'';if(_g)gradeOf[ev.nick]=_g;}
   if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);ttOnChat(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
@@ -1159,6 +1164,11 @@ function renderGradeBar(nSup,nFan,nSub){
   el.querySelectorAll('[data-grade]').forEach(c=>c.onclick=()=>setChatGrade(c.dataset.grade));
 }
 function setChatGrade(g){chatGrade=(chatGrade===g?'':g);paint();}
+/* 닉네임 색 등급 클래스 — 열혈>구독>팬 (별풍선 줄 등은 gradeOf 로 보완) */
+function nkClass(e){
+  const g=e.sup?'sup':e.sub?'sub':e.fan?'fan':(gradeOf[e.nick]||'');
+  return g==='sup'?'nk-yeol':g==='sub'?'nk-sub':g==='fan'?'nk-fan':'';
+}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
@@ -1295,10 +1305,10 @@ function paint(){
     const prevTop=chatEl.scrollTop;
     chatInner.innerHTML=_shown.map(e=>
       e.t==='balloon'
-      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' <span class="balloon">별풍선 '
+      ?'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'">🎈 '+fbadges(e)+'<b class="'+nkClass(e)+'">'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' <span class="balloon">별풍선 '
         +e.count+'개</span> <span class="pill">'+e.at+'</span></div>'
       :'<div class="chatline" data-nick="'+esc(e.nick)+'" title="'+esc(wtitle(e.nick))+'"><span class="pill" style="margin-right:5px">'+e.at
-        +'</span>'+fbadges(e)+'<b>'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' '+esc(e.msg)+'</div>').join('');
+        +'</span>'+fbadges(e)+'<b class="'+nkClass(e)+'">'+esc(e.nick)+'</b>'+wtag(e.nick)+dmBtn(e)+' '+esc(e.msg)+'</div>').join('');
     chatEl.scrollTop=atBottom?chatEl.scrollHeight:prevTop;
   }
   const arr=Object.entries(users).map(([nick,u])=>({nick,c:u.c,b:u.b,wins:winCount(nick)[0]}));
