@@ -1051,15 +1051,17 @@ function bump(nick,kind,n){
   const u=users[nick]??(users[nick]={c:0,b:0});
   if(kind==='c')u.c++; else u.b+=n;
 }
-// 채팅 등급 플래그 (라이브 talent 캡처 2회·58명으로 검증)
-//   팬클럽 = flag1 bit5(0x20)          [f[7]="flag1|flag2"]
-//   열혈팬 = flag2 bit25(0x2000000)
-//   구독자 = f[8] 이 0 이상 정수(구독 개월수). 미구독은 -1.
-//            (낭만헌터T f[8]="2"=2개월만 보유, 나머지 57명 전부 -1 로 확인)
+// 채팅 등급 플래그 — SOOP 채팅 DOM(button[grade],[userflag]) 을 정답으로 확정
+// (2026-09-10 talent 라이브 23명 대조). f[7]="flag1|flag2" 의 flag1 = DOM userflag.
+//   팬클럽(fan)     = flag1 bit5 (0x20)
+//   열혈팬(topfan)  = flag1 bit15(0x8000)   ← 예전 flag2 bit25 는 오답이었음(오탐·미탐)
+//   구독자(gudok)   = f[8](구독 개월수) 0 이상. 미구독은 -1.
+// 검증: 쌍두[승]모=topfan(bit15 유일) · IIillIllllI/누구새우♡=fan(bit15 없음) ·
+//       30살모솔/낭만헌터T=gudok(subm 1·2) · 플토의정석 등=user.
 function chatFlags(f){
   const raw=(f[7]||'').split('|');
-  const a=parseInt(raw[0]||'0',10)||0, b=parseInt(raw[1]||'0',10)||0;
-  return {fan:!!(a&0x20), sup:!!(b&0x2000000), sub:/^\d+$/.test((f[8]||'').trim())};
+  const a=parseInt(raw[0]||'0',10)||0;
+  return {fan:!!(a&0x20), sup:!!(a&0x8000), sub:/^\d+$/.test((f[8]||'').trim())};
 }
 // 채팅 이름 앞 등급 배지 (열혈>팬, 구독은 별개로 맨 앞)
 function fbadges(e){
