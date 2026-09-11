@@ -135,6 +135,8 @@ def hub_data(data, ctx, built_at):
         'appearances': p['appearances'],
         'firstDate': p['firstDate'], 'lastDate': p['lastDate'],
         'streak': p['streak'], 'yearly': p['yearly'],
+        'prize': p.get('prize', 0), 'prizeBonus': p.get('prizeBonus', 0),
+        'prizeTotal': p.get('prizeTotal', 0), 'prizeSets': p.get('prizeSets', 0),
     } for p in data['players']]
 
     maps = [{

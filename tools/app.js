@@ -118,6 +118,7 @@ window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeV
 /* ── 탭 / 상태 ─────────────────────────────────────────────── */
 var TABS = [
   { id: 'rank', label: '선수 랭킹' },
+  { id: 'prize', label: '상금 랭킹' },
   { id: 'roster', label: '선수 명단' },
   { id: 'maps', label: '맵 통계' },
   { id: 'recent', label: '경기 기록' },
@@ -129,7 +130,7 @@ var TAB_IDS = TABS.map(function (t) { return t.id; });
 // 정렬 상태는 탭마다 따로 둡니다 — 랭킹의 '매치승' 정렬이 맵 탭으로 새면 안 되니까요.
 var state = {
   tab: 'rank', year: 'ALL', race: 'ALL', q: '',
-  sort: { rank: { key: 'matchWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 } }
+  sort: { rank: { key: 'matchWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 }, prize: { key: 'prizeTotal', dir: -1 } }
 };
 function sortState() { return state.sort[state.tab] || { key: '', dir: -1 }; }
 
@@ -301,6 +302,65 @@ function renderRank() {
       '<div class="hint">' +
       (state.year === 'ALL' ? '통산 기록입니다. ' : state.year + '년 기록만 보고 있습니다. ') +
       '표 머리글을 누르면 그 항목으로 정렬하고, 선수를 누르면 상세 기록으로 이동합니다.</div>';
+    bindSort(table, draw);
+    table.querySelectorAll('[data-href]').forEach(function (el) {
+      el.addEventListener('click', function () { location.href = el.dataset.href; });
+    });
+  }
+  draw();
+}
+
+/* ── 상금 랭킹 ─────────────────────────────────────────────── */
+function fmtWon(n) {
+  n = Number(n || 0);
+  if (n >= 100000000) {
+    var eok = Math.floor(n / 100000000), man = Math.round((n % 100000000) / 10000);
+    return eok + '억' + (man ? ' ' + man.toLocaleString() + '만' : '') + '원';
+  }
+  if (n >= 10000) return Math.round(n / 10000).toLocaleString() + '만원';
+  return n.toLocaleString() + '원';
+}
+function renderPrize() {
+  view.appendChild(raceChips());
+  var table = document.createElement('div');
+  view.appendChild(searchBox('선수 이름 검색...', function () { draw(); }));
+  view.appendChild(table);
+
+  function draw() {
+    var s = sortState();
+    var rows = D.players.map(function (p) {
+      return {
+        name: p.name, slug: p.slug, race: p.race,
+        prizeTotal: p.prizeTotal || 0, prize: p.prize || 0,
+        prizeBonus: p.prizeBonus || 0, prizeSets: p.prizeSets || 0
+      };
+    }).filter(function (p) {
+      return (state.race === 'ALL' || p.race === state.race) &&
+        (!state.q || p.name.indexOf(state.q) >= 0);
+    });
+    rows = sortRows(rows, s.key || 'prizeTotal', s.dir);
+
+    var cols = [
+      { key: 'name', label: '선수' },
+      { key: 'prizeTotal', label: '총 상금', cls: 'num' },
+      { key: 'prize', label: '기본 상금', cls: 'num hide-mobile' },
+      { key: 'prizeBonus', label: '더블찬스', cls: 'num hide-mobile' },
+      { key: 'prizeSets', label: '이긴 세트', cls: 'num' }
+    ];
+    var body = rows.length ? rows.map(function (p, i) {
+      return '<tr class="rowlink" data-href="' + pageOf(p.slug) + '">' +
+        '<td><span class="rk">' + (i + 1) + '</span>' + raceBadge(p.race) +
+        '<span class="nm">' + esc(p.name) + '</span></td>' +
+        '<td class="num"><b>' + fmtWon(p.prizeTotal) + '</b></td>' +
+        '<td class="num hide-mobile">' + fmtWon(p.prize) + '</td>' +
+        '<td class="num hide-mobile">' + fmtWon(p.prizeBonus) + '</td>' +
+        '<td class="num">' + p.prizeSets.toLocaleString() + '</td></tr>';
+    }).join('') : '<tr><td colspan="5"><div class="emptybox">해당 조건의 선수가 없습니다.</div></td></tr>';
+
+    table.innerHTML = tableHTML(cols, body) +
+      '<div class="hint">끝장전은 <b>세트 승리마다 상금</b>을 받습니다. 통산 합계(기본 상금 + 더블찬스)입니다. ' +
+      '지금까지 배분된 총 상금 <b>' + fmtWon((D.global && D.global.totalPrize) || 0) + '</b>. ' +
+      '표 머리글을 누르면 정렬, 선수를 누르면 상세 기록으로 이동합니다.</div>';
     bindSort(table, draw);
     table.querySelectorAll('[data-href]').forEach(function (el) {
       el.addEventListener('click', function () { location.href = el.dataset.href; });
@@ -593,6 +653,7 @@ function render() {
   writeHash();
   view.innerHTML = '';
   if (state.tab === 'rank') renderRank();
+  else if (state.tab === 'prize') renderPrize();
   else if (state.tab === 'roster') renderRoster();
   else if (state.tab === 'maps') renderMaps();
   else if (state.tab === 'recent') renderRecent();

@@ -4,6 +4,7 @@
   "totalSets": 2656,
   "totalMatches": 296,
   "totalPlayers": 31,
+  "totalPrize": 318700000,
   "firstDate": "2019-05-14",
   "lastDate": "2026-09-10"
  },
@@ -453,7 +454,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 28200000,
+   "prizeBonus": 5600000,
+   "prizeTotal": 33800000,
+   "prizeSets": 282
   },
   {
    "name": "이재호",
@@ -936,7 +941,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 28800000,
+   "prizeBonus": 5100000,
+   "prizeTotal": 33900000,
+   "prizeSets": 288
   },
   {
    "name": "장윤철",
@@ -1443,7 +1452,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 28900000,
+   "prizeBonus": 6000000,
+   "prizeTotal": 34900000,
+   "prizeSets": 289
   },
   {
    "name": "도재욱",
@@ -1932,7 +1945,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 28000000,
+   "prizeBonus": 5700000,
+   "prizeTotal": 33700000,
+   "prizeSets": 275
   },
   {
    "name": "김지성",
@@ -2369,7 +2386,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 22000000,
+   "prizeBonus": 4900000,
+   "prizeTotal": 26900000,
+   "prizeSets": 220
   },
   {
    "name": "유영진",
@@ -2742,7 +2763,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 18400000,
+   "prizeBonus": 4300000,
+   "prizeTotal": 22700000,
+   "prizeSets": 184
   },
   {
    "name": "변현제",
@@ -3167,7 +3192,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 18600000,
+   "prizeBonus": 3700000,
+   "prizeTotal": 22300000,
+   "prizeSets": 186
   },
   {
    "name": "김민철",
@@ -3460,7 +3489,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 14900000,
+   "prizeBonus": 2400000,
+   "prizeTotal": 17300000,
+   "prizeSets": 145
   },
   {
    "name": "조일장",
@@ -3729,7 +3762,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 12500000,
+   "prizeBonus": 3100000,
+   "prizeTotal": 15600000,
+   "prizeSets": 125
   },
   {
    "name": "김명운",
@@ -4026,7 +4063,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 13400000,
+   "prizeBonus": 2300000,
+   "prizeTotal": 15700000,
+   "prizeSets": 134
   },
   {
    "name": "임홍규",
@@ -4209,7 +4250,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 6100000,
+   "prizeBonus": 600000,
+   "prizeTotal": 6700000,
+   "prizeSets": 61
   },
   {
    "name": "송병구",
@@ -4414,7 +4459,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 6700000,
+   "prizeBonus": 1300000,
+   "prizeTotal": 8000000,
+   "prizeSets": 67
   },
   {
    "name": "김성대",
@@ -4611,7 +4660,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 7200000,
+   "prizeBonus": 1600000,
+   "prizeTotal": 8800000,
+   "prizeSets": 72
   },
   {
    "name": "이제동",
@@ -4802,7 +4855,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 6100000,
+   "prizeBonus": 1500000,
+   "prizeTotal": 7600000,
+   "prizeSets": 61
   },
   {
    "name": "이영호",
@@ -4885,7 +4942,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 2400000,
+   "prizeBonus": 0,
+   "prizeTotal": 2400000,
+   "prizeSets": 24
   },
   {
    "name": "김택용",
@@ -4982,7 +5043,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 2600000,
+   "prizeBonus": 100000,
+   "prizeTotal": 2700000,
+   "prizeSets": 26
   },
   {
    "name": "이영한",
@@ -5107,7 +5172,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 2500000,
+   "prizeBonus": 600000,
+   "prizeTotal": 3100000,
+   "prizeSets": 25
   },
   {
    "name": "조기석",
@@ -5270,7 +5339,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 3900000,
+   "prizeBonus": 500000,
+   "prizeTotal": 4400000,
+   "prizeSets": 39
   },
   {
    "name": "김정우",
@@ -5339,7 +5412,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 1500000,
+   "prizeBonus": 400000,
+   "prizeTotal": 1900000,
+   "prizeSets": 15
   },
   {
    "name": "정영재",
@@ -5480,7 +5557,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 3700000,
+   "prizeBonus": 500000,
+   "prizeTotal": 4200000,
+   "prizeSets": 37
   },
   {
    "name": "윤찬희",
@@ -5577,7 +5658,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 1800000,
+   "prizeBonus": 400000,
+   "prizeTotal": 2200000,
+   "prizeSets": 18
   },
   {
    "name": "최호선",
@@ -5694,7 +5779,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 2300000,
+   "prizeBonus": 300000,
+   "prizeTotal": 2600000,
+   "prizeSets": 23
   },
   {
    "name": "박성균",
@@ -5749,7 +5838,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 900000,
+   "prizeBonus": 200000,
+   "prizeTotal": 1100000,
+   "prizeSets": 9
   },
   {
    "name": "이영웅",
@@ -5838,7 +5931,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 2200000,
+   "prizeBonus": 600000,
+   "prizeTotal": 2800000,
+   "prizeSets": 22
   },
   {
    "name": "김성현",
@@ -5879,7 +5976,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 300000,
+   "prizeBonus": 0,
+   "prizeTotal": 300000,
+   "prizeSets": 3
   },
   {
    "name": "임진묵",
@@ -5920,7 +6021,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 200000,
+   "prizeBonus": 0,
+   "prizeTotal": 200000,
+   "prizeSets": 2
   },
   {
    "name": "김윤중",
@@ -5989,7 +6094,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 800000,
+   "prizeBonus": 100000,
+   "prizeTotal": 900000,
+   "prizeSets": 8
   },
   {
    "name": "윤용태",
@@ -6030,7 +6139,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 400000,
+   "prizeBonus": 100000,
+   "prizeTotal": 500000,
+   "prizeSets": 4
   },
   {
    "name": "황병영",
@@ -6105,7 +6218,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 900000,
+   "prizeBonus": 300000,
+   "prizeTotal": 1200000,
+   "prizeSets": 9
   },
   {
    "name": "박준오",
@@ -6146,7 +6263,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 100000,
+   "prizeBonus": 0,
+   "prizeTotal": 100000,
+   "prizeSets": 1
   },
   {
    "name": "전태양",
@@ -6187,7 +6308,11 @@
       }
      ]
     }
-   ]
+   ],
+   "prize": 200000,
+   "prizeBonus": 0,
+   "prizeTotal": 200000,
+   "prizeSets": 2
   }
  ],
  "maps": [

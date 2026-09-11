@@ -55,8 +55,15 @@ def load_source():
     return c['sheetId'], c.get('sheet') or 'Results'
 
 
+def _won(cell):
+    """상금 칸을 정수로. '￦100,000' → 100000, 빈칸·'￦0' → 0 (숫자만 남깁니다)."""
+    d = ''.join(ch for ch in str(cell) if ch.isdigit())
+    return int(d) if d else 0
+
+
 def fetch_sets(sheet_id, sheet_name):
-    """Results 탭을 인증 없이 CSV 로 받아 세트 목록으로 만듭니다."""
+    """Results 탭을 인증 없이 CSV 로 받아 세트 목록으로 만듭니다.
+    상금(7열 Prize)·더블찬스(8열 Double Chance)를 승자별로 합산해 함께 돌려줍니다."""
     url = ('https://docs.google.com/spreadsheets/d/%s/gviz/tq?tqx=out:csv&sheet=%s'
            % (sheet_id, urllib.parse.quote(sheet_name)))
     # 받아오면서 마지막 정상본을 data/sheet-backup/ 에 남깁니다.
@@ -67,6 +74,7 @@ def fetch_sets(sheet_id, sheet_name):
     if len(rows) < 2:
         raise SystemExit('시트를 읽었지만 내용이 없습니다. 공유 설정을 확인하세요.')
     out = []
+    prize = {}   # 승자 이름 → {'prize': 기본 상금 합, 'bonus': 더블찬스 합, 'sets': 이긴 세트 수}
     for r in rows[1:]:
         if len(r) < 6:
             continue
@@ -74,7 +82,11 @@ def fetch_sets(sheet_id, sheet_name):
         if not (w and lo and dt):
             continue
         out.append((dt, w, wr, lo, lr, mp))
-    return out
+        e = prize.setdefault(w, {'prize': 0, 'bonus': 0, 'sets': 0})
+        e['prize'] += _won(r[6]) if len(r) > 6 else 0
+        e['bonus'] += _won(r[7]) if len(r) > 7 else 0
+        e['sets'] += 1
+    return out, prize
 
 
 # 시트에 잘못 적힌 맵 이름을 바로잡습니다 (왼쪽 → 오른쪽).
@@ -190,7 +202,7 @@ def group_matches(sets):
     return [matches[i] for i in idx], [setlist[i] for i in idx]
 
 
-def build_players(matches, setlist):
+def build_players(matches, setlist, prizes):
     acc = {}
     for m, ss in sorted(zip(matches, setlist), key=lambda z: z[0]['date']):
         a, b = m['players']
@@ -239,6 +251,11 @@ def build_players(matches, setlist):
         # 맞붙은 세트가 많은 순. 같으면 처음 만난 순서 그대로 둡니다.
         p['vsPlayers'] = sorted(p.pop('_vs').values(),
                                 key=lambda v: -(v['w'] + v['l']))
+        pz = prizes.get(p['name'], {})
+        p['prize'] = pz.get('prize', 0)          # 기본 상금 합 (원)
+        p['prizeBonus'] = pz.get('bonus', 0)     # 더블찬스 합 (원)
+        p['prizeTotal'] = p['prize'] + p['prizeBonus']
+        p['prizeSets'] = pz.get('sets', 0)       # 상금을 받은(이긴) 세트 수
         players.append(p)
     # 매치 승수가 많은 순. 같으면 먼저 나온 선수 순서 그대로 둡니다.
     players.sort(key=lambda p: -p['matchWin'])
@@ -286,9 +303,9 @@ def build_maps(matches, setlist):
     return maps
 
 
-def build_doc(sets, built_at):
+def build_doc(sets, built_at, prizes):
     matches, setlist = group_matches(sets)
-    players = build_players(matches, setlist)
+    players = build_players(matches, setlist, prizes)
     maps = build_maps(matches, setlist)
     dates = sorted(m['date'] for m in matches)
     return {
@@ -297,6 +314,7 @@ def build_doc(sets, built_at):
             'totalSets': len(sets),
             'totalMatches': len(matches),
             'totalPlayers': len(players),
+            'totalPrize': sum(p.get('prizeTotal', 0) for p in players),
             'firstDate': dates[0] if dates else '',
             'lastDate': dates[-1] if dates else '',
         },
@@ -347,7 +365,8 @@ def main():
 
     sheet_id, sheet_name = load_source()
     print('끝장전 시트에서 받아옵니다 — %s 탭' % sheet_name)
-    sets, fixes = normalize_sets(fetch_sets(sheet_id, sheet_name))
+    raw_sets, prizes = fetch_sets(sheet_id, sheet_name)
+    sets, fixes = normalize_sets(raw_sets)
     print('  세트 %d줄을 읽었습니다.' % len(sets))
     show_fixes(fixes)
 
@@ -358,7 +377,7 @@ def main():
         except ValueError:
             old = None
     built_at = (old or {}).get('builtAt') or ''
-    doc = build_doc(sets, built_at)
+    doc = build_doc(sets, built_at, prizes)
     lost = summarize(old, doc)
 
     if not args.write:
