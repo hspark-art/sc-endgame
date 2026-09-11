@@ -126,7 +126,7 @@ CG 툴에서 선수 이름을 고르면 등록된 사진이 저절로 올라옵�
 data/asl.json       ASL 정본  ← 구글시트에서 받아옴 (data/asl-source.json 에 주소)
 data/endgame.json   끝장전 정본  ← 구글시트 Results 탭 (data/endgame-source.json). 선수 상금(prize/prizeTotal)도 여기서 계산
 data/predict.json   중계진 예측  ← 같은 시트 '중계진 예측 현황입력용' 탭(gid=99072594), tools/predict_import.py
-data/videos.json    경기 → 유튜브 다시보기 매핑 (292/296 연결됨)
+data/videos.json    경기 → 유튜브 다시보기 매핑 (294/296 연결·update.py가 자동 재조회)
 data/site.json      사이트 주소 (baseUrl)
 ```
 
@@ -150,10 +150,16 @@ data/site.json      사이트 주소 (baseUrl)
 - ASL `상대 전적` 탭은 `asl.json` 의 `setList` 를 씁니다. 세트 하나하나를
   숫자로 압축한 것인데, 그 안의 번호는 `players`·`maps`·`tournaments` 배열의
   자리 번호입니다. **그 배열들의 순서를 바꾸면 전적이 어긋납니다.**
-- 다시보기 영상은 292/296 경기가 연결돼 있습니다 (`tools/fetch_videos.py`).
+- 다시보기 영상은 294/296 경기가 연결돼 있습니다 (`tools/fetch_videos.py`).
   제목에 두 선수 이름이 다 나오는 영상만 인정하고, 영상 하나는 경기 하나에만
   붙입니다. 1~3년 뒤에 올라온 재업로드는 제목의 방송 회차(`SC1-N`)로 찾습니다.
-  남은 4경기는 사람이 주소를 넣어 주면 됩니다.
+  남은 2경기는 사람이 주소를 넣어 주면 됩니다. API 키는 `data/youtube.json`
+  (`{"apiKey":"..."}`)에 있습니다.
+  - **자동 갱신됨(2026-09-12 복구)**: `update.py`(하루 4회)가 `fetch_videos.py
+    --refresh --write`를 돌려 **API 로 새 영상까지 다시 받아** 붙입니다(캐시
+    무시). 실패해도 기존 videos.json 으로 계속. **주의**: `--refresh` 없이
+    그냥 돌리면 `tools/.yt-cache.json`(직전 API 결과)만 읽어 새 영상은 못 찾음.
+    그동안 fetch_videos 가 파이프라인에 빠져 8/19 캐시에 멈춰 있던 게 원인이었음.
 - **예전 Node 프로젝트(`C:\Users\ETALENT-NEW\scetalent`)가 같은
   `/www/endgame/index.html` 에 15분마다 덮어쓰고 있었습니다.** 작업 스케줄러의
   `SC Endgame Cafe24 Mirror` 를 껐습니다(2026-08-19). 다시 켜지면 사이트가
