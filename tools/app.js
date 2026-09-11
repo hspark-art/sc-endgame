@@ -119,7 +119,6 @@ window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeV
 var TABS = [
   { id: 'rank', label: '선수 랭킹' },
   { id: 'prize', label: '상금 랭킹' },
-  { id: 'fun', label: '재밌는 기록' },
   { id: 'predict', label: '중계진 예측' },
   { id: 'roster', label: '선수 명단' },
   { id: 'maps', label: '맵 통계' },
@@ -371,7 +370,7 @@ function renderPrize() {
   draw();
 }
 
-/* ── 재밌는 기록 ───────────────────────────────────────────── */
+/* ── 재밌는 기록 (기록실 탭 하단에 이어 붙습니다) ───────────── */
 function renderFun() {
   var P = D.players;
   function nameCell(p, i) {
@@ -401,7 +400,6 @@ function renderFun() {
   var g1 = document.createElement('div');
   g1.className = 'grid3';
   g1.innerHTML =
-    lbCard('🔥 최다 연승', '매치 기준', '연승', rows(winL, function (p) { return '<b>' + p.streak.bestWin + '연승</b>'; })) +
     lbCard('💧 최다 연패', '매치 기준', '연패', rows(lossL, function (p) { return '<b>' + p.streak.bestLoss + '연패</b>'; })) +
     lbCard('📈 지금 연속 기록', '최근 경기 기준', '현재', rows(curL, function (p) {
       var c = p.streak.current;
@@ -461,14 +459,6 @@ function renderFun() {
     '<th class="num hide-mobile">우세율</th></tr></thead><tbody>' + tbody + '</tbody></table></div>' +
     '<div class="hint">같은 두 선수가 여러 번 맞붙어 한쪽이 크게 앞선 매치업입니다. 이름을 누르면 상세로 갑니다.</div>';
   view.appendChild(c3);
-
-  var c4 = document.createElement('div');
-  c4.className = 'card';
-  c4.innerHTML = '<div class="cardtitle">⚖️ 종족 상성<span class="note">통산 ' +
-    D.global.totalSets.toLocaleString() + '세트 · 세트 기준</span></div>' +
-    MU_KEYS.map(function (k) { return muBar(k, D.mu[k]); }).join('') +
-    '<div class="hint">끝장전 전체에서 종족끼리 맞붙은 세트 승패입니다.</div>';
-  view.appendChild(c4);
 
   view.querySelectorAll('.rowlink[data-href]').forEach(function (el) {
     el.addEventListener('click', function () { location.href = el.dataset.href; });
@@ -776,6 +766,7 @@ function renderRecords() {
     '<div class="hint">전적은 왼쪽에 적힌 선수 기준입니다.</div></div>';
 
   view.innerHTML = html;
+  renderFun();   // 재밌는 기록(연패·현재 연속·종족별 최강·천적)을 이어서 붙입니다
 }
 
 /* ── 시즌 ──────────────────────────────────────────────────── */
@@ -829,7 +820,6 @@ function render() {
   view.innerHTML = '';
   if (state.tab === 'rank') renderRank();
   else if (state.tab === 'prize') renderPrize();
-  else if (state.tab === 'fun') renderFun();
   else if (state.tab === 'predict') renderPredict();
   else if (state.tab === 'roster') renderRoster();
   else if (state.tab === 'maps') renderMaps();
