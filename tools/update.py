@@ -124,6 +124,12 @@ def main():
         subprocess.run([sys.executable, os.path.join(HERE, 'predict_import.py'), '--write'], cwd=ROOT)
     except Exception as e:
         print('  중계진 예측 갱신 건너뜀:', e)
+    # 유튜브 다시보기(보너스) — API 로 새 영상까지 다시 받아 경기에 붙임(캐시 무시 --refresh).
+    # 키·할당량 문제로 실패해도 기존 videos.json 으로 계속 진행합니다.
+    try:
+        subprocess.run([sys.executable, os.path.join(HERE, 'fetch_videos.py'), '--refresh', '--write'], cwd=ROOT)
+    except Exception as e:
+        print('  유튜브 영상 갱신 건너뜀:', e)
     run('build.py')
     if args.no_deploy:
         print('\n--no-deploy 라 올리지 않았습니다. '

@@ -322,6 +322,7 @@ function fmtWon(n) {
   return n.toLocaleString() + '원';
 }
 function renderPrize() {
+  view.appendChild(yearChips());
   view.appendChild(raceChips());
   var table = document.createElement('div');
   view.appendChild(searchBox('선수 이름 검색...', function () { draw(); }));
@@ -330,13 +331,18 @@ function renderPrize() {
   function draw() {
     var s = sortState();
     var rows = D.players.map(function (p) {
-      return {
-        name: p.name, slug: p.slug, race: p.race,
-        prizeTotal: p.prizeTotal || 0, prize: p.prize || 0,
-        prizeBonus: p.prizeBonus || 0, prizeSets: p.prizeSets || 0
-      };
+      var src;
+      if (state.year === 'ALL') {
+        src = { prizeTotal: p.prizeTotal || 0, prize: p.prize || 0, prizeBonus: p.prizeBonus || 0, prizeSets: p.prizeSets || 0 };
+      } else {
+        var y = p.prizeYearly && p.prizeYearly[state.year];
+        if (!y) return null;
+        src = { prizeTotal: y.total || 0, prize: y.prize || 0, prizeBonus: y.bonus || 0, prizeSets: y.sets || 0 };
+      }
+      return { name: p.name, slug: p.slug, race: p.race, prizeTotal: src.prizeTotal, prize: src.prize, prizeBonus: src.prizeBonus, prizeSets: src.prizeSets };
     }).filter(function (p) {
-      return (state.race === 'ALL' || p.race === state.race) &&
+      return p && p.prizeTotal > 0 &&
+        (state.race === 'ALL' || p.race === state.race) &&
         (!state.q || p.name.indexOf(state.q) >= 0);
     });
     rows = sortRows(rows, s.key || 'prizeTotal', s.dir);
@@ -358,10 +364,11 @@ function renderPrize() {
         '<td class="num">' + p.prizeSets.toLocaleString() + '</td></tr>';
     }).join('') : '<tr><td colspan="5"><div class="emptybox">해당 조건의 선수가 없습니다.</div></td></tr>';
 
+    var shownTotal = rows.reduce(function (a, p) { return a + p.prizeTotal; }, 0);
     table.innerHTML = tableHTML(cols, body) +
-      '<div class="hint">끝장전은 <b>세트 승리마다 상금</b>을 받습니다. 통산 합계(기본 상금 + 더블찬스)입니다. ' +
-      '지금까지 배분된 총 상금 <b>' + fmtWon((D.global && D.global.totalPrize) || 0) + '</b>. ' +
-      '표 머리글을 누르면 정렬, 선수를 누르면 상세 기록으로 이동합니다.</div>';
+      '<div class="hint">끝장전은 <b>세트 승리마다 상금</b>을 받습니다(기본 상금 + 더블찬스). ' +
+      (state.year === 'ALL' ? '통산 ' : state.year + '년 ') + '배분 상금 <b>' + fmtWon(shownTotal) + '</b>. ' +
+      '연도를 고르면 그 해 상금만 봅니다. 표 머리글을 누르면 정렬, 선수를 누르면 상세로 이동합니다.</div>';
     bindSort(table, draw);
     table.querySelectorAll('[data-href]').forEach(function (el) {
       el.addEventListener('click', function () { location.href = el.dataset.href; });
@@ -729,7 +736,6 @@ function renderRecords() {
     recordCard('세트 승률', r.minSet + '세트 이상', r.setPct) +
     recordCard('최다 연승', '매치 기준', r.winStreak) +
     recordCard('5-4 접전 최다', '마지막 세트까지 간 경기', r.thriller) +
-    recordCard('최장 활동', '첫 출전 ~ 최근 출전', r.span) +
     '</div>';
 
   html += '<div class="grid2">';

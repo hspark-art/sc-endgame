@@ -458,7 +458,51 @@
    "prize": 28200000,
    "prizeBonus": 5600000,
    "prizeTotal": 33800000,
-   "prizeSets": 282
+   "prizeSets": 282,
+   "prizeYearly": {
+    "2019": {
+     "prize": 900000,
+     "bonus": 0,
+     "total": 900000,
+     "sets": 9
+    },
+    "2020": {
+     "prize": 3700000,
+     "bonus": 700000,
+     "total": 4400000,
+     "sets": 37
+    },
+    "2021": {
+     "prize": 6000000,
+     "bonus": 1500000,
+     "total": 7500000,
+     "sets": 60
+    },
+    "2022": {
+     "prize": 2300000,
+     "bonus": 500000,
+     "total": 2800000,
+     "sets": 23
+    },
+    "2023": {
+     "prize": 7500000,
+     "bonus": 1300000,
+     "total": 8800000,
+     "sets": 75
+    },
+    "2025": {
+     "prize": 4000000,
+     "bonus": 800000,
+     "total": 4800000,
+     "sets": 40
+    },
+    "2026": {
+     "prize": 3800000,
+     "bonus": 800000,
+     "total": 4600000,
+     "sets": 38
+    }
+   }
   },
   {
    "name": "이재호",
@@ -945,7 +989,57 @@
    "prize": 28800000,
    "prizeBonus": 5100000,
    "prizeTotal": 33900000,
-   "prizeSets": 288
+   "prizeSets": 288,
+   "prizeYearly": {
+    "2019": {
+     "prize": 3300000,
+     "bonus": 0,
+     "total": 3300000,
+     "sets": 33
+    },
+    "2020": {
+     "prize": 7500000,
+     "bonus": 1300000,
+     "total": 8800000,
+     "sets": 75
+    },
+    "2021": {
+     "prize": 3500000,
+     "bonus": 500000,
+     "total": 4000000,
+     "sets": 35
+    },
+    "2022": {
+     "prize": 3800000,
+     "bonus": 900000,
+     "total": 4700000,
+     "sets": 38
+    },
+    "2023": {
+     "prize": 3400000,
+     "bonus": 700000,
+     "total": 4100000,
+     "sets": 34
+    },
+    "2024": {
+     "prize": 2300000,
+     "bonus": 700000,
+     "total": 3000000,
+     "sets": 23
+    },
+    "2025": {
+     "prize": 1700000,
+     "bonus": 300000,
+     "total": 2000000,
+     "sets": 17
+    },
+    "2026": {
+     "prize": 3300000,
+     "bonus": 700000,
+     "total": 4000000,
+     "sets": 33
+    }
+   }
   },
   {
    "name": "장윤철",
@@ -1456,7 +1550,57 @@
    "prize": 28900000,
    "prizeBonus": 6000000,
    "prizeTotal": 34900000,
-   "prizeSets": 289
+   "prizeSets": 289,
+   "prizeYearly": {
+    "2019": {
+     "prize": 2300000,
+     "bonus": 0,
+     "total": 2300000,
+     "sets": 23
+    },
+    "2020": {
+     "prize": 900000,
+     "bonus": 200000,
+     "total": 1100000,
+     "sets": 9
+    },
+    "2021": {
+     "prize": 1600000,
+     "bonus": 500000,
+     "total": 2100000,
+     "sets": 16
+    },
+    "2022": {
+     "prize": 2800000,
+     "bonus": 700000,
+     "total": 3500000,
+     "sets": 28
+    },
+    "2023": {
+     "prize": 9400000,
+     "bonus": 2200000,
+     "total": 11600000,
+     "sets": 94
+    },
+    "2024": {
+     "prize": 2900000,
+     "bonus": 600000,
+     "total": 3500000,
+     "sets": 29
+    },
+    "2025": {
+     "prize": 4400000,
+     "bonus": 900000,
+     "total": 5300000,
+     "sets": 44
+    },
+    "2026": {
+     "prize": 4600000,
+     "bonus": 900000,
+     "total": 5500000,
+     "sets": 46
+    }
+   }
   },
   {
    "name": "도재욱",
@@ -1949,7 +2093,57 @@
    "prize": 28000000,
    "prizeBonus": 5700000,
    "prizeTotal": 33700000,
-   "prizeSets": 275
+   "prizeSets": 275,
+   "prizeYearly": {
+    "2019": {
+     "prize": 500000,
+     "bonus": 0,
+     "total": 500000,
+     "sets": 5
+    },
+    "2020": {
+     "prize": 3600000,
+     "bonus": 1100000,
+     "total": 4700000,
+     "sets": 36
+    },
+    "2021": {
+     "prize": 3100000,
+     "bonus": 900000,
+     "total": 4000000,
+     "sets": 31
+    },
+    "2022": {
+     "prize": 7300000,
+     "bonus": 1600000,
+     "total": 8900000,
+     "sets": 73
+    },
+    "2023": {
+     "prize": 5400000,
+     "bonus": 700000,
+     "total": 6100000,
+     "sets": 49
+    },
+    "2024": {
+     "prize": 4400000,
+     "bonus": 600000,
+     "total": 5000000,
+     "sets": 44
+    },
+    "2025": {
+     "prize": 2800000,
+     "bonus": 600000,
+     "total": 3400000,
+     "sets": 28
+    },
+    "2026": {
+     "prize": 900000,
+     "bonus": 200000,
+     "total": 1100000,
+     "sets": 9
+    }
+   }
   },
   {
    "name": "김지성",
@@ -2390,7 +2584,51 @@
    "prize": 22000000,
    "prizeBonus": 4900000,
    "prizeTotal": 26900000,
-   "prizeSets": 220
+   "prizeSets": 220,
+   "prizeYearly": {
+    "2020": {
+     "prize": 300000,
+     "bonus": 200000,
+     "total": 500000,
+     "sets": 3
+    },
+    "2021": {
+     "prize": 1600000,
+     "bonus": 300000,
+     "total": 1900000,
+     "sets": 16
+    },
+    "2022": {
+     "prize": 5700000,
+     "bonus": 1200000,
+     "total": 6900000,
+     "sets": 57
+    },
+    "2023": {
+     "prize": 3600000,
+     "bonus": 700000,
+     "total": 4300000,
+     "sets": 36
+    },
+    "2024": {
+     "prize": 3300000,
+     "bonus": 900000,
+     "total": 4200000,
+     "sets": 33
+    },
+    "2025": {
+     "prize": 5000000,
+     "bonus": 1000000,
+     "total": 6000000,
+     "sets": 50
+    },
+    "2026": {
+     "prize": 2500000,
+     "bonus": 600000,
+     "total": 3100000,
+     "sets": 25
+    }
+   }
   },
   {
    "name": "유영진",
@@ -2767,7 +3005,57 @@
    "prize": 18400000,
    "prizeBonus": 4300000,
    "prizeTotal": 22700000,
-   "prizeSets": 184
+   "prizeSets": 184,
+   "prizeYearly": {
+    "2019": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    },
+    "2020": {
+     "prize": 500000,
+     "bonus": 100000,
+     "total": 600000,
+     "sets": 5
+    },
+    "2021": {
+     "prize": 2800000,
+     "bonus": 800000,
+     "total": 3600000,
+     "sets": 28
+    },
+    "2022": {
+     "prize": 2800000,
+     "bonus": 400000,
+     "total": 3200000,
+     "sets": 28
+    },
+    "2023": {
+     "prize": 2700000,
+     "bonus": 600000,
+     "total": 3300000,
+     "sets": 27
+    },
+    "2024": {
+     "prize": 1600000,
+     "bonus": 600000,
+     "total": 2200000,
+     "sets": 16
+    },
+    "2025": {
+     "prize": 4000000,
+     "bonus": 1000000,
+     "total": 5000000,
+     "sets": 40
+    },
+    "2026": {
+     "prize": 3700000,
+     "bonus": 800000,
+     "total": 4500000,
+     "sets": 37
+    }
+   }
   },
   {
    "name": "변현제",
@@ -3196,7 +3484,57 @@
    "prize": 18600000,
    "prizeBonus": 3700000,
    "prizeTotal": 22300000,
-   "prizeSets": 186
+   "prizeSets": 186,
+   "prizeYearly": {
+    "2019": {
+     "prize": 600000,
+     "bonus": 0,
+     "total": 600000,
+     "sets": 6
+    },
+    "2020": {
+     "prize": 900000,
+     "bonus": 200000,
+     "total": 1100000,
+     "sets": 9
+    },
+    "2021": {
+     "prize": 1600000,
+     "bonus": 200000,
+     "total": 1800000,
+     "sets": 16
+    },
+    "2022": {
+     "prize": 3400000,
+     "bonus": 600000,
+     "total": 4000000,
+     "sets": 34
+    },
+    "2023": {
+     "prize": 2200000,
+     "bonus": 400000,
+     "total": 2600000,
+     "sets": 22
+    },
+    "2024": {
+     "prize": 4200000,
+     "bonus": 600000,
+     "total": 4800000,
+     "sets": 42
+    },
+    "2025": {
+     "prize": 4400000,
+     "bonus": 1300000,
+     "total": 5700000,
+     "sets": 44
+    },
+    "2026": {
+     "prize": 1300000,
+     "bonus": 400000,
+     "total": 1700000,
+     "sets": 13
+    }
+   }
   },
   {
    "name": "김민철",
@@ -3493,7 +3831,51 @@
    "prize": 14900000,
    "prizeBonus": 2400000,
    "prizeTotal": 17300000,
-   "prizeSets": 145
+   "prizeSets": 145,
+   "prizeYearly": {
+    "2019": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    },
+    "2020": {
+     "prize": 800000,
+     "bonus": 100000,
+     "total": 900000,
+     "sets": 8
+    },
+    "2021": {
+     "prize": 2400000,
+     "bonus": 400000,
+     "total": 2800000,
+     "sets": 24
+    },
+    "2022": {
+     "prize": 3900000,
+     "bonus": 800000,
+     "total": 4700000,
+     "sets": 39
+    },
+    "2023": {
+     "prize": 3100000,
+     "bonus": 200000,
+     "total": 3300000,
+     "sets": 27
+    },
+    "2024": {
+     "prize": 2700000,
+     "bonus": 600000,
+     "total": 3300000,
+     "sets": 27
+    },
+    "2026": {
+     "prize": 1700000,
+     "bonus": 300000,
+     "total": 2000000,
+     "sets": 17
+    }
+   }
   },
   {
    "name": "조일장",
@@ -3766,7 +4148,51 @@
    "prize": 12500000,
    "prizeBonus": 3100000,
    "prizeTotal": 15600000,
-   "prizeSets": 125
+   "prizeSets": 125,
+   "prizeYearly": {
+    "2020": {
+     "prize": 3300000,
+     "bonus": 900000,
+     "total": 4200000,
+     "sets": 33
+    },
+    "2021": {
+     "prize": 1100000,
+     "bonus": 300000,
+     "total": 1400000,
+     "sets": 11
+    },
+    "2022": {
+     "prize": 2000000,
+     "bonus": 600000,
+     "total": 2600000,
+     "sets": 20
+    },
+    "2023": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    },
+    "2024": {
+     "prize": 800000,
+     "bonus": 100000,
+     "total": 900000,
+     "sets": 8
+    },
+    "2025": {
+     "prize": 1500000,
+     "bonus": 300000,
+     "total": 1800000,
+     "sets": 15
+    },
+    "2026": {
+     "prize": 3400000,
+     "bonus": 800000,
+     "total": 4200000,
+     "sets": 34
+    }
+   }
   },
   {
    "name": "김명운",
@@ -4067,7 +4493,57 @@
    "prize": 13400000,
    "prizeBonus": 2300000,
    "prizeTotal": 15700000,
-   "prizeSets": 134
+   "prizeSets": 134,
+   "prizeYearly": {
+    "2019": {
+     "prize": 2600000,
+     "bonus": 0,
+     "total": 2600000,
+     "sets": 26
+    },
+    "2020": {
+     "prize": 500000,
+     "bonus": 0,
+     "total": 500000,
+     "sets": 5
+    },
+    "2021": {
+     "prize": 1200000,
+     "bonus": 300000,
+     "total": 1500000,
+     "sets": 12
+    },
+    "2022": {
+     "prize": 2200000,
+     "bonus": 600000,
+     "total": 2800000,
+     "sets": 22
+    },
+    "2023": {
+     "prize": 1400000,
+     "bonus": 100000,
+     "total": 1500000,
+     "sets": 14
+    },
+    "2024": {
+     "prize": 1500000,
+     "bonus": 400000,
+     "total": 1900000,
+     "sets": 15
+    },
+    "2025": {
+     "prize": 2100000,
+     "bonus": 500000,
+     "total": 2600000,
+     "sets": 21
+    },
+    "2026": {
+     "prize": 1900000,
+     "bonus": 400000,
+     "total": 2300000,
+     "sets": 19
+    }
+   }
   },
   {
    "name": "임홍규",
@@ -4254,7 +4730,39 @@
    "prize": 6100000,
    "prizeBonus": 600000,
    "prizeTotal": 6700000,
-   "prizeSets": 61
+   "prizeSets": 61,
+   "prizeYearly": {
+    "2019": {
+     "prize": 1800000,
+     "bonus": 0,
+     "total": 1800000,
+     "sets": 18
+    },
+    "2020": {
+     "prize": 1000000,
+     "bonus": 0,
+     "total": 1000000,
+     "sets": 10
+    },
+    "2021": {
+     "prize": 1900000,
+     "bonus": 400000,
+     "total": 2300000,
+     "sets": 19
+    },
+    "2025": {
+     "prize": 1100000,
+     "bonus": 100000,
+     "total": 1200000,
+     "sets": 11
+    },
+    "2026": {
+     "prize": 300000,
+     "bonus": 100000,
+     "total": 400000,
+     "sets": 3
+    }
+   }
   },
   {
    "name": "송병구",
@@ -4463,7 +4971,57 @@
    "prize": 6700000,
    "prizeBonus": 1300000,
    "prizeTotal": 8000000,
-   "prizeSets": 67
+   "prizeSets": 67,
+   "prizeYearly": {
+    "2019": {
+     "prize": 800000,
+     "bonus": 0,
+     "total": 800000,
+     "sets": 8
+    },
+    "2020": {
+     "prize": 1300000,
+     "bonus": 200000,
+     "total": 1500000,
+     "sets": 13
+    },
+    "2021": {
+     "prize": 1700000,
+     "bonus": 200000,
+     "total": 1900000,
+     "sets": 17
+    },
+    "2022": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    },
+    "2023": {
+     "prize": 500000,
+     "bonus": 100000,
+     "total": 600000,
+     "sets": 5
+    },
+    "2024": {
+     "prize": 1300000,
+     "bonus": 400000,
+     "total": 1700000,
+     "sets": 13
+    },
+    "2025": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    },
+    "2026": {
+     "prize": 300000,
+     "bonus": 200000,
+     "total": 500000,
+     "sets": 3
+    }
+   }
   },
   {
    "name": "김성대",
@@ -4664,7 +5222,51 @@
    "prize": 7200000,
    "prizeBonus": 1600000,
    "prizeTotal": 8800000,
-   "prizeSets": 72
+   "prizeSets": 72,
+   "prizeYearly": {
+    "2019": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    },
+    "2020": {
+     "prize": 2300000,
+     "bonus": 600000,
+     "total": 2900000,
+     "sets": 23
+    },
+    "2021": {
+     "prize": 400000,
+     "bonus": 0,
+     "total": 400000,
+     "sets": 4
+    },
+    "2022": {
+     "prize": 1200000,
+     "bonus": 300000,
+     "total": 1500000,
+     "sets": 12
+    },
+    "2023": {
+     "prize": 900000,
+     "bonus": 300000,
+     "total": 1200000,
+     "sets": 9
+    },
+    "2024": {
+     "prize": 700000,
+     "bonus": 200000,
+     "total": 900000,
+     "sets": 7
+    },
+    "2025": {
+     "prize": 1400000,
+     "bonus": 200000,
+     "total": 1600000,
+     "sets": 14
+    }
+   }
   },
   {
    "name": "이제동",
@@ -4859,7 +5461,33 @@
    "prize": 6100000,
    "prizeBonus": 1500000,
    "prizeTotal": 7600000,
-   "prizeSets": 61
+   "prizeSets": 61,
+   "prizeYearly": {
+    "2020": {
+     "prize": 400000,
+     "bonus": 0,
+     "total": 400000,
+     "sets": 4
+    },
+    "2024": {
+     "prize": 1400000,
+     "bonus": 400000,
+     "total": 1800000,
+     "sets": 14
+    },
+    "2025": {
+     "prize": 3800000,
+     "bonus": 1000000,
+     "total": 4800000,
+     "sets": 38
+    },
+    "2026": {
+     "prize": 500000,
+     "bonus": 100000,
+     "total": 600000,
+     "sets": 5
+    }
+   }
   },
   {
    "name": "이영호",
@@ -4946,7 +5574,15 @@
    "prize": 2400000,
    "prizeBonus": 0,
    "prizeTotal": 2400000,
-   "prizeSets": 24
+   "prizeSets": 24,
+   "prizeYearly": {
+    "2019": {
+     "prize": 2400000,
+     "bonus": 0,
+     "total": 2400000,
+     "sets": 24
+    }
+   }
   },
   {
    "name": "김택용",
@@ -5047,7 +5683,33 @@
    "prize": 2600000,
    "prizeBonus": 100000,
    "prizeTotal": 2700000,
-   "prizeSets": 26
+   "prizeSets": 26,
+   "prizeYearly": {
+    "2019": {
+     "prize": 900000,
+     "bonus": 0,
+     "total": 900000,
+     "sets": 9
+    },
+    "2020": {
+     "prize": 500000,
+     "bonus": 0,
+     "total": 500000,
+     "sets": 5
+    },
+    "2021": {
+     "prize": 800000,
+     "bonus": 100000,
+     "total": 900000,
+     "sets": 8
+    },
+    "2026": {
+     "prize": 400000,
+     "bonus": 0,
+     "total": 400000,
+     "sets": 4
+    }
+   }
   },
   {
    "name": "이영한",
@@ -5176,7 +5838,27 @@
    "prize": 2500000,
    "prizeBonus": 600000,
    "prizeTotal": 3100000,
-   "prizeSets": 25
+   "prizeSets": 25,
+   "prizeYearly": {
+    "2021": {
+     "prize": 100000,
+     "bonus": 100000,
+     "total": 200000,
+     "sets": 1
+    },
+    "2022": {
+     "prize": 1200000,
+     "bonus": 300000,
+     "total": 1500000,
+     "sets": 12
+    },
+    "2023": {
+     "prize": 1200000,
+     "bonus": 200000,
+     "total": 1400000,
+     "sets": 12
+    }
+   }
   },
   {
    "name": "조기석",
@@ -5343,7 +6025,51 @@
    "prize": 3900000,
    "prizeBonus": 500000,
    "prizeTotal": 4400000,
-   "prizeSets": 39
+   "prizeSets": 39,
+   "prizeYearly": {
+    "2019": {
+     "prize": 700000,
+     "bonus": 0,
+     "total": 700000,
+     "sets": 7
+    },
+    "2020": {
+     "prize": 600000,
+     "bonus": 0,
+     "total": 600000,
+     "sets": 6
+    },
+    "2021": {
+     "prize": 900000,
+     "bonus": 300000,
+     "total": 1200000,
+     "sets": 9
+    },
+    "2022": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    },
+    "2024": {
+     "prize": 400000,
+     "bonus": 0,
+     "total": 400000,
+     "sets": 4
+    },
+    "2025": {
+     "prize": 300000,
+     "bonus": 100000,
+     "total": 400000,
+     "sets": 3
+    },
+    "2026": {
+     "prize": 700000,
+     "bonus": 100000,
+     "total": 800000,
+     "sets": 7
+    }
+   }
   },
   {
    "name": "김정우",
@@ -5416,7 +6142,21 @@
    "prize": 1500000,
    "prizeBonus": 400000,
    "prizeTotal": 1900000,
-   "prizeSets": 15
+   "prizeSets": 15,
+   "prizeYearly": {
+    "2021": {
+     "prize": 1200000,
+     "bonus": 300000,
+     "total": 1500000,
+     "sets": 12
+    },
+    "2025": {
+     "prize": 300000,
+     "bonus": 100000,
+     "total": 400000,
+     "sets": 3
+    }
+   }
   },
   {
    "name": "정영재",
@@ -5561,7 +6301,33 @@
    "prize": 3700000,
    "prizeBonus": 500000,
    "prizeTotal": 4200000,
-   "prizeSets": 37
+   "prizeSets": 37,
+   "prizeYearly": {
+    "2021": {
+     "prize": 500000,
+     "bonus": 0,
+     "total": 500000,
+     "sets": 5
+    },
+    "2022": {
+     "prize": 600000,
+     "bonus": 100000,
+     "total": 700000,
+     "sets": 6
+    },
+    "2023": {
+     "prize": 2000000,
+     "bonus": 300000,
+     "total": 2300000,
+     "sets": 20
+    },
+    "2025": {
+     "prize": 600000,
+     "bonus": 100000,
+     "total": 700000,
+     "sets": 6
+    }
+   }
   },
   {
    "name": "윤찬희",
@@ -5662,7 +6428,27 @@
    "prize": 1800000,
    "prizeBonus": 400000,
    "prizeTotal": 2200000,
-   "prizeSets": 18
+   "prizeSets": 18,
+   "prizeYearly": {
+    "2020": {
+     "prize": 400000,
+     "bonus": 0,
+     "total": 400000,
+     "sets": 4
+    },
+    "2022": {
+     "prize": 1000000,
+     "bonus": 300000,
+     "total": 1300000,
+     "sets": 10
+    },
+    "2023": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    }
+   }
   },
   {
    "name": "최호선",
@@ -5783,7 +6569,33 @@
    "prize": 2300000,
    "prizeBonus": 300000,
    "prizeTotal": 2600000,
-   "prizeSets": 23
+   "prizeSets": 23,
+   "prizeYearly": {
+    "2020": {
+     "prize": 600000,
+     "bonus": 100000,
+     "total": 700000,
+     "sets": 6
+    },
+    "2021": {
+     "prize": 900000,
+     "bonus": 100000,
+     "total": 1000000,
+     "sets": 9
+    },
+    "2022": {
+     "prize": 500000,
+     "bonus": 100000,
+     "total": 600000,
+     "sets": 5
+    },
+    "2025": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    }
+   }
   },
   {
    "name": "박성균",
@@ -5842,7 +6654,15 @@
    "prize": 900000,
    "prizeBonus": 200000,
    "prizeTotal": 1100000,
-   "prizeSets": 9
+   "prizeSets": 9,
+   "prizeYearly": {
+    "2020": {
+     "prize": 900000,
+     "bonus": 200000,
+     "total": 1100000,
+     "sets": 9
+    }
+   }
   },
   {
    "name": "이영웅",
@@ -5935,7 +6755,21 @@
    "prize": 2200000,
    "prizeBonus": 600000,
    "prizeTotal": 2800000,
-   "prizeSets": 22
+   "prizeSets": 22,
+   "prizeYearly": {
+    "2025": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    },
+    "2026": {
+     "prize": 1800000,
+     "bonus": 500000,
+     "total": 2300000,
+     "sets": 18
+    }
+   }
   },
   {
    "name": "김성현",
@@ -5980,7 +6814,15 @@
    "prize": 300000,
    "prizeBonus": 0,
    "prizeTotal": 300000,
-   "prizeSets": 3
+   "prizeSets": 3,
+   "prizeYearly": {
+    "2019": {
+     "prize": 300000,
+     "bonus": 0,
+     "total": 300000,
+     "sets": 3
+    }
+   }
   },
   {
    "name": "임진묵",
@@ -6025,7 +6867,15 @@
    "prize": 200000,
    "prizeBonus": 0,
    "prizeTotal": 200000,
-   "prizeSets": 2
+   "prizeSets": 2,
+   "prizeYearly": {
+    "2020": {
+     "prize": 200000,
+     "bonus": 0,
+     "total": 200000,
+     "sets": 2
+    }
+   }
   },
   {
    "name": "김윤중",
@@ -6098,7 +6948,27 @@
    "prize": 800000,
    "prizeBonus": 100000,
    "prizeTotal": 900000,
-   "prizeSets": 8
+   "prizeSets": 8,
+   "prizeYearly": {
+    "2020": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    },
+    "2021": {
+     "prize": 200000,
+     "bonus": 0,
+     "total": 200000,
+     "sets": 2
+    },
+    "2024": {
+     "prize": 200000,
+     "bonus": 0,
+     "total": 200000,
+     "sets": 2
+    }
+   }
   },
   {
    "name": "윤용태",
@@ -6143,7 +7013,15 @@
    "prize": 400000,
    "prizeBonus": 100000,
    "prizeTotal": 500000,
-   "prizeSets": 4
+   "prizeSets": 4,
+   "prizeYearly": {
+    "2021": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    }
+   }
   },
   {
    "name": "황병영",
@@ -6222,7 +7100,27 @@
    "prize": 900000,
    "prizeBonus": 300000,
    "prizeTotal": 1200000,
-   "prizeSets": 9
+   "prizeSets": 9,
+   "prizeYearly": {
+    "2021": {
+     "prize": 300000,
+     "bonus": 100000,
+     "total": 400000,
+     "sets": 3
+    },
+    "2025": {
+     "prize": 200000,
+     "bonus": 100000,
+     "total": 300000,
+     "sets": 2
+    },
+    "2026": {
+     "prize": 400000,
+     "bonus": 100000,
+     "total": 500000,
+     "sets": 4
+    }
+   }
   },
   {
    "name": "박준오",
@@ -6267,7 +7165,15 @@
    "prize": 100000,
    "prizeBonus": 0,
    "prizeTotal": 100000,
-   "prizeSets": 1
+   "prizeSets": 1,
+   "prizeYearly": {
+    "2023": {
+     "prize": 100000,
+     "bonus": 0,
+     "total": 100000,
+     "sets": 1
+    }
+   }
   },
   {
    "name": "전태양",
@@ -6312,7 +7218,15 @@
    "prize": 200000,
    "prizeBonus": 0,
    "prizeTotal": 200000,
-   "prizeSets": 2
+   "prizeSets": 2,
+   "prizeYearly": {
+    "2024": {
+     "prize": 200000,
+     "bonus": 0,
+     "total": 200000,
+     "sets": 2
+    }
+   }
   }
  ],
  "maps": [

@@ -82,10 +82,18 @@ def fetch_sets(sheet_id, sheet_name):
         if not (w and lo and dt):
             continue
         out.append((dt, w, wr, lo, lr, mp))
-        e = prize.setdefault(w, {'prize': 0, 'bonus': 0, 'sets': 0})
-        e['prize'] += _won(r[6]) if len(r) > 6 else 0
-        e['bonus'] += _won(r[7]) if len(r) > 7 else 0
+        pz = _won(r[6]) if len(r) > 6 else 0
+        bn = _won(r[7]) if len(r) > 7 else 0
+        e = prize.setdefault(w, {'prize': 0, 'bonus': 0, 'sets': 0, 'byYear': {}})
+        e['prize'] += pz
+        e['bonus'] += bn
         e['sets'] += 1
+        yr = (dt or '')[:4]
+        if yr:
+            ye = e['byYear'].setdefault(yr, {'prize': 0, 'bonus': 0, 'sets': 0})
+            ye['prize'] += pz
+            ye['bonus'] += bn
+            ye['sets'] += 1
     return out, prize
 
 
@@ -256,6 +264,9 @@ def build_players(matches, setlist, prizes):
         p['prizeBonus'] = pz.get('bonus', 0)     # 더블찬스 합 (원)
         p['prizeTotal'] = p['prize'] + p['prizeBonus']
         p['prizeSets'] = pz.get('sets', 0)       # 상금을 받은(이긴) 세트 수
+        p['prizeYearly'] = {yr: {'prize': ye['prize'], 'bonus': ye['bonus'],
+                                 'total': ye['prize'] + ye['bonus'], 'sets': ye['sets']}
+                            for yr, ye in (pz.get('byYear') or {}).items()}
         players.append(p)
     # 매치 승수가 많은 순. 같으면 먼저 나온 선수 순서 그대로 둡니다.
     players.sort(key=lambda p: -p['matchWin'])

@@ -258,17 +258,6 @@ def records(data, sk, strk):
               '%d승 %d패' % (thrill_w[p['name']], thrill_l[p['name']]))
          for p in players), key=lambda r: -r['value']))
 
-    # 활동 기간이 같으면 출전이 많은 선수를 위로 올립니다.
-    span_src = sorted(players,
-                      key=lambda x: (-(int(x['lastDate'][:4]) - int(x['firstDate'][:4])),
-                                     -x['appearances'], x['name']))
-    span = top([
-        prow(x, int(x['lastDate'][:4]) - int(x['firstDate'][:4]),
-             '%d년' % (int(x['lastDate'][:4]) - int(x['firstDate'][:4])),
-             '%s ~ %s · %d경기' % (x['firstDate'][:4], x['lastDate'][:4],
-                                 x['appearances']))
-        for x in span_src])
-
     sweeps = []
     for m in matches:
         a, b = m['players']
@@ -296,7 +285,7 @@ def records(data, sk, strk):
     return {
         'apps': apps, 'matchWin': match_win, 'matchPct': match_pct,
         'setWin': set_win, 'setPct': set_pct, 'winStreak': win_streak,
-        'thriller': thriller, 'span': span, 'sweep': sweep_rows,
+        'thriller': thriller, 'sweep': sweep_rows,
         'topMaps': top_maps, 'minMatch': MIN_M, 'minSet': MIN_S,
     }
 
