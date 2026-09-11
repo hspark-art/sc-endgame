@@ -142,9 +142,22 @@ function yrsInRange() { return YEARS_ASC.filter(function (y) { return y >= state
 function rangeLabel() { return isFullRange() ? '통산' : (state.yFrom === state.yTo ? state.yFrom + '년' : state.yFrom + '~' + state.yTo + '년'); }
 
 function writeHash() {
-  var h = state.tab + (!isFullRange() ? '/' + state.yFrom + '-' + state.yTo : '');
+  var params = [];
+  if (!isFullRange()) params.push('y=' + state.yFrom + '-' + state.yTo);
+  if (state.q) params.push('q=' + encodeURIComponent(state.q));
+  var h = state.tab + (params.length ? '?' + params.join('&') : '');
   if (location.hash.replace(/^#/, '') !== h) {
     history.replaceState(null, '', '#' + h);
+  }
+}
+
+function applyYearToken(tok) {
+  var rg = tok.split('-');
+  if (rg.length === 2 && D.years.indexOf(rg[0]) >= 0 && D.years.indexOf(rg[1]) >= 0) {
+    state.yFrom = rg[0] < rg[1] ? rg[0] : rg[1];
+    state.yTo = rg[0] < rg[1] ? rg[1] : rg[0];
+  } else if (D.years.indexOf(tok) >= 0) {          // 예전 단일 연도 호환
+    state.yFrom = state.yTo = tok;
   }
 }
 
@@ -157,16 +170,19 @@ function readHash() {
     var href = hrefOf(name);
     if (href) { location.replace(href); return true; }
   }
-  var parts = raw.split('/');
+  var qi = raw.indexOf('?');
+  var head = qi >= 0 ? raw.slice(0, qi) : raw;
+  var query = qi >= 0 ? raw.slice(qi + 1) : '';
+  var parts = head.split('/');
   if (TAB_IDS.indexOf(parts[0]) >= 0) state.tab = parts[0];
-  if (parts[1]) {
-    var rg = parts[1].split('-');
-    if (rg.length === 2 && D.years.indexOf(rg[0]) >= 0 && D.years.indexOf(rg[1]) >= 0) {
-      state.yFrom = rg[0] < rg[1] ? rg[0] : rg[1];
-      state.yTo = rg[0] < rg[1] ? rg[1] : rg[0];
-    } else if (D.years.indexOf(parts[1]) >= 0) {   // 예전 단일 연도 링크 호환
-      state.yFrom = state.yTo = parts[1];
-    }
+  if (parts[1]) applyYearToken(parts[1]);           // 예전 형식 #탭/2019-2025
+  if (query) {                                       // 새 형식 #탭?y=..&q=..
+    query.split('&').forEach(function (kv) {
+      var i = kv.indexOf('='); if (i < 0) return;
+      var k = kv.slice(0, i), v = decodeURIComponent(kv.slice(i + 1));
+      if (k === 'q') state.q = v;
+      else if (k === 'y') applyYearToken(v);
+    });
   }
   return false;
 }

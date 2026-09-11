@@ -189,6 +189,7 @@ def fmt_won(n):
 def player_page(p, ctx, css):
     """선수 한 명의 정적 상세 페이지."""
     name, race, slug = p['name'], p['race'], p['slug']
+    qname = urllib.parse.quote(name)               # 경기 기록 링크에 넘길 선수 이름
     slugs = ctx['slugs']
     race_of = ctx['raceOf']
     years = ctx['years']
@@ -230,6 +231,12 @@ def player_page(p, ctx, css):
                ('활동 기간', '%s ~ %s' % (p['firstDate'], p['lastDate'])),
            ])))
 
+    out.append('<div style="margin:14px 0 2px"><a href="../index.html#recent?q=%s" '
+               'style="display:inline-block;padding:8px 14px;border:1px solid var(--line);'
+               'border-radius:10px;background:var(--panel);color:var(--txt);font-weight:700;'
+               'font-size:13px;text-decoration:none">🎬 %s 경기·다시보기 모아보기 →</a></div>\n'
+               % (qname, e(name)))
+
     # 종족별 세트 전적
     pairs = [(r, p['vsRace'][r]) for r in ['T', 'P', 'Z'] if p['vsRace'][r]['w'] + p['vsRace'][r]['l']]
     out.append('<div class="card" style="margin-top:16px"><div class="cardtitle">'
@@ -247,12 +254,13 @@ def player_page(p, ctx, css):
         if not v:
             continue
         rows.append(
-            '<tr><td class="nm">%s</td><td class="num">%d</td>'
+            '<tr><td class="nm"><a class="nm-link" href="../index.html#recent?y=%s-%s&q=%s"'
+            ' title="%s년 %s 경기 보기">%s</a></td><td class="num">%d</td>'
             '<td class="num">%d-%d</td><td class="num">%s</td>'
             '<td class="num">%d-%d</td><td class="num">%s</td>'
             '<td class="num">%s</td>'
             '<td class="num muted hide-mobile">%s ~ %s</td></tr>'
-            % (y, v['apps'], v['matchWin'], v['matchLoss'],
+            % (y, y, qname, y, e(name), y, v['apps'], v['matchWin'], v['matchLoss'],
                pct(v['matchWin'], v['matchLoss']), v['setWin'], v['setLoss'],
                pct(v['setWin'], v['setLoss']),
                fmt_won(p.get('prizeYearly', {}).get(y, {}).get('total', 0)),

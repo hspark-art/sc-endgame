@@ -131,6 +131,14 @@ def main():
     except Exception as e:
         print('  유튜브 영상 갱신 건너뜀:', e)
     run('build.py')
+    # 데이터 정합성 상시 점검(17종 교차검증) — 어긋나면 콘솔·로그에 남깁니다.
+    # 배포는 막지 않습니다(이미 빌드된 것). 자동 갱신마다 돌아 '데이터 감시' 역할.
+    try:
+        r = subprocess.run([sys.executable, os.path.join(HERE, 'data_check.py')], cwd=ROOT)
+        if r.returncode != 0:
+            print('  ⚠ 데이터 정합성 점검에서 이상이 발견됐습니다 — 위 로그를 확인하세요.')
+    except Exception as e:
+        print('  데이터 점검 건너뜀:', e)
     if args.no_deploy:
         print('\n--no-deploy 라 올리지 않았습니다. '
               '올리려면 python3 tools/deploy.py 를 실행하세요.')
