@@ -124,7 +124,8 @@ CG 툴에서 선수 이름을 고르면 등록된 사진이 저절로 올라옵�
 
 ```
 data/asl.json       ASL 정본  ← 구글시트에서 받아옴 (data/asl-source.json 에 주소)
-data/endgame.json   끝장전 정본  ← 구글시트에서 받아옴 (data/endgame-source.json 에 주소)
+data/endgame.json   끝장전 정본  ← 구글시트 Results 탭 (data/endgame-source.json). 선수 상금(prize/prizeTotal)도 여기서 계산
+data/predict.json   중계진 예측  ← 같은 시트 '중계진 예측 현황입력용' 탭(gid=99072594), tools/predict_import.py
 data/videos.json    경기 → 유튜브 다시보기 매핑 (292/296 연결됨)
 data/site.json      사이트 주소 (baseUrl)
 ```
