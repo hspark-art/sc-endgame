@@ -1,0 +1,103 @@
+[2026-09-12  0:23:37.92] records update 
+구글시트에서 받아오는 중 — ASL 연동본 (첫 번째 탭)
+지금 데이터와 견주기
+  세트 2221 → 2221 (+0) · 매치 1334 → 1334 (+0)
+  달라진 것이 없습니다.
+
+ASL 데이터 정리 완료 → data/asl.json
+  대회 23개 (대국민 스타리그 ~ ASL Season 22)
+  세트 2221 · 매치 1334 · 선수 95 · 맵 97
+  동족전 569세트 (T 247 · P 122 · Z 200) — 상성 집계에서는 빠집니다
+  우승 기록이 있는 대회 22개 / 결승 미확정 1개
+
+  여러 종족으로 출전한 선수 (랜덤 출전)
+    세트에 적힌 종족을 그대로 씁니다. 선수 목록에 보이는 종족만 주 종족으로 표시합니다.
+      이영호 주 종족 T · 다른 종족으로 뛴 줄: P 4줄, Z 5줄
+끝장전 시트에서 받아옵니다 — Results 탭
+  세트 2656줄을 읽었습니다.
+  시트에 잘못 적힌 것을 읽으면서 바로잡았습니다 (원본 시트는 그대로):
+    맵 이름 MatchPoint → Match Point  (20줄)
+    맵 이름 Neo sylphid → Neo Sylphid
+    맵 이름 New Heartbreak Ridge → Neo Heartbreak Ridge Line  (6줄)
+    맵 이름 benzene → Benzene
+    맵 이름 la mancha → La Mancha
+    변현제 종족 Z → P
+  세트     2656 →   2656
+  매치      296 →    296
+  선수       31 →     31
+data/endgame.json 에 기록했습니다. 이제 tools/build.py 를 돌리세요.
+끝장전 기록실 빌드
+  사이트 주소 https://pubgin.com/endgame
+  매치 296 · 세트 2,656 · 선수 31 · 맵 78 · 연도 2019~2026
+  csv/players.csv         31행
+  csv/matches.csv        296행
+  csv/sets.csv          2656행
+  csv/maps.csv            78행
+  csv/headtohead.csv     112행
+  csv/yearly.csv           8행
+  xlsx/sc-endgame.xlsx  104KB
+  csv/asl-players.csv     95행
+  csv/asl-tournaments.csv    23행
+  csv/asl-matches.csv   1334행
+  csv/asl-sets.csv      2221행
+  csv/asl-maps.csv        97행
+  csv/asl-headtohead.csv   731행
+  xlsx/asl.xlsx         168KB
+  index.html            211KB
+  p/*.html              31개 · 합계 1301KB
+  sheets.html           작성
+  img/players/          사진 35/95명 · 넣을 이름은 _사진목록.txt 에
+  admin/*.php           114KB · 선수 95명 자동완성 · 로그인 보호
+  asl/index.html        542KB
+  asl/p/*.html          95개 · 합계 4343KB
+  asl/t/*.html          23개 · 합계 1631KB
+    ASL 대회 23 · 매치 1,334 · 세트 2,221 · 선수 95
+  경로 검사 통과 — 하위 폴더든 도메인 루트든 그대로 옮길 수 있습니다.
+  다시보기 영상 291/296 경기 연결
+완료.
+배포 대상 pubgin.com/www/endgame
+  전체 334개 중 바뀐 파일 156개 (8.1MB)
+  FTPS 실패(error_perm) — 평문 FTP 로 다시 시도합니다.
+  FTP로 접속했습니다. (암호화 안 됨)
+  20/156 올리는 중...
+  40/156 올리는 중...
+  60/156 올리는 중...
+  80/156 올리는 중...
+  100/156 올리는 중...
+  120/156 올리는 중...
+  140/156 올리는 중...
+  156/156 올리는 중...
+  올린 파일 156개
+완료 — https://pubgin.com/endgame/ 에서 확인하세요.
+── 1. 구글시트 받아오기 ──────────────────────────────
+구글시트에서 받아오는 중 — ASL 연동본 (첫 번째 탭)
+  여러 종족으로 출전한 선수 (랜덤 출전 — 세트 기록은 그대로 씁니다):
+    이영호 주 종족 T · 다른 종족으로 뛴 줄: P 4줄, Z 5줄
+
+── 2. 지금 데이터와 견주기 ────────────────────────────
+  세트 2221 → 2221 (+0) · 매치 1334 → 1334 (+0)
+  달라진 것이 없습니다.
+
+── 3. 끝장전 시트 받아오기 ────────────────────────────
+  세트 2656줄을 읽었습니다.
+  시트에 잘못 적힌 것을 읽으면서 바로잡았습니다 (원본 시트는 그대로):
+    맵 이름 MatchPoint → Match Point  (20줄)
+    맵 이름 Neo sylphid → Neo Sylphid
+    맵 이름 New Heartbreak Ridge → Neo Heartbreak Ridge Line  (6줄)
+    맵 이름 benzene → Benzene
+    맵 이름 la mancha → La Mancha
+    변현제 종족 Z → P
+  세트     2656 →   2656
+  매치      296 →    296
+  선수       31 →     31
+
+$ python3 tools/asl_import.py --sheet
+
+$ python3 tools/endgame_import.py --write
+
+$ python3 tools/build.py 
+
+$ python3 tools/deploy.py 
+
+끝났습니다.
+[2026-09-12  0:23:51.69] done 
