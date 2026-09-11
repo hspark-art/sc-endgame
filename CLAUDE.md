@@ -43,6 +43,16 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
 
 슬래시 명령으로도 됩니다 — `/갱신` `/확인` `/배포` `/상태`
 
+**경기기록은 자동 갱신됩니다 (2026-09-12 추가).** `update.py` 를 이 PC 작업
+스케줄러가 **매일 21:30·01:30·05:30·09:30**(하루 4회) 자동 실행합니다
+(`SC Endgame Records Update` → `tools/run-update-hidden.vbs` →
+`tools/_update_run.bat` → `update.py`, 로그 `logs/records-update.log`).
+그 전엔 자동이 없어 수동으로만 돌렸고, 8/22~9/12 사이 안 돌려서 경기기록이
+멈췄던 적이 있습니다. 재등록·이관은 `12_경기기록자동갱신.bat`. **PC 가 그
+시간에 켜져 있어야** 하고(카페24 FTP 국내 전용), 시트가 그대로면 배포 0개라
+자주 돌아도 안전, 기록이 줄면 update.py 가 스스로 멈춥니다. 확인:
+`schtasks /Query /TN "SC Endgame Records Update"`.
+
 ## 작업이 끝나면 바로 올립니다
 
 **사장님이 따로 말하지 않아도 올리세요.** 물어보지 말고 하시면 됩니다.
