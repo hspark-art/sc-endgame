@@ -143,6 +143,10 @@ h1 a{color:transparent}
   cursor:pointer;font-weight:700;font-size:12px;border:1px solid var(--line)}
 .chip:hover{color:var(--txt)}
 .chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.yrrange{align-items:center}
+.yrsel{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.yrsel:hover{border-color:var(--accent)}
+.yrtilde{color:var(--dim);font-weight:700;margin:0 1px}
 .chiplabel{color:var(--dim);font-size:11.5px;letter-spacing:.05em;margin-right:2px}
 
 input.search{width:100%;max-width:280px;padding:8px 12px;border-radius:8px;

@@ -128,15 +128,21 @@ var TABS = [
 ];
 var TAB_IDS = TABS.map(function (t) { return t.id; });
 
+// 기간(연도 범위) 필터: 시작~끝 연도. 기본은 전체 기간.
+var YEARS_ASC = (D.years || []).slice().sort();
+var Y_MIN = YEARS_ASC[0] || '', Y_MAX = YEARS_ASC[YEARS_ASC.length - 1] || '';
 // 정렬 상태는 탭마다 따로 둡니다 — 랭킹의 '매치승' 정렬이 맵 탭으로 새면 안 되니까요.
 var state = {
-  tab: 'rank', year: 'ALL', race: 'ALL', q: '',
+  tab: 'rank', yFrom: Y_MIN, yTo: Y_MAX, race: 'ALL', q: '',
   sort: { rank: { key: 'matchWin', dir: -1 }, maps: { key: 'totalSets', dir: -1 }, prize: { key: 'prizeTotal', dir: -1 } }
 };
 function sortState() { return state.sort[state.tab] || { key: '', dir: -1 }; }
+function isFullRange() { return state.yFrom <= Y_MIN && state.yTo >= Y_MAX; }
+function yrsInRange() { return YEARS_ASC.filter(function (y) { return y >= state.yFrom && y <= state.yTo; }); }
+function rangeLabel() { return isFullRange() ? '통산' : (state.yFrom === state.yTo ? state.yFrom + '년' : state.yFrom + '~' + state.yTo + '년'); }
 
 function writeHash() {
-  var h = state.tab + (state.year !== 'ALL' ? '/' + state.year : '');
+  var h = state.tab + (!isFullRange() ? '/' + state.yFrom + '-' + state.yTo : '');
   if (location.hash.replace(/^#/, '') !== h) {
     history.replaceState(null, '', '#' + h);
   }
@@ -153,7 +159,15 @@ function readHash() {
   }
   var parts = raw.split('/');
   if (TAB_IDS.indexOf(parts[0]) >= 0) state.tab = parts[0];
-  if (parts[1] && D.years.indexOf(parts[1]) >= 0) state.year = parts[1];
+  if (parts[1]) {
+    var rg = parts[1].split('-');
+    if (rg.length === 2 && D.years.indexOf(rg[0]) >= 0 && D.years.indexOf(rg[1]) >= 0) {
+      state.yFrom = rg[0] < rg[1] ? rg[0] : rg[1];
+      state.yTo = rg[0] < rg[1] ? rg[1] : rg[0];
+    } else if (D.years.indexOf(parts[1]) >= 0) {   // 예전 단일 연도 링크 호환
+      state.yFrom = state.yTo = parts[1];
+    }
+  }
   return false;
 }
 
@@ -172,19 +186,27 @@ function renderTabs() {
 }
 
 /* ── 필터 칩 ───────────────────────────────────────────────── */
-function yearChips() {
-  var counts = {};
-  D.yearly.forEach(function (y) { counts[y.year] = y.matches; });
-  var opts = [['ALL', '전체', D.global.totalMatches]].concat(
-    D.years.map(function (y) { return [y, y, counts[y] || 0]; }));
+function yearRange() {
   var el = document.createElement('div');
-  el.className = 'chips';
-  el.innerHTML = '<span class="chiplabel">연도</span>' + opts.map(function (o) {
-    return '<div class="chip' + (state.year === o[0] ? ' on' : '') + '" data-year="' + o[0] + '">' +
-      o[1] + '<span class="n" style="opacity:.6;margin-left:5px;font-size:11px">' + o[2] + '</span></div>';
-  }).join('');
-  el.querySelectorAll('[data-year]').forEach(function (c) {
-    c.addEventListener('click', function () { state.year = c.dataset.year; render(); });
+  el.className = 'chips yrrange';
+  function opts(sel) {
+    return YEARS_ASC.map(function (y) {
+      return '<option value="' + y + '"' + (y === sel ? ' selected' : '') + '>' + y + '</option>';
+    }).join('');
+  }
+  el.innerHTML = '<span class="chiplabel">기간</span>' +
+    '<select class="yrsel" data-yr="from" aria-label="시작 연도">' + opts(state.yFrom) + '</select>' +
+    '<span class="yrtilde">~</span>' +
+    '<select class="yrsel" data-yr="to" aria-label="끝 연도">' + opts(state.yTo) + '</select>' +
+    '<div class="chip' + (isFullRange() ? ' on' : '') + '" data-yall="1">전체</div>';
+  el.querySelector('[data-yr="from"]').addEventListener('change', function () {
+    state.yFrom = this.value; if (state.yFrom > state.yTo) state.yTo = state.yFrom; render();
+  });
+  el.querySelector('[data-yr="to"]').addEventListener('change', function () {
+    state.yTo = this.value; if (state.yTo < state.yFrom) state.yFrom = state.yTo; render();
+  });
+  el.querySelector('[data-yall]').addEventListener('click', function () {
+    state.yFrom = Y_MIN; state.yTo = Y_MAX; render();
   });
   return el;
 }
@@ -246,24 +268,37 @@ function bindSort(container, rerender) {
 
 /* ── 선수 랭킹 ─────────────────────────────────────────────── */
 function playerRowsForYear() {
-  // 연도를 고르면 그 해 성적만, 전체면 통산 성적을 씁니다.
+  // 기간을 고르면 그 기간 성적을 연도별로 합산, 전체면 통산 성적을 그대로 씁니다.
+  var full = isFullRange(), yrs = yrsInRange();
   return D.players.map(function (p) {
-    var src = state.year === 'ALL' ? p : (p.yearly[state.year] || null);
-    if (!src) return null;
+    if (full) {
+      return {
+        name: p.name, slug: p.slug, race: p.race,
+        matchWin: p.matchWin, matchLoss: p.matchLoss,
+        setWin: p.setWin, setLoss: p.setLoss,
+        appearances: p.appearances, lastDate: p.lastDate,
+        matchPct: pctNum(p.matchWin, p.matchLoss),
+        setPct: pctNum(p.setWin, p.setLoss)
+      };
+    }
+    var mw = 0, ml = 0, sw = 0, sl = 0, apps = 0, last = '';
+    yrs.forEach(function (y) {
+      var v = p.yearly[y];
+      if (v) { mw += v.matchWin; ml += v.matchLoss; sw += v.setWin; sl += v.setLoss; apps += v.apps;
+        if (v.lastDate && v.lastDate > last) last = v.lastDate; }
+    });
+    if (mw + ml === 0) return null;
     return {
       name: p.name, slug: p.slug, race: p.race,
-      matchWin: src.matchWin, matchLoss: src.matchLoss,
-      setWin: src.setWin, setLoss: src.setLoss,
-      appearances: state.year === 'ALL' ? p.appearances : src.apps,
-      lastDate: state.year === 'ALL' ? p.lastDate : (src.lastDate || ''),
-      matchPct: pctNum(src.matchWin, src.matchLoss),
-      setPct: pctNum(src.setWin, src.setLoss)
+      matchWin: mw, matchLoss: ml, setWin: sw, setLoss: sl,
+      appearances: apps, lastDate: last,
+      matchPct: pctNum(mw, ml), setPct: pctNum(sw, sl)
     };
   }).filter(Boolean);
 }
 
 function renderRank() {
-  view.appendChild(yearChips());
+  view.appendChild(yearRange());
   view.appendChild(raceChips());
   var table = document.createElement('div');
   var input = searchBox('선수 이름 검색...', function () { draw(); });
@@ -301,7 +336,7 @@ function renderRank() {
 
     table.innerHTML = tableHTML(cols, body) +
       '<div class="hint">' +
-      (state.year === 'ALL' ? '통산 기록입니다. ' : state.year + '년 기록만 보고 있습니다. ') +
+      (isFullRange() ? '통산 기록입니다. ' : rangeLabel() + ' 기록만 보고 있습니다. ') +
       '표 머리글을 누르면 그 항목으로 정렬하고, 선수를 누르면 상세 기록으로 이동합니다.</div>';
     bindSort(table, draw);
     table.querySelectorAll('[data-href]').forEach(function (el) {
@@ -322,7 +357,7 @@ function fmtWon(n) {
   return n.toLocaleString() + '원';
 }
 function renderPrize() {
-  view.appendChild(yearChips());
+  view.appendChild(yearRange());
   view.appendChild(raceChips());
   var table = document.createElement('div');
   view.appendChild(searchBox('선수 이름 검색...', function () { draw(); }));
@@ -330,14 +365,15 @@ function renderPrize() {
 
   function draw() {
     var s = sortState();
+    var full = isFullRange(), yrs = yrsInRange();
     var rows = D.players.map(function (p) {
       var src;
-      if (state.year === 'ALL') {
+      if (full) {
         src = { prizeTotal: p.prizeTotal || 0, prize: p.prize || 0, prizeBonus: p.prizeBonus || 0, prizeSets: p.prizeSets || 0 };
       } else {
-        var y = p.prizeYearly && p.prizeYearly[state.year];
-        if (!y) return null;
-        src = { prizeTotal: y.total || 0, prize: y.prize || 0, prizeBonus: y.bonus || 0, prizeSets: y.sets || 0 };
+        var tot = 0, pz = 0, bn = 0, st = 0;
+        yrs.forEach(function (y) { var v = p.prizeYearly && p.prizeYearly[y]; if (v) { tot += v.total; pz += v.prize; bn += v.bonus; st += v.sets; } });
+        src = { prizeTotal: tot, prize: pz, prizeBonus: bn, prizeSets: st };
       }
       return { name: p.name, slug: p.slug, race: p.race, prizeTotal: src.prizeTotal, prize: src.prize, prizeBonus: src.prizeBonus, prizeSets: src.prizeSets };
     }).filter(function (p) {
@@ -367,8 +403,8 @@ function renderPrize() {
     var shownTotal = rows.reduce(function (a, p) { return a + p.prizeTotal; }, 0);
     table.innerHTML = tableHTML(cols, body) +
       '<div class="hint">끝장전은 <b>세트 승리마다 상금</b>을 받습니다(기본 상금 + 더블찬스). ' +
-      (state.year === 'ALL' ? '통산 ' : state.year + '년 ') + '배분 상금 <b>' + fmtWon(shownTotal) + '</b>. ' +
-      '연도를 고르면 그 해 상금만 봅니다. 표 머리글을 누르면 정렬, 선수를 누르면 상세로 이동합니다.</div>';
+      (isFullRange() ? '통산 ' : rangeLabel() + ' ') + '배분 상금 <b>' + fmtWon(shownTotal) + '</b>. ' +
+      '기간을 고르면 그 기간 상금만 봅니다. 표 머리글을 누르면 정렬, 선수를 누르면 상세로 이동합니다.</div>';
     bindSort(table, draw);
     table.querySelectorAll('[data-href]').forEach(function (el) {
       el.addEventListener('click', function () { location.href = el.dataset.href; });
@@ -631,7 +667,7 @@ function renderMaps() {
 
 /* ── 경기 기록 ─────────────────────────────────────────────── */
 function renderRecent() {
-  view.appendChild(yearChips());
+  view.appendChild(yearRange());
   var table = document.createElement('div');
   var input = searchBox('선수 이름으로 경기 찾기...', function () { draw(); });
   view.appendChild(input);
@@ -639,7 +675,8 @@ function renderRecent() {
 
   function draw() {
     var rows = D.matches.filter(function (m) {
-      return (state.year === 'ALL' || m.date.slice(0, 4) === state.year) &&
+      var yr = m.date.slice(0, 4);
+      return (isFullRange() || (yr >= state.yFrom && yr <= state.yTo)) &&
         (!state.q || m.players.some(function (n) { return n.indexOf(state.q) >= 0; }));
     });
     var withVideo = rows.filter(function (m) { return m.youtubeUrl; }).length;
@@ -812,7 +849,7 @@ function renderSeason() {
     el.addEventListener('click', function (e) {
       // 행 안의 선수 이름은 선수 페이지로 가야 하므로 행 클릭을 가로채지 않습니다.
       if (e.target.closest('a')) return;
-      state.year = el.dataset.year;
+      state.yFrom = state.yTo = el.dataset.year;
       state.tab = 'rank';
       render();
     });
