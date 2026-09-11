@@ -175,6 +175,17 @@ def _yt_cell(url, a, b):
             'target="_blank" rel="noopener">🔍 채널에서 찾기</a>' % (YT_SC, q))
 
 
+def fmt_won(n):
+    """상금을 억·만원으로. 1160만원 → '1,160만원', 3.49억 → '3억 4,900만원'."""
+    n = int(n or 0)
+    if n >= 100000000:
+        eok, man = n // 100000000, round((n % 100000000) / 10000)
+        return '%d억%s원' % (eok, (' %s만' % format(man, ',')) if man else '')
+    if n >= 10000:
+        return '%s만원' % format(round(n / 10000), ',')
+    return '%s원' % format(n, ',')
+
+
 def player_page(p, ctx, css):
     """선수 한 명의 정적 상세 페이지."""
     name, race, slug = p['name'], p['race'], p['slug']
@@ -215,6 +226,7 @@ def player_page(p, ctx, css):
                                              pct(p['setWin'], p['setLoss']))),
                ('출전', '%d경기' % p['appearances']),
                ('최다 연승', '%d연승' % strk['bestWin']),
+               ('총 상금', fmt_won(p.get('prizeTotal', 0))),
                ('활동 기간', '%s ~ %s' % (p['firstDate'], p['lastDate'])),
            ])))
 
@@ -238,16 +250,20 @@ def player_page(p, ctx, css):
             '<tr><td class="nm">%s</td><td class="num">%d</td>'
             '<td class="num">%d-%d</td><td class="num">%s</td>'
             '<td class="num">%d-%d</td><td class="num">%s</td>'
+            '<td class="num">%s</td>'
             '<td class="num muted hide-mobile">%s ~ %s</td></tr>'
             % (y, v['apps'], v['matchWin'], v['matchLoss'],
                pct(v['matchWin'], v['matchLoss']), v['setWin'], v['setLoss'],
-               pct(v['setWin'], v['setLoss']), v['firstDate'], v['lastDate']))
+               pct(v['setWin'], v['setLoss']),
+               fmt_won(p.get('prizeYearly', {}).get(y, {}).get('total', 0)),
+               v['firstDate'], v['lastDate']))
     out.append(
         '<div class="card"><div class="cardtitle">연도별 성적</div>'
         '<div class="tblwrap"><table><thead><tr>'
         '<th class="static">연도</th><th class="static num">출전</th>'
         '<th class="static num">매치</th><th class="static num">매치 승률</th>'
         '<th class="static num">세트</th><th class="static num">세트 승률</th>'
+        '<th class="static num">상금</th>'
         '<th class="static num hide-mobile">기간</th></tr></thead><tbody>%s</tbody>'
         '</table></div></div>\n' % ''.join(rows))
 
