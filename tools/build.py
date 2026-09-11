@@ -159,6 +159,7 @@ def hub_data(data, ctx, built_at):
         'players': players,
         'maps': maps,
         'matches': data['matches'],
+        'predict': read_json(os.path.join(ROOT, 'data', 'predict.json'), None),
     }
 
 

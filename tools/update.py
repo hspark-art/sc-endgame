@@ -119,6 +119,11 @@ def main():
 
     run('asl_import.py', '--sheet')
     run('endgame_import.py', *(['--write', '--force'] if args.force else ['--write']))
+    # 중계진 예측(보너스) — 시트 탭이 없거나 실패해도 전체 갱신은 멈추지 않습니다.
+    try:
+        subprocess.run([sys.executable, os.path.join(HERE, 'predict_import.py'), '--write'], cwd=ROOT)
+    except Exception as e:
+        print('  중계진 예측 갱신 건너뜀:', e)
     run('build.py')
     if args.no_deploy:
         print('\n--no-deploy 라 올리지 않았습니다. '

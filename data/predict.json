@@ -1,0 +1,202 @@
+{
+ "totalPredictions": 267,
+ "overallPct": 49.8,
+ "casters": [
+  {
+   "name": "박상현 캐스터",
+   "total": 87,
+   "correct": 49,
+   "pct": 56.3,
+   "index": 13709.0,
+   "roi": 9.4
+  },
+  {
+   "name": "임성춘 해설",
+   "total": 107,
+   "correct": 50,
+   "pct": 46.7,
+   "index": -3331.0,
+   "roi": -1.3
+  },
+  {
+   "name": "이승원 해설",
+   "total": 73,
+   "correct": 34,
+   "pct": 46.6,
+   "index": -35841.0,
+   "roi": -19.3
+  }
+ ],
+ "bySet": [
+  {
+   "set": 1,
+   "total": 17,
+   "correct": 8,
+   "pct": 47.1
+  },
+  {
+   "set": 2,
+   "total": 28,
+   "correct": 16,
+   "pct": 57.1
+  },
+  {
+   "set": 3,
+   "total": 27,
+   "correct": 14,
+   "pct": 51.9
+  },
+  {
+   "set": 4,
+   "total": 31,
+   "correct": 13,
+   "pct": 41.9
+  },
+  {
+   "set": 5,
+   "total": 30,
+   "correct": 16,
+   "pct": 53.3
+  },
+  {
+   "set": 6,
+   "total": 31,
+   "correct": 19,
+   "pct": 61.3
+  },
+  {
+   "set": 7,
+   "total": 34,
+   "correct": 21,
+   "pct": 61.8
+  },
+  {
+   "set": 8,
+   "total": 34,
+   "correct": 12,
+   "pct": 35.3
+  },
+  {
+   "set": 9,
+   "total": 35,
+   "correct": 14,
+   "pct": 40.0
+  }
+ ],
+ "byPlayer": [
+  {
+   "name": "도재욱",
+   "race": "P",
+   "total": 22,
+   "miss": 15,
+   "missPct": 68.2
+  },
+  {
+   "name": "김지성",
+   "race": "T",
+   "total": 37,
+   "miss": 22,
+   "missPct": 59.5
+  },
+  {
+   "name": "김명운",
+   "race": "Z",
+   "total": 31,
+   "miss": 18,
+   "missPct": 58.1
+  },
+  {
+   "name": "이제동",
+   "race": "Z",
+   "total": 18,
+   "miss": 10,
+   "missPct": 55.6
+  },
+  {
+   "name": "박상현",
+   "race": "Z",
+   "total": 66,
+   "miss": 35,
+   "missPct": 53.0
+  },
+  {
+   "name": "김민철",
+   "race": "Z",
+   "total": 21,
+   "miss": 11,
+   "missPct": 52.4
+  },
+  {
+   "name": "이재호",
+   "race": "T",
+   "total": 52,
+   "miss": 27,
+   "missPct": 51.9
+  },
+  {
+   "name": "유영진",
+   "race": "T",
+   "total": 63,
+   "miss": 31,
+   "missPct": 49.2
+  },
+  {
+   "name": "이영웅",
+   "race": "T",
+   "total": 31,
+   "miss": 15,
+   "missPct": 48.4
+  },
+  {
+   "name": "조일장",
+   "race": "Z",
+   "total": 51,
+   "miss": 23,
+   "missPct": 45.1
+  },
+  {
+   "name": "조기석",
+   "race": "T",
+   "total": 20,
+   "miss": 9,
+   "missPct": 45.0
+  },
+  {
+   "name": "장윤철",
+   "race": "P",
+   "total": 69,
+   "miss": 31,
+   "missPct": 44.9
+  },
+  {
+   "name": "변현제",
+   "race": "P",
+   "total": 28,
+   "miss": 10,
+   "missPct": 35.7
+  }
+ ],
+ "byMatchup": [
+  {
+   "key": "PvZ",
+   "label": "프로토스 vs 저그",
+   "total": 62,
+   "correct": 33,
+   "pct": 53.2
+  },
+  {
+   "key": "PvT",
+   "label": "프로토스 vs 테란",
+   "total": 74,
+   "correct": 38,
+   "pct": 51.4
+  },
+  {
+   "key": "TvZ",
+   "label": "테란 vs 저그",
+   "total": 131,
+   "correct": 62,
+   "pct": 47.3
+  }
+ ]
+}

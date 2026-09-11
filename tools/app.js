@@ -119,6 +119,8 @@ window.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeV
 var TABS = [
   { id: 'rank', label: '선수 랭킹' },
   { id: 'prize', label: '상금 랭킹' },
+  { id: 'fun', label: '재밌는 기록' },
+  { id: 'predict', label: '중계진 예측' },
   { id: 'roster', label: '선수 명단' },
   { id: 'maps', label: '맵 통계' },
   { id: 'recent', label: '경기 기록' },
@@ -367,6 +369,179 @@ function renderPrize() {
     });
   }
   draw();
+}
+
+/* ── 재밌는 기록 ───────────────────────────────────────────── */
+function renderFun() {
+  var P = D.players;
+  function nameCell(p, i) {
+    return '<td><span class="rk">' + (i + 1) + '</span>' + raceBadge(p.race) +
+      '<span class="nm">' + esc(p.name) + '</span></td>';
+  }
+  function rows(list, valFn) {
+    return list.length ? list.map(function (p, i) {
+      return '<tr class="rowlink" data-href="' + pageOf(p.slug) + '">' + nameCell(p, i) +
+        '<td class="num">' + valFn(p) + '</td></tr>';
+    }).join('') : '<tr><td colspan="2"><div class="emptybox">없음</div></td></tr>';
+  }
+  function lbCard(title, note, headLabel, body) {
+    return '<div class="card"><div class="cardtitle">' + title +
+      (note ? '<span class="note">' + note + '</span>' : '') + '</div>' +
+      '<div class="tblwrap"><table><thead><tr><th>선수</th><th class="num">' + headLabel +
+      '</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  }
+
+  var winL = P.filter(function (p) { return p.streak.bestWin >= 2; })
+    .sort(function (a, b) { return b.streak.bestWin - a.streak.bestWin; }).slice(0, 10);
+  var lossL = P.filter(function (p) { return p.streak.bestLoss >= 2; })
+    .sort(function (a, b) { return b.streak.bestLoss - a.streak.bestLoss; }).slice(0, 10);
+  var curL = P.filter(function (p) { return Math.abs(p.streak.current) >= 2; })
+    .sort(function (a, b) { return Math.abs(b.streak.current) - Math.abs(a.streak.current); }).slice(0, 12);
+
+  var g1 = document.createElement('div');
+  g1.className = 'grid3';
+  g1.innerHTML =
+    lbCard('🔥 최다 연승', '매치 기준', '연승', rows(winL, function (p) { return '<b>' + p.streak.bestWin + '연승</b>'; })) +
+    lbCard('💧 최다 연패', '매치 기준', '연패', rows(lossL, function (p) { return '<b>' + p.streak.bestLoss + '연패</b>'; })) +
+    lbCard('📈 지금 연속 기록', '최근 경기 기준', '현재', rows(curL, function (p) {
+      var c = p.streak.current;
+      return '<b class="' + (c > 0 ? 'stw' : 'stl') + '">' + (c > 0 ? c + '연승 중' : (-c) + '연패 중') + '</b>';
+    }));
+  view.appendChild(g1);
+
+  var g2 = document.createElement('div');
+  g2.className = 'grid3';
+  g2.innerHTML = RACE_ORDER.map(function (r) {
+    var list = P.filter(function (p) { return p.race === r; })
+      .sort(function (a, b) { return b.matchWin - a.matchWin || b.setWin - a.setWin; }).slice(0, 6);
+    var body = list.map(function (p, i) {
+      return '<tr class="rowlink" data-href="' + pageOf(p.slug) + '">' + nameCell(p, i) +
+        '<td class="num">' + p.matchWin + '-' + p.matchLoss + '</td>' +
+        '<td class="num hide-mobile">' + pct(p.matchWin, p.matchLoss) + '</td></tr>';
+    }).join('');
+    return '<div class="card"><div class="cardtitle">' + raceBadge(r) + RACE_LABEL[r] +
+      ' 최강<span class="note">매치승 순</span></div>' +
+      '<div class="tblwrap"><table><thead><tr><th>선수</th><th class="num">매치</th>' +
+      '<th class="num hide-mobile">승률</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  }).join('');
+  view.appendChild(g2);
+
+  var h2h = {}, pairs = [];
+  D.matches.forEach(function (m) {
+    var pr = m.players.slice().sort();
+    var key = pr[0] + '|' + pr[1];
+    var rec = h2h[key] || (h2h[key] = { a: pr[0], b: pr[1], aw: 0, bw: 0 });
+    if (m.winner === pr[0]) rec.aw++; else rec.bw++;
+  });
+  Object.keys(h2h).forEach(function (key) {
+    var r = h2h[key], g = r.aw + r.bw;
+    if (g < 3) return;                            // 매치(경기) 3번 이상 맞대결
+    var sN, wN, sw, sl;
+    if (r.aw >= r.bw) { sN = r.a; wN = r.b; sw = r.aw; sl = r.bw; }
+    else { sN = r.b; wN = r.a; sw = r.bw; sl = r.aw; }
+    pairs.push({
+      strong: { n: sN, r: D.raceOf[sN], s: D.slugs[sN] || '' },
+      weak: { n: wN, r: D.raceOf[wN], s: D.slugs[wN] || '' },
+      sw: sw, sl: sl, rate: sw / g
+    });
+  });
+  pairs = pairs.filter(function (x) { return x.rate >= 0.7 && x.sw - x.sl >= 2; })
+    .sort(function (a, b) { return b.rate - a.rate || (b.sw - b.sl) - (a.sw - a.sl); }).slice(0, 15);
+  var tbody = pairs.length ? pairs.map(function (x, i) {
+    return '<tr><td><span class="rk">' + (i + 1) + '</span>' + raceBadge(x.strong.r) +
+      '<a class="nm-link" href="' + pageOf(x.strong.s) + '">' + esc(x.strong.n) + '</a></td>' +
+      '<td class="num"><b>' + x.sw + '</b> - ' + x.sl + '</td>' +
+      '<td>' + raceBadge(x.weak.r) + '<a class="nm-link" href="' + pageOf(x.weak.s) + '">' + esc(x.weak.n) + '</a></td>' +
+      '<td class="num hide-mobile">' + Math.round(x.rate * 100) + '%</td></tr>';
+  }).join('') : '<tr><td colspan="4"><div class="emptybox">없음</div></td></tr>';
+  var c3 = document.createElement('div');
+  c3.className = 'card';
+  c3.innerHTML = '<div class="cardtitle">😈 천적 관계<span class="note">3경기 이상 맞대결 · 한쪽이 70%+ 우세</span></div>' +
+    '<div class="tblwrap"><table><thead><tr><th>우세</th><th class="num">경기 전적</th><th>열세</th>' +
+    '<th class="num hide-mobile">우세율</th></tr></thead><tbody>' + tbody + '</tbody></table></div>' +
+    '<div class="hint">같은 두 선수가 여러 번 맞붙어 한쪽이 크게 앞선 매치업입니다. 이름을 누르면 상세로 갑니다.</div>';
+  view.appendChild(c3);
+
+  var c4 = document.createElement('div');
+  c4.className = 'card';
+  c4.innerHTML = '<div class="cardtitle">⚖️ 종족 상성<span class="note">통산 ' +
+    D.global.totalSets.toLocaleString() + '세트 · 세트 기준</span></div>' +
+    MU_KEYS.map(function (k) { return muBar(k, D.mu[k]); }).join('') +
+    '<div class="hint">끝장전 전체에서 종족끼리 맞붙은 세트 승패입니다.</div>';
+  view.appendChild(c4);
+
+  view.querySelectorAll('.rowlink[data-href]').forEach(function (el) {
+    el.addEventListener('click', function () { location.href = el.dataset.href; });
+  });
+}
+
+/* ── 중계진 예측 ───────────────────────────────────────────── */
+function renderPredict() {
+  var pr = D.predict;
+  if (!pr || !pr.casters || !pr.casters.length) {
+    view.innerHTML = '<div class="emptybox">중계진 예측 데이터가 아직 없습니다.</div>';
+    return;
+  }
+  function signed(n, suffix) {
+    if (n == null) return '-';
+    return (n > 0 ? '+' : '') + (suffix === '%' ? n : n.toLocaleString()) + (suffix || '');
+  }
+  var cbody = pr.casters.map(function (c, i) {
+    return '<tr><td><span class="rk">' + (i + 1) + '</span><span class="nm">' + esc(c.name) + '</span></td>' +
+      '<td class="num"><b>' + c.pct + '%</b></td>' +
+      '<td class="num">' + c.correct + ' / ' + c.total + '</td>' +
+      '<td class="num hide-mobile ' + ((c.index || 0) >= 0 ? 'stw' : 'stl') + '">' + signed(c.index) + '</td>' +
+      '<td class="num hide-mobile ' + ((c.roi || 0) >= 0 ? 'stw' : 'stl') + '">' + signed(c.roi, '%') + '</td></tr>';
+  }).join('');
+  var c1 = document.createElement('div'); c1.className = 'card';
+  c1.innerHTML = '<div class="cardtitle">🎙️ 캐스터 적중률<span class="note">전체 ' + pr.totalPredictions +
+    '건 · 평균 ' + pr.overallPct + '%</span></div>' +
+    '<div class="tblwrap"><table><thead><tr><th>캐스터</th><th class="num">적중률</th><th class="num">적중/전체</th>' +
+    '<th class="num hide-mobile">지수</th><th class="num hide-mobile">수익률</th></tr></thead><tbody>' + cbody +
+    '</tbody></table></div><div class="hint">세트마다 캐스터가 승자를 예측한 기록입니다. 지수·수익률은 방송 미션 점수(갯수를 걸어 맞히면 획득) 기준입니다.</div>';
+  view.appendChild(c1);
+
+  var pcts = pr.bySet.map(function (x) { return x.pct; });
+  var lo = Math.min.apply(null, pcts), hi = Math.max.apply(null, pcts);
+  var sbars = pr.bySet.map(function (s) {
+    var cls = s.pct === lo ? ' hard' : (s.pct === hi ? ' easy' : '');
+    return '<div class="prow"><span class="plab">SET ' + s.set + '</span>' +
+      '<div class="pbar"><span class="' + cls.trim() + '" style="width:' + Math.max(s.pct, 8) + '%">' + s.pct + '%</span></div>' +
+      '<span class="pnum">' + s.correct + '/' + s.total + '</span></div>';
+  }).join('');
+  var c2 = document.createElement('div'); c2.className = 'card';
+  c2.innerHTML = '<div class="cardtitle">🎯 세트별 적중률<span class="note">초록=가장 잘맞힘 · 빨강=가장 어려움</span></div>' +
+    sbars + '<div class="hint">몇 번째 세트를 캐스터들이 잘/못 맞혔는지. 승부가 갈리는 후반 세트가 대체로 더 어렵습니다.</div>';
+  view.appendChild(c2);
+
+  var pbody = pr.byPlayer.slice(0, 12).map(function (p, i) {
+    var s = D.slugs[p.name];
+    return '<tr' + (s ? ' class="rowlink" data-href="' + pageOf(s) + '"' : '') + '>' +
+      '<td><span class="rk">' + (i + 1) + '</span>' + raceBadge(p.race) + '<span class="nm">' + esc(p.name) + '</span></td>' +
+      '<td class="num"><b>' + p.missPct + '%</b></td>' +
+      '<td class="num hide-mobile">' + p.miss + ' / ' + p.total + '</td></tr>';
+  }).join('');
+  var c3 = document.createElement('div'); c3.className = 'card';
+  c3.innerHTML = '<div class="cardtitle">😱 예측 파괴자<span class="note">이 선수 경기에서 예측이 빗나간 비율</span></div>' +
+    '<div class="tblwrap"><table><thead><tr><th>선수</th><th class="num">빗나감</th>' +
+    '<th class="num hide-mobile">빗나감/예측</th></tr></thead><tbody>' + pbody + '</tbody></table></div>' +
+    '<div class="hint">이 선수가 낀 세트에서 캐스터 예측이 얼마나 빗나갔는지(12예측 이상). 높을수록 이변이 잦습니다.</div>';
+  view.appendChild(c3);
+
+  var mbody = pr.byMatchup.map(function (m) {
+    return '<tr><td>' + esc(m.label) + '</td><td class="num"><b>' + m.pct + '%</b></td>' +
+      '<td class="num hide-mobile">' + m.correct + ' / ' + m.total + '</td></tr>';
+  }).join('');
+  var c4 = document.createElement('div'); c4.className = 'card';
+  c4.innerHTML = '<div class="cardtitle">🧬 종족전별 예측 적중률</div>' +
+    '<div class="tblwrap"><table><thead><tr><th>종족전</th><th class="num">적중률</th>' +
+    '<th class="num hide-mobile">적중/예측</th></tr></thead><tbody>' + mbody + '</tbody></table></div>' +
+    '<div class="hint">어느 종족 대결이 예측하기 쉬운지/어려운지. 낮을수록 변수가 많다는 뜻입니다.</div>';
+  view.appendChild(c4);
+
+  view.querySelectorAll('.rowlink[data-href]').forEach(function (el) {
+    el.addEventListener('click', function () { location.href = el.dataset.href; });
+  });
 }
 
 /* ── 선수 명단 ─────────────────────────────────────────────── */
@@ -654,6 +829,8 @@ function render() {
   view.innerHTML = '';
   if (state.tab === 'rank') renderRank();
   else if (state.tab === 'prize') renderPrize();
+  else if (state.tab === 'fun') renderFun();
+  else if (state.tab === 'predict') renderPredict();
   else if (state.tab === 'roster') renderRoster();
   else if (state.tab === 'maps') renderMaps();
   else if (state.tab === 'recent') renderRecent();

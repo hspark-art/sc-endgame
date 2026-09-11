@@ -154,7 +154,7 @@ def normalize_sets(sets):
 
 def load_sets():
     """시트에서 읽고 잘못 적힌 것까지 바로잡아 돌려줍니다."""
-    sets = fetch_sets(*load_source())
+    sets, _prizes = fetch_sets(*load_source())
     return normalize_sets(sets)
 
 
@@ -303,9 +303,9 @@ def build_maps(matches, setlist):
     return maps
 
 
-def build_doc(sets, built_at, prizes):
+def build_doc(sets, built_at, prizes=None):
     matches, setlist = group_matches(sets)
-    players = build_players(matches, setlist, prizes)
+    players = build_players(matches, setlist, prizes or {})
     maps = build_maps(matches, setlist)
     dates = sorted(m['date'] for m in matches)
     return {
