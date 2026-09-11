@@ -484,7 +484,7 @@ function renderPredict() {
       '<td class="num hide-mobile ' + ((c.roi || 0) >= 0 ? 'stw' : 'stl') + '">' + signed(c.roi, '%') + '</td></tr>';
   }).join('');
   var c1 = document.createElement('div'); c1.className = 'card';
-  c1.innerHTML = '<div class="cardtitle">🎙️ 캐스터 적중률<span class="note">전체 ' + pr.totalPredictions +
+  c1.innerHTML = '<div class="cardtitle">🎙️ 중계진 적중률<span class="note">전체 ' + pr.totalPredictions +
     '건 · 평균 ' + pr.overallPct + '%</span></div>' +
     '<div class="tblwrap"><table><thead><tr><th>캐스터</th><th class="num">적중률</th><th class="num">적중/전체</th>' +
     '<th class="num hide-mobile">지수</th><th class="num hide-mobile">수익률</th></tr></thead><tbody>' + cbody +
