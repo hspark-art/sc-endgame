@@ -53,6 +53,25 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
 자주 돌아도 안전, 기록이 줄면 update.py 가 스스로 멈춥니다. 확인:
 `schtasks /Query /TN "SC Endgame Records Update"`.
 
+## GitHub Actions 로 하루 4회 — PC 가 꺼져 있어도 (2026-09-15)
+
+위 「경기기록 자동 갱신」의 PC 스케줄러와 **같은 시각(KST 21:30·01:30·05:30·09:30)에 GitHub
+서버도** `tools/update.py` 를 돌립니다 — `.github/workflows/update.yml`. 카페24 FTP 가
+2026-09-14 부터 해외 IP 를 허용해 GitHub 서버에서도 올라갑니다(그 전 문서의 "클라우드에선
+막힘"은 옛 정보). 이 저장소(`hspark-art/sc-endgame`)는 **공개**라 Actions 분이 무료·무제한입니다.
+
+- 시크릿 6개(`SC_FTP_HOST/USER/PASS/DIR` · `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`)를 API 로 등록했습니다 —
+  값은 `data/deploy.json`·`data/youtube.json`·`data/slack.json` 과 같습니다(도구들이 원래 환경변수를 먼저 읽음).
+- **저장소 기본 브랜치를 `gh-pages`(옛 GitHub Pages 빌드물, 8/15) → `claude/starcraft-endgame-site-049jip`
+  로 바꿨습니다** — GitHub 예약 실행은 기본 브랜치에서만 돌기 때문입니다. Pages 설정과 사이트에는 영향 없음.
+  ⚠️ 클라우드 세션이 다른 `claude/*` 브랜치에서 작업하면 그 브랜치엔 예약이 안 붙습니다 — 작업 브랜치가 바뀌면 기본 브랜치도 옮기세요.
+- 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json` 만 Actions 캐시로 이어가 바뀐 파일만 올립니다 —
+  첫 실행은 325개 전부(~10분). PC 스케줄러는 그대로 둬도 됩니다(같은 파일을 같은 곳에 올림).
+- 수동 실행: Actions 탭 「기록 자동 갱신」 → Run workflow. 공개 저장소라 로그도 공개 — 스크립트는 호스트 이름 외 접속 정보를 안 찍습니다.
+- 예전 Node 프로젝트의 `sc-endgame-src` 워크플로(비공개, GitHub Pages 배포)는 꺼둔 채 그대로 — 되살리지 마세요(월 2,000분 한도 사고, 지금 사이트와 무관).
+- git push 를 PC 에서 스크립트로 할 때는 자격 증명 관리자가 GUI 로 막힙니다 — `scetalent/.env` 의 토큰으로
+  `git -c credential.helper= -c http.extraheader="AUTHORIZATION: basic <base64(x-access-token:TOKEN)>" push` (Bearer 는 안 됨).
+
 ## 작업이 끝나면 바로 올립니다
 
 **사장님이 따로 말하지 않아도 올리세요.** 물어보지 말고 하시면 됩니다.
