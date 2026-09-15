@@ -68,6 +68,16 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
 - 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json` 만 Actions 캐시로 이어가 바뀐 파일만 올립니다 —
   첫 실행은 325개 전부(~10분). PC 스케줄러는 그대로 둬도 됩니다(같은 파일을 같은 곳에 올림).
 - 수동 실행: Actions 탭 「기록 자동 갱신」 → Run workflow. 공개 저장소라 로그도 공개 — 스크립트는 호스트 이름 외 접속 정보를 안 찍습니다.
+- **삭제(기록 감소)도 클라우드에서 자동 반영 (2026-09-16).** 워크플로가 `update.py --auto-apply-deletes`
+  로 돕니다: 작은 삭제(ASL ≤15세트·끝장전 ≤2경기, **그로스=실제로 줄어든 양** 기준)는 자동 반영하고,
+  그보다 크면 사고 가능성으로 보고 멈춘 뒤 슬랙으로 알립니다. 순증감(총합 차이)이 아니라 그로스로
+  판단하므로 다른 곳이 늘어 총합이 늘어도 큰 삭제를 놓치지 않습니다. 큰 삭제를 정말 반영하려면 여전히
+  PC 의 `9_삭제반영.bat`(또는 `--force`). 상한은 `tools/update.py` 의 `AUTO_DELETE_MAX_ASL_SETS`·
+  `AUTO_DELETE_MAX_EG_MATCHES` 로 조정합니다.
+- **당첨자 명단 등록도 클라우드에서 하루 4회 (2026-09-16).** 같은 워크플로에 `tools/gdoc_import.py`
+  스텝을 추가(`if: always()` — update 가 멈춰도 실행). `gdoc_import.py` 가 FTP 정보를 환경변수
+  (`SC_FTP_*`)로도 읽게 고쳐 클라우드에서 동작합니다. PC 작업 스케줄러 `SC Endgame Winners Doc` 는
+  그대로 둬도(중복 안전) 됩니다.
 - 예전 Node 프로젝트의 `sc-endgame-src` 워크플로(비공개, GitHub Pages 배포)는 꺼둔 채 그대로 — 되살리지 마세요(월 2,000분 한도 사고, 지금 사이트와 무관).
 - git push 를 PC 에서 스크립트로 할 때는 자격 증명 관리자가 GUI 로 막힙니다 — `scetalent/.env` 의 토큰으로
   `git -c credential.helper= -c http.extraheader="AUTHORIZATION: basic <base64(x-access-token:TOKEN)>" push` (Bearer 는 안 됨).

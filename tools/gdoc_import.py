@@ -25,6 +25,7 @@
 건드리지 않습니다 (새 줄만 추가).
 """
 import sys
+import os
 import io
 import re
 import json
@@ -201,6 +202,34 @@ def ftp_connect(cfg):
         return f
 
 
+def ftp_config():
+    """FTP 접속 정보 — 환경변수(SC_FTP_*)를 먼저, 없으면 data/deploy.json.
+
+    클라우드(GitHub Actions)에는 data/deploy.json 이 없으므로 시크릿을
+    환경변수로 넣습니다. deploy.py 와 같은 규칙입니다.
+    """
+    cfg = {}
+    try:
+        cfg = json.load(io.open('data/deploy.json', encoding='utf-8'))
+    except Exception:
+        cfg = {}
+    out = {
+        'host': os.environ.get('SC_FTP_HOST') or cfg.get('host'),
+        'user': os.environ.get('SC_FTP_USER') or cfg.get('user'),
+        'password': os.environ.get('SC_FTP_PASS') or cfg.get('password'),
+        'remoteDir': os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir') or '/www/endgame',
+        'port': int(os.environ.get('SC_FTP_PORT') or cfg.get('port') or 21),
+    }
+    missing = [name for name, key in (('SC_FTP_HOST', 'host'),
+                                      ('SC_FTP_USER', 'user'),
+                                      ('SC_FTP_PASS', 'password')) if not out[key]]
+    if missing:
+        raise SystemExit(
+            'FTP 접속 정보가 없습니다 — data/deploy.json 을 만들거나 %s 를 넣어 주세요.'
+            % ' / '.join(missing))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true', help='올리지 않고 결과만 보기')
@@ -234,7 +263,7 @@ def main():
                 r['date'] or '-', r['sid'], r['nick'], r['prize'] or '(비어 있음)',
                 r['sent'] or '', r['memo']))
 
-    cfg = json.load(io.open('data/deploy.json', encoding='utf-8'))
+    cfg = ftp_config()
     base = cfg.get('remoteDir', '/www/endgame')
     path = base + '/admin/pz/winners.json'
     f = ftp_connect(cfg)

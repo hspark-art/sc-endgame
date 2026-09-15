@@ -64,4 +64,17 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           PYTHONIOENCODING: utf-8
-        run: python3 tools/update.py
+        run: python3 tools/update.py --auto-apply-deletes
+
+      # 당첨자 명단(구글 문서 → 서버 winners.json) — 새 당첨자만 추가(중복 안전).
+      # 위 update 가 멈춰도(대량 삭제 감지 등) 당첨자 등록은 따로 돌게 always().
+      - name: 당첨자 명단 자동 등록
+        if: always()
+        env:
+          SC_FTP_HOST: ${{ secrets.SC_FTP_HOST }}
+          SC_FTP_USER: ${{ secrets.SC_FTP_USER }}
+          SC_FTP_PASS: ${{ secrets.SC_FTP_PASS }}
+          SC_FTP_DIR: ${{ secrets.SC_FTP_DIR }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PYTHONIOENCODING: utf-8
+        run: python3 tools/gdoc_import.py
