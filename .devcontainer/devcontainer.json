@@ -1,0 +1,15 @@
+{
+  "name": "sc-endgame (끝장전·ASL 기록실)",
+  "//": "클라우드에서 이 저장소를 열 때(Claude Code 웹/클라우드 세션, GitHub Codespaces 등) Python 3.12 + Node 22 가 바로 준비되게 합니다. PC 없이 열어 작업하기 위한 설정입니다.",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "//postCreate": "빌드·배포 도구는 표준 라이브러리만 씁니다. openpyxl 은 xlsx 산출물용(없으면 그 부분만 건너뜀)이라 넣어 둡니다. 실패해도 열리는 데 지장 없게 || true.",
+  "postCreateCommand": "pip install --quiet openpyxl || true",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}
