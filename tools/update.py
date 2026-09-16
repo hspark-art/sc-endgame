@@ -51,15 +51,17 @@ AUTO_DELETE_MAX_EG_MATCHES = 2     # 끝장전: 사라진 경기 수
 # 그래서 **영상이 보통 올라오는 시간대에만** 확인합니다 (2026-09-16 사장님 지시).
 # 그 밖의 시간에 뒤져 봐야 새 영상이 없어 할당량만 씁니다.
 #
-#   VIDEO_WINDOW_KST — 확인할 시각(KST, 24시간). (14, 15) 면 14시대·15시대에만.
-#                      빈 튜플 ()로 두면 아무 때도 안 합니다.
+#   VIDEO_WINDOW_KST — 확인할 시각(KST, 24시간). 예: (14, 15) 면 14시대·15시대에만.
 #   그 시간대 안에서도 **한 시간에 한 번만** 봅니다(15분마다 실행되므로 네 번 중 한 번).
 #
-# ⚠ 이 값은 추측하지 말고 실제 업로드 시각을 보고 정하세요:
-#       python3 tools/fetch_videos.py --when
-#   최근 180일 업로드 시각 분포를 찍고, 넣을 값까지 그대로 알려 줍니다.
-#   (자동 갱신 로그에도 매번 이 표가 찍히므로 Actions 로그에서도 볼 수 있습니다.)
-VIDEO_WINDOW_KST = (14, 15)   # ⚠ 실측 전 임시값 — 아래 --when 결과로 바꿀 것
+# ⚠ 지금은 비어 있습니다 — 실제 업로드 시각을 아직 재지 못했습니다.
+#   비어 있으면 **하루 한 번**만 확인합니다(할당량 10,000 중 120 정도라 안전).
+#   채우는 법 — 추측하지 말고 실제 분포를 보고 넣으세요:
+#       python3 tools/fetch_videos.py --when       (PC 에서. API 키가 있어야 합니다)
+#   최근 180일 업로드 시각 분포를 찍고 '(14, 15) 로 두면 됩니다' 까지 알려 줍니다.
+#   하루 한 번 도는 자동 갱신 로그(Actions)에도 같은 표가 찍히니 거기서 봐도 됩니다.
+#   값을 넣는 순간부터는 그 시간대에만 확인합니다.
+VIDEO_WINDOW_KST = ()
 STATE_PATH = os.path.join(ROOT, 'data', '.update-state.json')
 
 # 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
@@ -87,9 +89,9 @@ def main():
     ap.add_argument('--auto-apply-deletes', action='store_true',
                     help='작은 삭제는 자동 반영(=--force), 큰 삭제는 멈춤+경고 — 클라우드용')
     ap.add_argument('--videos', choices=('auto', 'always', 'never'), default='auto',
-                    help='유튜브 다시보기 재조회 — auto(기본): 영상이 보통 올라오는 '
-                         'KST %s 에만' % ('·'.join('%d시' % h for h in VIDEO_WINDOW_KST)
-                                          or '(없음)'))
+                    help='유튜브 다시보기 재조회 — auto(기본): 영상이 보통 올라오는 %s'
+                         % ('KST ' + '·'.join('%d시' % h for h in VIDEO_WINDOW_KST) + ' 에만'
+                            if VIDEO_WINDOW_KST else '시간대 미설정이라 하루 한 번'))
     args = ap.parse_args()
 
     print('── 1. 구글시트 받아오기 ' + '─' * 30)
@@ -202,9 +204,13 @@ def main():
     why = _video_refresh_reason(args.videos, state)
     if why is None:
         kst, _ = _kst_slot()
-        print('\n유튜브 다시보기 재조회는 건너뜁니다 — 지금 KST %02d시, 영상이 보통 '
-              '올라오는 시간대(%s)가 아닙니다. (기존 videos.json 을 씁니다)'
-              % (kst.hour, '·'.join('%d시' % h for h in VIDEO_WINDOW_KST) or '없음'))
+        if VIDEO_WINDOW_KST:
+            print('\n유튜브 다시보기 재조회는 건너뜁니다 — 지금 KST %02d시, 영상이 보통 '
+                  '올라오는 시간대(%s)가 아닙니다. (기존 videos.json 을 씁니다)'
+                  % (kst.hour, '·'.join('%d시' % h for h in VIDEO_WINDOW_KST)))
+        else:
+            print('\n유튜브 다시보기 재조회는 건너뜁니다 — 오늘 몫은 이미 확인했습니다. '
+                  '(기존 videos.json 을 씁니다)')
     else:
         print('\n유튜브 다시보기 재조회 — %s' % why)
         try:
@@ -213,7 +219,9 @@ def main():
             if r.returncode == 0:
                 now = datetime.now(timezone.utc)
                 state['videosCheckedAt'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+                kst_now = _kst_slot(now)[0]
                 state['videosCheckedSlot'] = _kst_slot(now)[1]
+                state['videosCheckedDay'] = kst_now.strftime('%Y-%m-%d')
                 _save_state(state)
             else:
                 print('  유튜브 영상 갱신 실패(코드 %d) — 기존 videos.json 으로 계속합니다.'
@@ -266,6 +274,13 @@ def _video_refresh_reason(mode, state, now=None):
     if mode == 'always':
         return '--videos always 로 지정하셨습니다'
     kst, slot = _kst_slot(now)
+    if not VIDEO_WINDOW_KST:
+        # 업로드 시간대를 아직 재지 못했습니다 — 하루 한 번만 봅니다.
+        # 그때 로그에 찍히는 시각 분포표로 VIDEO_WINDOW_KST 를 정하면 됩니다.
+        if state.get('videosCheckedDay') == kst.strftime('%Y-%m-%d'):
+            return None
+        return ('업로드 시간대가 아직 설정되지 않아 하루 한 번만 확인합니다 '
+                '— 아래 시각 분포를 보고 VIDEO_WINDOW_KST 를 정해 주세요')
     if kst.hour not in VIDEO_WINDOW_KST:
         return None                       # 영상이 올라오는 시간대가 아닙니다
     if state.get('videosCheckedSlot') == slot:

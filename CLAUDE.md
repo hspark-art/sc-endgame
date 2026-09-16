@@ -81,12 +81,31 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
 
 | 무엇 | 언제만 | 왜 |
 | --- | --- | --- |
-| 유튜브 다시보기 재조회 | 새 경기가 생겼거나 **6시간마다** | 매번 하면 두 채널 업로드 목록을 통째로 받아 YouTube API 하루 할당량 10,000 을 넘깁니다 |
+| 유튜브 다시보기 재조회 | **영상이 보통 올라오는 시간대**에만 (아직 미설정 → 하루 한 번) | 매번 하면 두 채널 업로드 목록을 통째로 받아 YouTube API 하루 할당량 10,000 을 넘깁니다 |
 | FTP 업로드 | 바뀐 파일이 있을 때만 | `deploy.py` 가 0개면 접속조차 안 합니다 |
 | 당첨자 문서 확인 | **KST 21~02시**에만 | 낮에는 문서가 바뀔 일이 없습니다. 이 시간대엔 15분 간격이라 예전 PC(30분)보다 촘촘합니다 |
 
-유튜브 주기는 `tools/update.py` 의 `VIDEO_REFRESH_HOURS`, 강제로 돌리려면
-`python3 tools/update.py --videos always` (또는 Actions 탭 Run workflow 에서 `videos: always`).
+### 유튜브 다시보기 — 올라오는 시간대에만 (2026-09-16 사장님 지시)
+
+영상이 올라오지도 않는 시간에 뒤져 봐야 할당량만 씁니다. 그래서 **`tools/update.py` 의
+`VIDEO_WINDOW_KST` 에 적힌 시각(KST)에만** 확인합니다. 그 시간대 안에서도 한 시간에 한 번만
+봅니다(15분마다 실행되므로 네 번 중 한 번).
+
+**⚠ 지금 `VIDEO_WINDOW_KST` 는 비어 있습니다 — 실제 업로드 시각을 아직 못 쟀습니다.**
+비어 있는 동안은 **하루 한 번**만 확인합니다(할당량 10,000 중 120 정도라 안전).
+채우시려면 PC 에서 아래를 한 번 돌리시면 됩니다 (API 키가 있는 곳이어야 합니다).
+
+```bash
+python3 tools/fetch_videos.py --when
+```
+
+최근 180일 업로드 시각 분포를 KST 로 찍고, 전체의 80% 를 덮는 시각만 추려
+`VIDEO_WINDOW_KST 를 (14, 15) 로 두면 됩니다` 처럼 넣을 값까지 알려 줍니다. 그대로
+`tools/update.py` 에 넣으면 그때부터 그 시간대에만 봅니다. 하루 한 번 도는 자동 갱신
+로그(Actions)에도 같은 표가 찍히니 거기서 보셔도 됩니다.
+
+강제로 지금 돌리려면 `python3 tools/update.py --videos always`
+(또는 Actions 탭 Run workflow → `videos: always`). 아예 끄려면 `--videos never`.
 마지막 조회 시각은 `data/.update-state.json` 에 남고 Actions 캐시로 이어집니다. **조회에
 실패하면 상태를 안 남기므로 다음 실행에서 다시 시도합니다.**
 
