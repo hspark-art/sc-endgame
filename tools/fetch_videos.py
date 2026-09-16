@@ -81,6 +81,9 @@ def all_videos(playlist_id, key, cap=3000):
                 'desc': (sn.get('description') or '')[:400],
                 'published': (it['contentDetails'].get('videoPublishedAt')
                               or sn.get('publishedAt') or '')[:10],
+                # 전체 시각(UTC). '보통 몇 시에 올라오나'를 보려고 함께 담습니다 — report_hours().
+                'publishedAt': (it['contentDetails'].get('videoPublishedAt')
+                                or sn.get('publishedAt') or ''),
             })
         token = d.get('nextPageToken')
         if not token:
@@ -185,6 +188,54 @@ def stored_key():
         return None
 
 
+def report_hours(videos, days=180):
+    """영상이 보통 몇 시(KST)에 올라오는지 세어 보여 줍니다.
+
+    update.py 의 VIDEO_WINDOW_KST — '이 시간대에만 유튜브를 확인한다' 는 값을
+    무엇으로 둘지 정하려고 씁니다. 추측하지 말고 이 표를 보고 정하세요.
+    """
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+    hours, recent = {}, 0
+    for v in videos:
+        raw = v.get('publishedAt') or ''
+        try:
+            t = datetime.strptime(raw[:19], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue                      # 옛 캐시에는 시각이 없습니다
+        if (now - t).days > days:
+            continue
+        kst = t + timedelta(hours=9)
+        hours[kst.hour] = hours.get(kst.hour, 0) + 1
+        recent += 1
+
+    print('\n── 최근 %d일 업로드 시각 분포 (KST) — 영상 %d개 ──' % (days, recent))
+    if not recent:
+        print('  시각 정보가 없습니다. --refresh 로 다시 받으면 채워집니다.')
+        return []
+    for h in range(24):
+        n = hours.get(h, 0)
+        if n:
+            print('  %02d시  %3d개  %s' % (h, n, '█' * min(40, n)))
+
+    # 가끔 한두 개 올라온 시각까지 넣으면 창이 쓸데없이 넓어집니다.
+    # 많은 쪽부터 담아 전체의 80% 를 덮을 때까지만, 5% 도 안 되는 시각은 뺍니다.
+    busiest, covered = [], 0
+    for h, n in sorted(hours.items(), key=lambda kv: -kv[1]):
+        if n < recent * 0.05:
+            break
+        busiest.append(h)
+        covered += n
+        if covered >= recent * 0.8:
+            break
+    print('  → 주로 올라오는 시각: %s  (최근 업로드의 %d%%)'
+          % (', '.join('%02d시' % h for h in sorted(busiest)),
+             round(covered * 100.0 / recent)))
+    print('     tools/update.py 의 VIDEO_WINDOW_KST 를 (%s) 로 두면 됩니다.'
+          % ', '.join(str(h) for h in sorted(busiest)))
+    return sorted(busiest)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--key', default=os.environ.get('YOUTUBE_API_KEY') or stored_key())
@@ -193,6 +244,8 @@ def main():
     ap.add_argument('--cache', default=os.path.join(HERE, '.yt-cache.json'),
                     help='받아온 영상 목록을 저장해 두는 곳 (할당량 절약)')
     ap.add_argument('--refresh', action='store_true', help='캐시를 무시하고 다시 받기')
+    ap.add_argument('--when', action='store_true',
+                    help='영상이 보통 몇 시에 올라오는지만 보고 끝냅니다')
     ap.add_argument('--replace', action='store_true',
                     help='앞서 자동으로 넣은 항목도 새 결과로 덮어쓰기')
     args = ap.parse_args()
@@ -218,6 +271,10 @@ def main():
             videos.extend(got)
         json.dump(videos, io.open(args.cache, 'w', encoding='utf-8'),
                   ensure_ascii=False)
+
+    report_hours(videos)
+    if args.when:
+        return
 
     data = json.load(io.open(os.path.join(ROOT, 'data', 'endgame.json'), encoding='utf-8'))
     matches = data['matches']

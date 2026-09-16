@@ -27,7 +27,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -45,12 +45,21 @@ AUTO_DELETE_MAX_EG_MATCHES = 2     # 끝장전: 사라진 경기 수
 
 # 유튜브 다시보기 재조회(fetch_videos --refresh)는 두 채널의 업로드 목록을 통째로
 # 받아오는 '비싼' 작업입니다 — YouTube Data API 하루 할당량(10,000)을 크게 씁니다.
-# 자동 갱신을 15분마다로 촘촘히 돌리게 되면서(2026-09-16) 매번 돌리면 할당량을
-# 넘겨 영상이 아예 안 붙습니다. 그래서 아래일 때만 돕니다.
-#   · 끝장전 경기 수가 달라졌다 (= 다시보기를 붙일 새 경기가 생겼다)
-#   · 또는 마지막 조회 후 VIDEO_REFRESH_HOURS 시간이 지났다
-# 그 밖의 갱신은 이미 받아 둔 data/videos.json 을 그대로 씁니다.
-VIDEO_REFRESH_HOURS = 6
+# 자동 갱신이 15분마다 돌기 때문에(2026-09-16) 매번 하면 할당량을 넘겨 영상이
+# 아예 안 붙습니다.
+#
+# 그래서 **영상이 보통 올라오는 시간대에만** 확인합니다 (2026-09-16 사장님 지시).
+# 그 밖의 시간에 뒤져 봐야 새 영상이 없어 할당량만 씁니다.
+#
+#   VIDEO_WINDOW_KST — 확인할 시각(KST, 24시간). (14, 15) 면 14시대·15시대에만.
+#                      빈 튜플 ()로 두면 아무 때도 안 합니다.
+#   그 시간대 안에서도 **한 시간에 한 번만** 봅니다(15분마다 실행되므로 네 번 중 한 번).
+#
+# ⚠ 이 값은 추측하지 말고 실제 업로드 시각을 보고 정하세요:
+#       python3 tools/fetch_videos.py --when
+#   최근 180일 업로드 시각 분포를 찍고, 넣을 값까지 그대로 알려 줍니다.
+#   (자동 갱신 로그에도 매번 이 표가 찍히므로 Actions 로그에서도 볼 수 있습니다.)
+VIDEO_WINDOW_KST = (14, 15)   # ⚠ 실측 전 임시값 — 아래 --when 결과로 바꿀 것
 STATE_PATH = os.path.join(ROOT, 'data', '.update-state.json')
 
 # 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
@@ -78,8 +87,9 @@ def main():
     ap.add_argument('--auto-apply-deletes', action='store_true',
                     help='작은 삭제는 자동 반영(=--force), 큰 삭제는 멈춤+경고 — 클라우드용')
     ap.add_argument('--videos', choices=('auto', 'always', 'never'), default='auto',
-                    help='유튜브 다시보기 재조회 — auto(기본): 새 경기가 생겼거나 %d시간마다'
-                         % VIDEO_REFRESH_HOURS)
+                    help='유튜브 다시보기 재조회 — auto(기본): 영상이 보통 올라오는 '
+                         'KST %s 에만' % ('·'.join('%d시' % h for h in VIDEO_WINDOW_KST)
+                                          or '(없음)'))
     args = ap.parse_args()
 
     print('── 1. 구글시트 받아오기 ' + '─' * 30)
@@ -189,19 +199,21 @@ def main():
     # 비싼 작업이라 필요할 때만 돕니다(위 VIDEO_REFRESH_HOURS 설명 참고).
     # 키·할당량 문제로 실패해도 기존 videos.json 으로 계속 진행합니다.
     state = _load_state()
-    match_count = eg_new['global']['totalMatches']
-    why = _video_refresh_reason(args.videos, match_count, state)
+    why = _video_refresh_reason(args.videos, state)
     if why is None:
-        print('\n유튜브 다시보기 재조회는 건너뜁니다 — 새 경기가 없고 마지막 조회 후 '
-              '%d시간이 안 됐습니다. (기존 videos.json 을 씁니다)' % VIDEO_REFRESH_HOURS)
+        kst, _ = _kst_slot()
+        print('\n유튜브 다시보기 재조회는 건너뜁니다 — 지금 KST %02d시, 영상이 보통 '
+              '올라오는 시간대(%s)가 아닙니다. (기존 videos.json 을 씁니다)'
+              % (kst.hour, '·'.join('%d시' % h for h in VIDEO_WINDOW_KST) or '없음'))
     else:
         print('\n유튜브 다시보기 재조회 — %s' % why)
         try:
             r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_videos.py'),
                                 '--refresh', '--write'], cwd=ROOT)
             if r.returncode == 0:
-                state['videosCheckedAt'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-                state['videosMatchCount'] = match_count
+                now = datetime.now(timezone.utc)
+                state['videosCheckedAt'] = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+                state['videosCheckedSlot'] = _kst_slot(now)[1]
                 _save_state(state)
             else:
                 print('  유튜브 영상 갱신 실패(코드 %d) — 기존 videos.json 으로 계속합니다.'
@@ -241,23 +253,24 @@ def _save_state(state):
         print('  (갱신 상태 저장 건너뜀 — %s)' % e)
 
 
-def _video_refresh_reason(mode, match_count, state):
+def _kst_slot(now=None):
+    """지금이 KST 로 몇 년-월-일-몇 시인지. '이 시간대에 이미 봤나'를 가리는 열쇠입니다."""
+    kst = (now or datetime.now(timezone.utc)) + timedelta(hours=9)
+    return kst, kst.strftime('%Y-%m-%dT%H')
+
+
+def _video_refresh_reason(mode, state, now=None):
     """지금 유튜브를 다시 뒤질 이유. 없으면 None (= 건너뜀)."""
     if mode == 'never':
         return None
     if mode == 'always':
         return '--videos always 로 지정하셨습니다'
-    if state.get('videosMatchCount') != match_count:
-        return '경기 수가 %s → %d 로 바뀌었습니다' % (state.get('videosMatchCount'), match_count)
-    try:
-        prev = datetime.strptime(state.get('videosCheckedAt') or '',
-                                 '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
-    except ValueError:
-        return '마지막으로 조회한 기록이 없습니다'
-    hours = (datetime.now(timezone.utc) - prev).total_seconds() / 3600.0
-    if hours >= VIDEO_REFRESH_HOURS:
-        return '마지막 조회 후 %.1f시간 지났습니다' % hours
-    return None
+    kst, slot = _kst_slot(now)
+    if kst.hour not in VIDEO_WINDOW_KST:
+        return None                       # 영상이 올라오는 시간대가 아닙니다
+    if state.get('videosCheckedSlot') == slot:
+        return None                       # 이 시간대에는 이미 봤습니다
+    return 'KST %02d시 — 영상이 보통 올라오는 시간대입니다' % kst.hour
 
 
 def _asl_lost_sets(old, new):
