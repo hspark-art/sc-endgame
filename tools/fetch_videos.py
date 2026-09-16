@@ -231,9 +231,17 @@ def report_hours(videos, days=180):
     print('  → 주로 올라오는 시각: %s  (최근 업로드의 %d%%)'
           % (', '.join('%02d시' % h for h in sorted(busiest)),
              round(covered * 100.0 / recent)))
+
+    # 위 목록은 중간에 구멍이 날 수 있습니다(예: 13시는 많고 14시는 적고 15시는 많음).
+    # 그 구멍 시간에 올라온 영상은 다음 날에야 붙으므로, 처음~끝을 이어 붙인
+    # 구간을 함께 권합니다 — 몇 시간 더 보는 값이 크지 않습니다.
+    span = list(range(min(busiest), max(busiest) + 1))
+    span_n = sum(hours.get(h, 0) for h in span)
     print('     tools/update.py 의 VIDEO_WINDOW_KST 를 (%s) 로 두면 됩니다.'
-          % ', '.join(str(h) for h in sorted(busiest)))
-    return sorted(busiest)
+          % ', '.join(str(h) for h in span))
+    print('     (%02d~%02d시를 이어서 보는 값 — 최근 업로드의 %d%% 를 덮습니다)'
+          % (span[0], span[-1], round(span_n * 100.0 / recent)))
+    return span
 
 
 def main():
