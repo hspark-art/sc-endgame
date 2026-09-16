@@ -27,6 +27,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -41,6 +42,16 @@ import endgame_import                             # noqa: E402
 # 줄어든 양'으로 판단하므로, 다른 곳이 늘어 총합이 늘어도 큰 삭제를 놓치지 않습니다.
 AUTO_DELETE_MAX_ASL_SETS = 15      # ASL: 줄어든 세트 수 (한 라운드 = 보통 16세트 이상)
 AUTO_DELETE_MAX_EG_MATCHES = 2     # 끝장전: 사라진 경기 수
+
+# 유튜브 다시보기 재조회(fetch_videos --refresh)는 두 채널의 업로드 목록을 통째로
+# 받아오는 '비싼' 작업입니다 — YouTube Data API 하루 할당량(10,000)을 크게 씁니다.
+# 자동 갱신을 15분마다로 촘촘히 돌리게 되면서(2026-09-16) 매번 돌리면 할당량을
+# 넘겨 영상이 아예 안 붙습니다. 그래서 아래일 때만 돕니다.
+#   · 끝장전 경기 수가 달라졌다 (= 다시보기를 붙일 새 경기가 생겼다)
+#   · 또는 마지막 조회 후 VIDEO_REFRESH_HOURS 시간이 지났다
+# 그 밖의 갱신은 이미 받아 둔 data/videos.json 을 그대로 씁니다.
+VIDEO_REFRESH_HOURS = 6
+STATE_PATH = os.path.join(ROOT, 'data', '.update-state.json')
 
 # 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
 try:
@@ -66,6 +77,9 @@ def main():
     ap.add_argument('--force', action='store_true', help='기록이 줄어도 진행')
     ap.add_argument('--auto-apply-deletes', action='store_true',
                     help='작은 삭제는 자동 반영(=--force), 큰 삭제는 멈춤+경고 — 클라우드용')
+    ap.add_argument('--videos', choices=('auto', 'always', 'never'), default='auto',
+                    help='유튜브 다시보기 재조회 — auto(기본): 새 경기가 생겼거나 %d시간마다'
+                         % VIDEO_REFRESH_HOURS)
     args = ap.parse_args()
 
     print('── 1. 구글시트 받아오기 ' + '─' * 30)
@@ -172,11 +186,28 @@ def main():
     except Exception as e:
         print('  중계진 예측 갱신 건너뜀:', e)
     # 유튜브 다시보기(보너스) — API 로 새 영상까지 다시 받아 경기에 붙임(캐시 무시 --refresh).
+    # 비싼 작업이라 필요할 때만 돕니다(위 VIDEO_REFRESH_HOURS 설명 참고).
     # 키·할당량 문제로 실패해도 기존 videos.json 으로 계속 진행합니다.
-    try:
-        subprocess.run([sys.executable, os.path.join(HERE, 'fetch_videos.py'), '--refresh', '--write'], cwd=ROOT)
-    except Exception as e:
-        print('  유튜브 영상 갱신 건너뜀:', e)
+    state = _load_state()
+    match_count = eg_new['global']['totalMatches']
+    why = _video_refresh_reason(args.videos, match_count, state)
+    if why is None:
+        print('\n유튜브 다시보기 재조회는 건너뜁니다 — 새 경기가 없고 마지막 조회 후 '
+              '%d시간이 안 됐습니다. (기존 videos.json 을 씁니다)' % VIDEO_REFRESH_HOURS)
+    else:
+        print('\n유튜브 다시보기 재조회 — %s' % why)
+        try:
+            r = subprocess.run([sys.executable, os.path.join(HERE, 'fetch_videos.py'),
+                                '--refresh', '--write'], cwd=ROOT)
+            if r.returncode == 0:
+                state['videosCheckedAt'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+                state['videosMatchCount'] = match_count
+                _save_state(state)
+            else:
+                print('  유튜브 영상 갱신 실패(코드 %d) — 기존 videos.json 으로 계속합니다.'
+                      % r.returncode)
+        except Exception as e:
+            print('  유튜브 영상 갱신 건너뜀:', e)
     run('build.py')
     # 데이터 정합성 상시 점검(17종 교차검증) — 어긋나면 콘솔·로그에 남깁니다.
     # 배포는 막지 않습니다(이미 빌드된 것). 자동 갱신마다 돌아 '데이터 감시' 역할.
@@ -192,6 +223,41 @@ def main():
         return
     run('deploy.py')
     print('\n끝났습니다.')
+
+
+def _load_state():
+    """갱신 상태(마지막 유튜브 조회 시각 등). 없으면 빈 것으로 봅니다."""
+    try:
+        return json.load(io.open(STATE_PATH, encoding='utf-8'))
+    except (IOError, OSError, ValueError):
+        return {}
+
+
+def _save_state(state):
+    try:
+        json.dump(state, io.open(STATE_PATH, 'w', encoding='utf-8'),
+                  ensure_ascii=False, indent=1)
+    except (IOError, OSError) as e:
+        print('  (갱신 상태 저장 건너뜀 — %s)' % e)
+
+
+def _video_refresh_reason(mode, match_count, state):
+    """지금 유튜브를 다시 뒤질 이유. 없으면 None (= 건너뜀)."""
+    if mode == 'never':
+        return None
+    if mode == 'always':
+        return '--videos always 로 지정하셨습니다'
+    if state.get('videosMatchCount') != match_count:
+        return '경기 수가 %s → %d 로 바뀌었습니다' % (state.get('videosMatchCount'), match_count)
+    try:
+        prev = datetime.strptime(state.get('videosCheckedAt') or '',
+                                 '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+    except ValueError:
+        return '마지막으로 조회한 기록이 없습니다'
+    hours = (datetime.now(timezone.utc) - prev).total_seconds() / 3600.0
+    if hours >= VIDEO_REFRESH_HOURS:
+        return '마지막 조회 후 %.1f시간 지났습니다' % hours
+    return None
 
 
 def _asl_lost_sets(old, new):

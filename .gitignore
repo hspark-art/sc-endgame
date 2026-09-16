@@ -8,6 +8,8 @@ admin/config.php
 # FTP 접속 정보와 배포 기록 — 서버에만 두고 저장소에는 올리지 않습니다
 data/deploy.json
 data/.deploy-state.json
+# 마지막 유튜브 조회 시각 등 — 실행 상태라 저장소에 둘 것이 아닙니다
+data/.update-state.json
 # 유튜브 API 키 — 서버/PC 에만 둡니다
 data/youtube.json
 

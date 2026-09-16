@@ -2,10 +2,20 @@
 #
 # 하는 일: 이 PC 작업 스케줄러 「SC Endgame Records Update」와 똑같이 tools/update.py 를 돌립니다
 #   구글시트 → data/*.json → 사이트 빌드 → 카페24 FTP(pubgin.com/endgame) 업로드 → 슬랙 알림.
-# 같은 시각(KST 21:30·01:30·05:30·09:30)에 PC 도 돌면 같은 파일을 같은 곳에 올릴 뿐이라 충돌하지 않습니다.
+# 같은 시각에 PC 도 돌면 같은 파일을 같은 곳에 올릴 뿐이라 충돌하지 않습니다.
 #
 # 왜 되는가: 이 저장소는 공개라 Actions 분이 무료·무제한이고(비공개였던 예전 sc-endgame-src 는 월 2,000분에 막혔음),
 #   카페24 FTP 가 2026-09-14 부터 해외 IP 를 허용해 GitHub 서버에서도 올라갑니다.
+#
+# ── 2026-09-16 개편: 시트 수정이 최대한 빨리 사이트에 반영되도록 ──────────────
+#   ① 15분마다 (하루 4회 → 96회). 바뀐 게 없으면 한 번에 40초쯤 걸리고 아무것도 올리지 않습니다.
+#   ② repository_dispatch 입구 추가 — 구글시트에서 수정 즉시 호출하면 몇십 초 만에 반영됩니다
+#      (tools/sheet_push.gs 참고). GitHub 예약 실행은 몇 시간씩 늦는 일이 있어 이쪽이 본선입니다.
+#   ③ 촘촘히 돌려도 안전한 이유 — 비싼 일은 필요할 때만 합니다:
+#      · 유튜브 다시보기 재조회: 새 경기가 생겼거나 6시간마다만 (update.py 의 VIDEO_REFRESH_HOURS).
+#        매번 하면 YouTube API 하루 할당량 10,000 을 넘겨 영상이 아예 안 붙습니다.
+#      · FTP 업로드: deploy.py 가 바뀐 파일이 0개면 접속조차 하지 않습니다.
+#      · 당첨자 문서 확인: 방송 시간대(KST 21~02시)에만. 그 밖의 시간엔 건너뜁니다.
 #
 # Secrets (저장소 Settings → Secrets and variables → Actions) — 2026-09-15 API 로 등록:
 #   SC_FTP_HOST · SC_FTP_USER · SC_FTP_PASS · SC_FTP_DIR   ← data/deploy.json 과 같은 값 (deploy.py 가 환경변수를 먼저 읽음)
@@ -14,20 +24,29 @@
 #
 # 주의
 #   · 저장소에 커밋하지 않습니다 — 원본은 구글시트이고 매번 다시 받으므로 남길 것이 없습니다. (PC 쪽 git 과 충돌 방지)
-#   · data/.deploy-state.json(마지막으로 올린 파일의 해시)은 Actions 캐시로 이어갑니다 — 없으면 325개를 전부 다시 올립니다(~10분).
-#   · update.py 는 기록이 줄면 스스로 멈춥니다(시트에서 줄이 지워지는 사고 방지). 그땐 PC 에서 9_삭제반영.bat.
+#   · data/.deploy-state.json(마지막으로 올린 파일의 해시)과 data/.update-state.json(마지막 유튜브 조회 시각)은
+#     Actions 캐시로 이어갑니다 — 없으면 325개를 전부 다시 올립니다(~10분).
+#   · update.py 는 기록이 크게 줄면 스스로 멈춥니다(시트에서 줄이 지워지는 사고 방지). 그땐 PC 에서 9_삭제반영.bat.
 #   · 공개 저장소라 실행 로그도 공개입니다 — 비밀값은 마스킹되고, 스크립트는 호스트 이름 외에 접속 정보를 찍지 않습니다.
 
 name: 기록 자동 갱신
 
 on:
-  workflow_dispatch: {}
-  schedule:                          # cron 은 UTC — KST = UTC+9. PC 스케줄러와 같은 시각.
-    - cron: '30 12,16,20,0 * * *'    # KST 21:30 · 01:30 · 05:30 · 09:30
+  workflow_dispatch:
+    inputs:
+      videos:
+        description: '유튜브 다시보기 재조회'
+        type: choice
+        default: auto
+        options: [auto, always, never]
+  repository_dispatch:                 # 구글시트가 수정 즉시 두드리는 입구 (tools/sheet_push.gs)
+    types: [sheet-changed]
+  schedule:
+    - cron: '*/15 * * * *'             # 15분마다. 바뀐 게 없으면 아무것도 올리지 않고 끝납니다.
 
 concurrency:
   group: sc-endgame-update
-  cancel-in-progress: false
+  cancel-in-progress: false            # 배포 도중에 끊지 않습니다. 밀린 실행은 최신 것 하나만 남습니다.
 
 permissions:
   contents: read
@@ -46,11 +65,13 @@ jobs:
       - name: openpyxl (엑셀 산출물용 — 없으면 xlsx 만 건너뜀)
         run: pip install --quiet openpyxl
 
-      # 지난 실행이 올린 파일 목록(해시)을 이어받습니다 — 바뀐 파일만 올리기 위해.
-      - name: 배포 상태 이어받기
+      # 지난 실행이 올린 파일 목록(해시)과 마지막 유튜브 조회 시각을 이어받습니다.
+      - name: 실행 상태 이어받기
         uses: actions/cache@v4
         with:
-          path: data/.deploy-state.json
+          path: |
+            data/.deploy-state.json
+            data/.update-state.json
           key: sc-deploy-state-${{ github.run_id }}
           restore-keys: |
             sc-deploy-state-
@@ -64,11 +85,12 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           PYTHONIOENCODING: utf-8
-        run: python3 tools/update.py --auto-apply-deletes
+        run: python3 tools/update.py --auto-apply-deletes --videos "${{ inputs.videos || 'auto' }}"
 
       # 당첨자 명단(구글 문서 → 서버 winners.json) — 새 당첨자만 추가(중복 안전).
       # 위 update 가 멈춰도(대량 삭제 감지 등) 당첨자 등록은 따로 돌게 always().
-      - name: 당첨자 명단 자동 등록
+      # 방송 시간대에만 봅니다 — 낮에는 문서가 바뀔 일이 없어 그냥 낭비입니다.
+      - name: 당첨자 명단 자동 등록 (방송 시간대 KST 21~02시)
         if: always()
         env:
           SC_FTP_HOST: ${{ secrets.SC_FTP_HOST }}
@@ -77,4 +99,11 @@ jobs:
           SC_FTP_DIR: ${{ secrets.SC_FTP_DIR }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           PYTHONIOENCODING: utf-8
-        run: python3 tools/gdoc_import.py
+        run: |
+          H=$(TZ=Asia/Seoul date +%-H)
+          if [ "$H" -ge 21 ] || [ "$H" -le 2 ]; then
+            echo "KST ${H}시 — 방송 시간대라 당첨자 문서를 확인합니다."
+            python3 tools/gdoc_import.py
+          else
+            echo "KST ${H}시 — 방송 시간대(21~02시)가 아니라 건너뜁니다."
+          fi

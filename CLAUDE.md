@@ -27,11 +27,12 @@ FTP 정보 네 가지만 묻고 유튜브 키 찾기·영상 채우기·빌드·
 
 **클라우드에서 열기 (PC 없이 · 웹·휴대폰, 2026-09-16).** 이 저장소는 공개라 Claude Code 웹
 (claude.ai/code)이나 클라우드 세션에서 바로 열어 작업할 수 있습니다. `.devcontainer/devcontainer.json`
-이 있어 열면 Python 3.12·Node 22 가 준비됩니다. 주의: ① 반드시 기본 브랜치
-`claude/starcraft-endgame-site-049jip` 에서 작업(예약 실행이 이 브랜치에만 붙음) · ② `.bat` 은
-윈도우 전용이라 클라우드에선 위 `python3 tools/...` 명령을 직접 사용 · ③ 코드 편집·커밋은 시크릿
-없이 되고, 사이트 갱신·배포는 GitHub Actions 가 자동으로 하므로 클라우드 세션에서 직접
-빌드·배포할 필요는 없음(굳이 돌리려면 `SC_FTP_*` 등 환경변수 필요).
+이 있어 열면 Python 3.12·Node 22 가 준비됩니다. 주의: ① 작업이 끝나면 **기본 브랜치
+`claude/starcraft-endgame-site-049jip` 에 합쳐야** 자동 갱신·배포가 그 변경을 봅니다
+(→ 아래 「⚠️ 브랜치」 절) · ② `.bat` 은 윈도우 전용이라 클라우드에선 위 `python3 tools/...`
+명령을 직접 사용 · ③ 코드 편집·커밋은 시크릿 없이 되고, 사이트 갱신·배포는 GitHub Actions 가
+자동으로 하므로 클라우드 세션에서 직접 빌드·배포할 필요는 없음 · ④ 클라우드 작업방에 따라서는
+카페24 FTP 와 끝장전 구글시트가 프록시에 막힙니다 — 그때는 억지로 우회하지 말고 Actions 에 맡기세요.
 
 명령으로 하시려면 이 둘입니다.
 
@@ -61,20 +62,39 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
 자주 돌아도 안전, 기록이 줄면 update.py 가 스스로 멈춥니다. 확인:
 `schtasks /Query /TN "SC Endgame Records Update"`.
 
-## GitHub Actions 로 하루 4회 — PC 가 꺼져 있어도 (2026-09-15)
+## GitHub Actions 가 대신 돕니다 — PC 가 꺼져 있어도 (2026-09-16 개편)
 
-위 「경기기록 자동 갱신」의 PC 스케줄러와 **같은 시각(KST 21:30·01:30·05:30·09:30)에 GitHub
-서버도** `tools/update.py` 를 돌립니다 — `.github/workflows/update.yml`. 카페24 FTP 가
-2026-09-14 부터 해외 IP 를 허용해 GitHub 서버에서도 올라갑니다(그 전 문서의 "클라우드에선
-막힘"은 옛 정보). 이 저장소(`hspark-art/sc-endgame`)는 **공개**라 Actions 분이 무료·무제한입니다.
+`tools/update.py` 를 **GitHub 서버가 15분마다** 돌립니다 — `.github/workflows/update.yml`.
+구글시트 → `data/*.json` → 사이트 빌드 → 카페24 FTP 업로드 → 슬랙 알림까지 전부입니다.
+카페24 FTP 가 2026-09-14 부터 해외 IP 를 허용해 GitHub 서버에서도 올라갑니다(그 전 문서의
+"클라우드에선 막힘"은 옛 정보). 이 저장소(`hspark-art/sc-endgame`)는 **공개**라 Actions 분이 무료·무제한입니다.
+
+**시트 수정이 곧바로 반영되게 하려면 — `tools/sheet_push.gs`.** GitHub 예약 실행은 서버가
+붐비면 늦습니다(2026-09-15 실측: 예정보다 40분·2.5시간·4.5시간 지연). 그래서 구글시트 쪽에
+앱스 스크립트를 넣어 **시트를 고치는 순간 GitHub 을 직접 두드리게** 해 뒀습니다
+(`repository_dispatch` · 타입 `sheet-changed`). 넣으면 대개 1분 안에 사이트가 바뀝니다.
+설치법은 `tools/sheet_push.gs` 파일 맨 위 주석에 그대로 적어 뒀습니다(깃허브 토큰을
+시트의 스크립트 속성에 한 번만 넣으면 끝). **토큰은 저장소에 적지 마세요.**
+안 넣어도 15분 예약이 보험으로 돌아갑니다.
+
+**15분마다 돌려도 안전한 이유 — 비싼 일은 필요할 때만 합니다.**
+
+| 무엇 | 언제만 | 왜 |
+| --- | --- | --- |
+| 유튜브 다시보기 재조회 | 새 경기가 생겼거나 **6시간마다** | 매번 하면 두 채널 업로드 목록을 통째로 받아 YouTube API 하루 할당량 10,000 을 넘깁니다 |
+| FTP 업로드 | 바뀐 파일이 있을 때만 | `deploy.py` 가 0개면 접속조차 안 합니다 |
+| 당첨자 문서 확인 | **KST 21~02시**에만 | 낮에는 문서가 바뀔 일이 없습니다. 이 시간대엔 15분 간격이라 예전 PC(30분)보다 촘촘합니다 |
+
+유튜브 주기는 `tools/update.py` 의 `VIDEO_REFRESH_HOURS`, 강제로 돌리려면
+`python3 tools/update.py --videos always` (또는 Actions 탭 Run workflow 에서 `videos: always`).
+마지막 조회 시각은 `data/.update-state.json` 에 남고 Actions 캐시로 이어집니다. **조회에
+실패하면 상태를 안 남기므로 다음 실행에서 다시 시도합니다.**
 
 - 시크릿 6개(`SC_FTP_HOST/USER/PASS/DIR` · `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`)를 API 로 등록했습니다 —
   값은 `data/deploy.json`·`data/youtube.json`·`data/slack.json` 과 같습니다(도구들이 원래 환경변수를 먼저 읽음).
-- **저장소 기본 브랜치를 `gh-pages`(옛 GitHub Pages 빌드물, 8/15) → `claude/starcraft-endgame-site-049jip`
-  로 바꿨습니다** — GitHub 예약 실행은 기본 브랜치에서만 돌기 때문입니다. Pages 설정과 사이트에는 영향 없음.
-  ⚠️ 클라우드 세션이 다른 `claude/*` 브랜치에서 작업하면 그 브랜치엔 예약이 안 붙습니다 — 작업 브랜치가 바뀌면 기본 브랜치도 옮기세요.
-- 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json` 만 Actions 캐시로 이어가 바뀐 파일만 올립니다 —
-  첫 실행은 325개 전부(~10분). PC 스케줄러는 그대로 둬도 됩니다(같은 파일을 같은 곳에 올림).
+- 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json`·`data/.update-state.json` 만
+  Actions 캐시로 이어가 바뀐 파일만 올립니다 — 캐시가 없으면 325개 전부(~10분).
+  PC 스케줄러는 그대로 둬도 됩니다(같은 파일을 같은 곳에 올림).
 - 수동 실행: Actions 탭 「기록 자동 갱신」 → Run workflow. 공개 저장소라 로그도 공개 — 스크립트는 호스트 이름 외 접속 정보를 안 찍습니다.
 - **삭제(기록 감소)도 클라우드에서 자동 반영 (2026-09-16).** 워크플로가 `update.py --auto-apply-deletes`
   로 돕니다: 작은 삭제(ASL ≤15세트·끝장전 ≤2경기, **그로스=실제로 줄어든 양** 기준)는 자동 반영하고,
@@ -82,13 +102,33 @@ python3 tools/deploy.py              # 만든 것을 FTP 로 올리기 (바뀐 �
   판단하므로 다른 곳이 늘어 총합이 늘어도 큰 삭제를 놓치지 않습니다. 큰 삭제를 정말 반영하려면 여전히
   PC 의 `9_삭제반영.bat`(또는 `--force`). 상한은 `tools/update.py` 의 `AUTO_DELETE_MAX_ASL_SETS`·
   `AUTO_DELETE_MAX_EG_MATCHES` 로 조정합니다.
-- **당첨자 명단 등록도 클라우드에서 하루 4회 (2026-09-16).** 같은 워크플로에 `tools/gdoc_import.py`
-  스텝을 추가(`if: always()` — update 가 멈춰도 실행). `gdoc_import.py` 가 FTP 정보를 환경변수
-  (`SC_FTP_*`)로도 읽게 고쳐 클라우드에서 동작합니다. PC 작업 스케줄러 `SC Endgame Winners Doc` 는
-  그대로 둬도(중복 안전) 됩니다.
+- **당첨자 명단 등록도 클라우드에서 (2026-09-16).** 같은 워크플로에 `tools/gdoc_import.py`
+  스텝(`if: always()` — update 가 멈춰도 실행). `gdoc_import.py` 가 FTP 정보를 환경변수
+  (`SC_FTP_*`)로도 읽습니다. PC 작업 스케줄러 `SC Endgame Winners Doc` 는 그대로 둬도(중복 안전) 됩니다.
 - 예전 Node 프로젝트의 `sc-endgame-src` 워크플로(비공개, GitHub Pages 배포)는 꺼둔 채 그대로 — 되살리지 마세요(월 2,000분 한도 사고, 지금 사이트와 무관).
 - git push 를 PC 에서 스크립트로 할 때는 자격 증명 관리자가 GUI 로 막힙니다 — `scetalent/.env` 의 토큰으로
   `git -c credential.helper= -c http.extraheader="AUTHORIZATION: basic <base64(x-access-token:TOKEN)>" push` (Bearer 는 안 됨).
+
+## ⚠️ 브랜치 — 클라우드에서 고쳤으면 기본 브랜치까지 올려야 반영됩니다
+
+**기본 브랜치는 `claude/starcraft-endgame-site-049jip` 이고, 이게 사실상 배포 브랜치입니다.**
+GitHub 예약 실행은 기본 브랜치에서만 돌고, 워크플로가 체크아웃한 코드로 `build.py`·`deploy.py`
+를 돌리기 때문입니다. 즉 **기본 브랜치에 올라간 코드가 곧 사이트에 나가는 코드**입니다.
+
+클라우드 세션(Claude Code 웹 등)은 열 때마다 `claude/무작위이름` 브랜치를 받습니다.
+거기서만 커밋하면 **자동 갱신도 배포도 그 변경을 보지 못합니다.** 그래서 작업이 끝나면:
+
+```bash
+git push -u origin <작업브랜치>                        # 작업 브랜치 저장
+git checkout claude/starcraft-endgame-site-049jip     # 기본(=배포) 브랜치로
+git merge --ff-only <작업브랜치>                        # 합치고
+git push -u origin claude/starcraft-endgame-site-049jip
+```
+
+그 뒤 Actions 탭에서 Run workflow 를 누르면 즉시, 안 눌러도 15분 안에 사이트에 반영됩니다.
+**기본 브랜치를 새 작업 브랜치로 옮기지는 마세요** — 세션이 중간에 끊기면 반쯤 고친 코드가
+그대로 배포돼 버립니다. 합치는 쪽이 안전합니다.
+
 
 ## 작업이 끝나면 바로 올립니다
 
