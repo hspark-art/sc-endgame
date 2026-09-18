@@ -13,6 +13,7 @@
 """
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -384,7 +385,7 @@ def main():
     data, video_matched = load()
     ctx = enrich(data)
 
-    now = datetime.now(timezone.utc)
+    now = content_changed_at()
     built_at = now.strftime('%Y-%m-%dT%H:%M:%S.') + '%03dZ' % (now.microsecond // 1000)
     built_ko = now.astimezone(KST).strftime('%Y년 %m월 %d일 %H:%M (KST)')
     photos = find_photos()
@@ -862,6 +863,73 @@ def asl_tournament_detail(data, tour):
 
     return {'rounds': rounds, 'players': players, 'placements': placements,
             'maps': maps.most_common()}
+
+
+# ── '마지막 갱신' 시각 ────────────────────────────────────────
+# 푸터의 '마지막 갱신'과 index.html 안의 builtAt 에 빌드를 돌린 시각을
+# 분 단위로 찍고 있었습니다. 그러면 기록이 하나도 안 바뀐 날에도 모든 HTML 이
+# '달라진 파일'로 보여 통째로 다시 올라갑니다 — 2026-09-18 실측 157개·9.1MB,
+# 하루 8회면 약 73MB. deploy.py 의 '바뀐 것만 올린다'가 무력화된 셈이었습니다.
+#
+# 그래서 **만들어 낼 내용이 같으면 시각도 그대로 둡니다.** 아래 파일들의
+# 해시가 지난번과 같으면 그때 적어 둔 시각을 다시 쓰고, 달라졌을 때만 지금
+# 시각으로 올립니다. 그러면 푸터 문구('마지막 갱신')도 말 그대로가 됩니다.
+#
+# 목록에서 빠진 파일이 있어도 배포는 정상입니다(내용이 달라지면 deploy.py 가
+# 알아서 올립니다) — 푸터 시각만 조금 옛것으로 남을 뿐입니다.
+BUILD_STATE = os.path.join(ROOT, 'data', '.build-state.json')
+
+STAMP_INPUTS = [
+    'data/asl.json', 'data/endgame.json', 'data/videos.json',
+    'data/predict.json', 'data/site.json', 'data/player-photos.json',
+    'tools/build.py', 'tools/render.py', 'tools/site.css',
+    'tools/app.js', 'tools/asl_app.js', 'tools/cg_app.js',
+    'tools/admin_php.py', 'tools/prize_php.py', 'tools/stats.py',
+]
+
+
+def content_fingerprint():
+    """사이트 내용을 정하는 것들의 지문. 같으면 결과물도 같습니다."""
+    h = hashlib.sha1()
+    for rel in STAMP_INPUTS:
+        path = os.path.join(ROOT, rel)
+        h.update(rel.encode('utf-8'))
+        try:
+            with open(path, 'rb') as f:
+                h.update(f.read())
+        except (IOError, OSError):
+            h.update(b'<none>')             # 없으면 '없음'도 지문의 일부
+    # 선수 사진은 파일 이름과 크기만 봅니다 (내용까지 읽을 필요는 없습니다).
+    photo_dir = os.path.join(ROOT, 'img', 'players')
+    try:
+        for name in sorted(os.listdir(photo_dir)):
+            if name.startswith('_'):
+                continue
+            h.update(name.encode('utf-8'))
+            h.update(b'%d' % os.path.getsize(os.path.join(photo_dir, name)))
+    except (IOError, OSError):
+        pass
+    return h.hexdigest()
+
+
+def content_changed_at():
+    """내용이 마지막으로 바뀐 시각(UTC). 안 바뀌었으면 지난번 값 그대로."""
+    fp = content_fingerprint()
+    now = datetime.now(timezone.utc)
+    try:
+        st = json.load(io.open(BUILD_STATE, encoding='utf-8'))
+        if st.get('fingerprint') == fp:
+            return datetime.strptime(st['changedAt'], '%Y-%m-%dT%H:%M:%S.%fZ'
+                                     ).replace(tzinfo=timezone.utc)
+    except (IOError, OSError, ValueError, KeyError):
+        pass                                 # 기록이 없거나 깨졌으면 지금 시각으로
+    stamp = now.strftime('%Y-%m-%dT%H:%M:%S.') + '%03dZ' % (now.microsecond // 1000)
+    try:
+        json.dump({'fingerprint': fp, 'changedAt': stamp},
+                  io.open(BUILD_STATE, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    except (IOError, OSError) as e:
+        print('  (갱신 시각 저장 건너뜀 — %s)' % e)
+    return now
 
 
 # ── 실행 지점은 항상 파일 맨 끝에 두세요 ──────────────────────

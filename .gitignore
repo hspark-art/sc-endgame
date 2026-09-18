@@ -10,6 +10,8 @@ data/deploy.json
 data/.deploy-state.json
 # 마지막 유튜브 조회 시각 등 — 실행 상태라 저장소에 둘 것이 아닙니다
 data/.update-state.json
+# 사이트 내용이 마지막으로 바뀐 시각 — 실행 상태라 저장소에 둘 것이 아닙니다
+data/.build-state.json
 # 유튜브 API 키 — 서버/PC 에만 둡니다
 data/youtube.json
 
