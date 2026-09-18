@@ -424,8 +424,9 @@ if ($act === 'cumulative') {
     $agg = [];
     foreach ($dates as $date) {
         foreach ($perDate[$date] as $nick => $u) {
-            $c = (int)($u['c'] ?? 0); $b = (int)($u['b'] ?? 0);
-            if (!isset($agg[$nick])) { $agg[$nick] = ['c'=>0,'b'=>0,'wc'=>0,'wb'=>0,'days'=>0,'present'=>[]]; }
+            $c = (int)($u['c'] ?? 0); $b = (int)($u['b'] ?? 0); $g = (int)($u['g'] ?? 0);
+            if (!isset($agg[$nick])) { $agg[$nick] = ['c'=>0,'b'=>0,'wc'=>0,'wb'=>0,'days'=>0,'g'=>0,'present'=>[]]; }
+            if ($g) { $agg[$nick]['g'] = $g; }   // 날짜 오름차순이라 가장 최근 등급이 남습니다
             $agg[$nick]['present'][$date] = true;
             $agg[$nick]['days']++;
             $agg[$nick]['c'] += $c; $agg[$nick]['b'] += $b;
@@ -438,9 +439,9 @@ if ($act === 'cumulative') {
         $streak = 0;
         foreach ($rev as $d) { if (!empty($a['present'][$d])) { $streak++; } else { break; } }
         $sid = $sidOf[$nick] ?? '';
-        $streakList[]  = ['nick'=>$nick,'sid'=>$sid,'streak'=>$streak,'days'=>$a['days']];
-        $chatList[]    = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wc'],'days'=>$a['days']];
-        $balloonList[] = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wb'],'days'=>$a['days']];
+        $streakList[]  = ['nick'=>$nick,'sid'=>$sid,'streak'=>$streak,'days'=>$a['days'],'g'=>$a['g']];
+        $chatList[]    = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wc'],'days'=>$a['days'],'g'=>$a['g']];
+        $balloonList[] = ['nick'=>$nick,'sid'=>$sid,'v'=>$a['wb'],'days'=>$a['days'],'g'=>$a['g']];
     }
     usort($streakList, fn($x,$y) => ($y['streak'] <=> $x['streak']) ?: ($y['days'] <=> $x['days']));
     usort($chatList, fn($x,$y) => $y['v'] <=> $x['v']);

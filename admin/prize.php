@@ -977,14 +977,14 @@ async function showPastDay(date){
   try{j=await (await fetch('prize_api.php?act=stats_get&date='+encodeURIComponent(date))).json();}
   catch(e){document.getElementById('pastBody').innerHTML='<div class="warn">불러오기 실패</div>';return;}
   const u=j.users||{}, ud=j.uid||{};
-  const arr=Object.entries(u).map(([nick,x])=>({nick:nick,c:(x&&x.c)||0,b:(x&&x.b)||0}));
+  const arr=Object.entries(u).map(([nick,x])=>({nick:nick,c:(x&&x.c)||0,b:(x&&x.b)||0,g:(x&&x.g)||0}));
   const medal=['🥇','🥈','🥉'];
   function tbl(valKey,label,cls){
     const rows=arr.filter(x=>x[valKey]>0).sort((a,b)=>b[valKey]-a[valKey]).slice(0,50);
     return '<div class="subhead">'+label+'</div><div class="scroll" style="max-height:230px"><table><thead><tr>'+
       '<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">'+(valKey==='c'?'채팅':'별풍선')+'</th></tr></thead><tbody>'+
       (rows.length?rows.map((x,i)=>'<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+
-        '</td><td><b>'+esc(x.nick)+'</b></td><td class="pill acc" style="font-size:11px">'+esc(ud[x.nick]||'-')+
+        '</td><td>'+kingNick(gradeBits(x.g),x.nick)+'</td><td class="pill acc" style="font-size:11px">'+esc(ud[x.nick]||'-')+
         '</td><td class="num '+cls+'">'+x[valKey]+'</td></tr>').join(''):'<tr><td colspan="4" style="color:#8a93a6;padding:12px">없음</td></tr>')+
       '</tbody></table></div>';
   }
@@ -1017,7 +1017,7 @@ async function openCumulative(w){
     return '<div class="subhead">'+title+'</div><div class="scroll" style="max-height:220px"><table><thead><tr>'+
       '<th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">'+valLabel+'</th></tr></thead><tbody>'+
       (rows.length?rows.map((x,i)=>'<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+
-        '</td><td><b>'+esc(x.nick)+'</b></td><td class="pill acc" style="font-size:11px">'+esc(x.sid||'-')+
+        '</td><td>'+kingNick(gradeBits(x.g),x.nick)+'</td><td class="pill acc" style="font-size:11px">'+esc(x.sid||'-')+
         '</td><td class="num '+cls+'">'+x[valKey]+unit+'</td></tr>').join(''):'<tr><td colspan="4" style="color:#8a93a6;padding:12px">아직 없습니다</td></tr>')+
       '</tbody></table></div>';
   }
@@ -1122,6 +1122,7 @@ function clearStats(){
   if(!confirm('집계·계정·채팅 로그를 모두 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
   for(const k in users)delete users[k];
   for(const k in uid)delete uid[k];
+  for(const k in gradeOf)delete gradeOf[k];
   recent.length=0;logBuf.length=0;macroCount=0;
   try{localStorage.removeItem(LSKEY);}catch(e){}
   if(!IS_TEST_CH&&sess.date){
@@ -1194,13 +1195,26 @@ function nkClass(e){
   const g=e.sup?'sup':e.sub?'sub':e.fan?'fan':(gradeOf[e.nick]||'');
   return g==='sup'?'nk-yeol':g==='sub'?'nk-sub':g==='fan'?'nk-fan':'';
 }
-/* 활약표(채팅왕·후원왕)용 — 저장해 둔 등급(users[nick].g)을 채팅 줄과 같은 모양으로 폅니다.
-   그래야 fbadges()·nkClass() 를 그대로 재사용해 색·배지가 채팅창과 어긋나지 않습니다.
-   기록이 없으면 그 세션 채팅에서 본 gradeOf 로 nkClass 가 알아서 보완합니다. */
-function gradeOfUser(nick){
-  const u=users[nick], g=(u&&u.g)||0;
-  return {nick:nick, fan:!!(g&1), sup:!!(g&2), sub:!!(g&4)};
+/* 등급 비트(1=팬 · 2=열혈 · 4=구독)를 채팅 줄과 같은 모양으로 폅니다.
+   nick 을 비워 두는 것은 일부러입니다 — nkClass 가 gradeOf(오늘 채팅 캐시)로 보완하지
+   못하게 해서, 지난 방송·누적 표에 '오늘 등급'이 섞이지 않게 합니다. */
+function gradeBits(g){
+  g=g|0;
+  return {nick:'', fan:!!(g&1), sup:!!(g&2), sub:!!(g&4)};
 }
+/* 지금 방송 활약표용 — 등급 출처가 둘이라 반드시 합쳐서 봅니다.
+     users[nick].g  저장되는 기록. 팬·열혈·구독을 다 담고 새로고침 뒤에도 남습니다.
+     gradeOf[nick]  오늘 채팅에서 본 것. 한 가지만 담고 저장되지 않습니다.
+   ⚠ 처음 넣을 때(2026-09-18) users[].g 만 봤더니, 색은 nkClass 가 gradeOf 로 보완하는데
+     배지는 보완이 안 돼 '색은 있는데 마크가 없는' 사람이 생겼습니다. 그래서 합칩니다.
+     예전에 저장된 기록에는 g 가 아예 없어서 이 보완이 꼭 필요합니다. */
+function gradeOfUser(nick){
+  const u=users[nick], e=gradeBits((u&&u.g)||0), s=gradeOf[nick]||'';
+  if(s==='fan')e.fan=true; else if(s==='sup')e.sup=true; else if(s==='sub')e.sub=true;
+  return e;
+}
+/* 활약표 닉네임 한 칸 — 배지 + 등급 색. 지금·지난 방송·누적 세 곳이 같은 모양을 쓰게 합니다. */
+function kingNick(e,nick){return fbadges(e)+'<b class="kn '+nkClass(e)+'">'+esc(nick)+'</b>';}
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
   if(!n){document.getElementById('dupwarn').innerHTML='';return;}
@@ -1350,8 +1364,7 @@ function paint(){
     return list.slice(0,100).map((u,i)=>{
       const val=u[valKey], pct=Math.round(val/maxv*100), g=gradeOfUser(u.nick);
       return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
-      '<td><div class="actbar" style="width:'+pct+'%"></div>'+fbadges(g)
-        +'<b class="kn '+nkClass(g)+'">'+esc(u.nick)+'</b></td>'+
+      '<td><div class="actbar" style="width:'+pct+'%"></div>'+kingNick(g,u.nick)+'</td>'+
       '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td>'+
       '<td class="num '+cls+'">'+val+'</td>'+
       '<td class="num">'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
