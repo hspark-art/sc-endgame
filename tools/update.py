@@ -209,14 +209,16 @@ def main():
     state = _load_state()
     why = _video_refresh_reason(args.videos, state)
     if why is None:
-        kst, _ = _kst_slot()
-        if VIDEO_WINDOW_KST:
-            print('\n유튜브 다시보기 재조회는 건너뜁니다 — 지금 KST %02d시, 영상이 보통 '
-                  '올라오는 시간대(%s)가 아닙니다. (기존 videos.json 을 씁니다)'
-                  % (kst.hour, '·'.join('%d시' % h for h in VIDEO_WINDOW_KST)))
+        kst, slot = _kst_slot()
+        if not VIDEO_WINDOW_KST:
+            why_not = '오늘 몫은 이미 확인했습니다'
+        elif kst.hour not in VIDEO_WINDOW_KST:
+            why_not = ('지금 KST %02d시, 영상이 보통 올라오는 시간대(%s)가 아닙니다'
+                       % (kst.hour, '·'.join('%d시' % h for h in VIDEO_WINDOW_KST)))
         else:
-            print('\n유튜브 다시보기 재조회는 건너뜁니다 — 오늘 몫은 이미 확인했습니다. '
-                  '(기존 videos.json 을 씁니다)')
+            why_not = 'KST %02d시대 몫은 이미 확인했습니다 (한 시간에 한 번)' % kst.hour
+        print('\n유튜브 다시보기 재조회는 건너뜁니다 — %s. (기존 videos.json 을 씁니다)'
+              % why_not)
     else:
         print('\n유튜브 다시보기 재조회 — %s' % why)
         try:

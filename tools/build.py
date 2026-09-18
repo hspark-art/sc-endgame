@@ -913,16 +913,33 @@ def content_fingerprint():
 
 
 def content_changed_at():
-    """내용이 마지막으로 바뀐 시각(UTC). 안 바뀌었으면 지난번 값 그대로."""
+    """내용이 마지막으로 바뀐 시각(UTC). 안 바뀌었으면 지난번 값 그대로.
+
+    왜 그대로 쓰는지는 위 주석 참고. 판단 근거를 로그에 남깁니다 — 배포가
+    0개로 안 떨어질 때 어디가 어긋났는지 이 줄만 보면 됩니다.
+    """
     fp = content_fingerprint()
     now = datetime.now(timezone.utc)
+    st = None
     try:
         st = json.load(io.open(BUILD_STATE, encoding='utf-8'))
+    except (IOError, OSError, ValueError):
+        print('  갱신 시각: 지난 기록이 없습니다 (%s) — 지금 시각으로 찍습니다'
+              % os.path.relpath(BUILD_STATE, ROOT))
+    if st is not None:
         if st.get('fingerprint') == fp:
-            return datetime.strptime(st['changedAt'], '%Y-%m-%dT%H:%M:%S.%fZ'
-                                     ).replace(tzinfo=timezone.utc)
-    except (IOError, OSError, ValueError, KeyError):
-        pass                                 # 기록이 없거나 깨졌으면 지금 시각으로
+            try:
+                keep = datetime.strptime(st['changedAt'], '%Y-%m-%dT%H:%M:%S.%fZ'
+                                         ).replace(tzinfo=timezone.utc)
+                print('  갱신 시각: 내용 그대로 — %s 유지 (지문 %s)'
+                      % (st['changedAt'], fp[:12]))
+                return keep
+            except (ValueError, KeyError):
+                print('  갱신 시각: 지난 기록이 깨졌습니다 — 지금 시각으로 찍습니다')
+        else:
+            print('  갱신 시각: 내용이 바뀌었습니다 — 지문 %s → %s'
+                  % (str(st.get('fingerprint'))[:12], fp[:12]))
+
     stamp = now.strftime('%Y-%m-%dT%H:%M:%S.') + '%03dZ' % (now.microsecond // 1000)
     try:
         json.dump({'fingerprint': fp, 'changedAt': stamp},
