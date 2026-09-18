@@ -12,6 +12,12 @@
  *   끝장전 시트(Results 탭이 있는 것)와 ASL 연동본, 둘 다에 넣으면 좋습니다.
  *   하나만 넣어도 그 시트의 수정은 즉시 반영됩니다.
  *
+ * ⚠ 먼저 — 이 스크립트는 **새 파일로 추가**하세요. 있던 코드를 지우면 안 됩니다.
+ *   끝장전 시트에는 이미 「끝장전 데이터 자동화」 프로젝트(Code.gs·자동화.gs)가
+ *   들어 있습니다. 2026-09-18 에 그걸 덮어써서 원래 함수가 지워지고, 그 함수를
+ *   부르던 자동 실행이 실패한 적이 있습니다. 파일 목록 옆 [+] → [스크립트] 로
+ *   새 파일(예: sheet_push)을 만들어 여기에 붙여넣으세요.
+ *
  * 넣는 법 (시트마다 한 번씩)
  *   1. 깃허브에서 토큰을 만듭니다
  *        github.com → 우측 위 프로필 → Settings → Developer settings
@@ -21,7 +27,8 @@
  *        · Expiration        : 1년 정도 (만료되면 다시 만들어 4번만 다시 하면 됩니다)
  *      만들고 나온 토큰 문자열(github_pat_... )을 복사해 둡니다.
  *   2. 시트 상단 메뉴 [확장 프로그램] → [Apps Script]
- *   3. 편집기 내용을 지우고 이 파일 전체를 붙여넣고 저장(💾)
+ *   3. 파일 목록 옆 [+] → [스크립트] 로 새 파일을 만들고(이름 sheet_push),
+ *      거기에 이 파일 전체를 붙여넣고 저장(💾). **있던 파일은 손대지 마세요.**
  *   4. 왼쪽 [프로젝트 설정 ⚙] → 맨 아래 [스크립트 속성] → [속성 추가]
  *        속성 : GITHUB_TOKEN     값 : 1번에서 복사한 토큰
  *      (토큰은 여기에만 둡니다. 스크립트 본문이나 저장소에 적지 마세요.)
@@ -31,7 +38,8 @@
  *
  * 그다음부터
  *   시트를 고치면 알아서 갑니다. 손볼 것 없습니다.
- *   끄고 싶으면 편집기에서 teardown 을 ▶ 실행하세요.
+ *   끄고 싶으면 편집기에서 teardown 을 ▶ 실행하세요 — 이 스크립트가 건 것만
+ *   걷어내고, 시트에 원래 있던 다른 자동 실행은 그대로 둡니다.
  */
 
 var REPO = 'hspark-art/sc-endgame';
@@ -39,20 +47,40 @@ var EVENT = 'sheet-changed';        // .github/workflows/update.yml 의 reposito
 var MIN_GAP_MS = 60 * 1000;         // 연속 수정 때 1분에 한 번만 보냅니다
 
 
+// 이 스크립트가 거는 자동 실행의 함수 이름. 지울 때도 이것만 골라 지웁니다 —
+// 시트에 원래 있던 다른 자동화(예: 「끝장전 데이터 자동화」)를 건드리지 않기 위해서입니다.
+var OWN_HANDLERS = ['onSheetChange', 'flushPending'];
+
+
 /** 5번에서 한 번 실행 — 수정 감지 + 5분마다 밀린 것 보내기, 두 가지를 겁니다. */
 function setup() {
-  teardown();
+  removeOwnTriggers();                       // 두 번 눌러도 중복되지 않게 (내 것만)
   var ss = SpreadsheetApp.getActive();
   ScriptApp.newTrigger('onSheetChange').forSpreadsheet(ss).onChange().create();
   ScriptApp.newTrigger('flushPending').timeBased().everyMinutes(5).create();
   Logger.log('설치했습니다. 이제 시트를 고치면 자동으로 사이트가 갱신됩니다.');
+  Logger.log('이 시트의 다른 자동 실행 %s개는 그대로 두었습니다.',
+             ScriptApp.getProjectTriggers().length - OWN_HANDLERS.length);
 }
 
 
-/** 자동 실행을 모두 걷어냅니다. */
+/** 이 스크립트가 건 자동 실행만 걷어냅니다. 다른 자동화는 그대로 둡니다. */
 function teardown() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
-  Logger.log('자동 실행을 껐습니다.');
+  Logger.log('이 스크립트가 걸어 둔 자동 실행 %s개를 껐습니다. 나머지는 그대로입니다.',
+             removeOwnTriggers());
+}
+
+
+/** OWN_HANDLERS 에 적힌 함수에 걸린 자동 실행만 삭제하고, 지운 개수를 돌려줍니다. */
+function removeOwnTriggers() {
+  var n = 0;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (OWN_HANDLERS.indexOf(t.getHandlerFunction()) !== -1) {
+      ScriptApp.deleteTrigger(t);
+      n++;
+    }
+  });
+  return n;
 }
 
 
