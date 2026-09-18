@@ -32,9 +32,11 @@ th{color:#8a93a6;font-size:11px}
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-radius:5px}
 .chatline:hover{background:#1a2130}
 .chatline b{color:#b9c1cf;font-weight:600}.balloon{color:#ffb020;font-weight:700}
-.chatline b.nk-yeol{color:#ff6b6b;font-weight:800}   /* 열혈 = 빨강(강조) */
-.chatline b.nk-sub{color:#5aa9ff}                    /* 구독 = 파랑 */
-.chatline b.nk-fan{color:#4ade80}                    /* 팬 = 초록, 일반 = 회색(기본) */
+/* 등급 색은 채팅창 밖(시청자 활약표)에서도 같게 씁니다 — .chatline 안에 가두지 않습니다 */
+b.nk-yeol{color:#ff6b6b;font-weight:800}   /* 열혈 = 빨강(강조) */
+b.nk-sub{color:#5aa9ff}                    /* 구독 = 파랑 */
+b.nk-fan{color:#4ade80}                    /* 팬 = 초록, 일반 = 회색(기본) */
+.kn{font-weight:700}                       /* 활약표 닉네임 — 등급이 없으면 표 기본색 그대로 */
 .wtag{color:#ffd166;font-size:calc(11px*var(--cz,1));font-weight:600;margin-left:1px}
 .fb{display:inline-block;font-size:calc(10px*var(--cz,1));font-weight:800;line-height:1.4;border-radius:3px;padding:0 4px;margin-right:3px;vertical-align:middle;letter-spacing:-.3px}
 .fb.yeol{background:#e02e2e;color:#fff;box-shadow:0 0 0 1px #ff9a9a inset}
@@ -145,6 +147,9 @@ function goCh(v){
 <button class="gray" style="margin-left:auto;padding:4px 10px" onclick="toggleMask()" id="maskBtn">🙈 계정 가리기</button>
 <button class="gray" style="padding:4px 10px" onclick="downloadActivity()">⬇ 활약 CSV</button>
 <button class="gray" style="padding:4px 10px" onclick="clearStats()">집계 초기화</button><button class="px" onclick="togglePanel('users')" title="이 창 닫기">✕</button></div>
+<div class="hint" style="margin:-2px 0 4px">등급은 채팅창과 같은 표시입니다 —
+<span class="fb yeol">열</span>열혈 · <span class="fb fan">F</span>팬클럽 · <span class="fb sub">구</span>구독
+<span class="n">(채팅에서 확인된 사람만)</span></div>
 <div class="subhead">💬 채팅왕 <span class="n">채팅 많은 순</span></div>
 <div class="scroll" style="max-height:300px"><table id="kingChat"><thead><tr>
 <th class="num">#</th><th>닉네임</th><th>SOOP계정</th><th class="num">채팅</th><th class="num">당첨</th><th></th>
@@ -351,7 +356,12 @@ function onEvent(ev){
   if(isExcluded(ev.id,ev.nick)){macroCount++;return;}
   ev.s=++chatSeq;
   if(ev.t==='chat'){const _g=ev.sup?'sup':ev.sub?'sub':ev.fan?'fan':'';if(_g)gradeOf[ev.nick]=_g;}
-  if(ev.t==='chat'){bump(ev.nick,'c');if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);ttOnChat(ev);}
+  if(ev.t==='chat'){bump(ev.nick,'c');
+    // 등급을 시청자 기록에도 남깁니다 — 활약표(채팅왕·후원왕)에서 채팅창과 같은 색·배지를 쓰고,
+    // 새로고침이나 저장 뒤에도 유지되게 하려는 것입니다. 1=팬 · 2=열혈 · 4=구독.
+    const _gm=(ev.fan?1:0)|(ev.sup?2:0)|(ev.sub?4:0);
+    if(_gm&&users[ev.nick])users[ev.nick].g=_gm;
+    if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);ttOnChat(ev);}
   else if(ev.t==='balloon'){
     bump(ev.nick,'b',ev.count);if(ev.id)uid[ev.nick]=ev.id;recent.push(ev);
     // 큰 별풍선이면 방송 장면에 감사 배너를 자동으로 띄웁니다
@@ -915,13 +925,27 @@ function initPanels(){
 /* 채팅창 높이 — 드래그한 값을 이 브라우저에 기억 */
 function applyChatZoom(p){
   p=Math.max(50,Math.min(200,Math.round((+p||100)/10)*10));
-  const inner=document.getElementById('chatInner');
-  if(inner)inner.style.setProperty('--cz',(p/100).toFixed(3));
+  // ⚠ 예전에는 이 값을 #chatInner 에 걸었는데, '채팅 지우기'가 #chat 을 통째로 비우면서
+  //   #chatInner 까지 날아가 크기 조절이 그 세션 내내 먹히지 않았습니다 (2026-09-18 수정).
+  //   바깥 상자 #chat 은 지워지지 않으므로 여기에 걸고, 안쪽은 상속으로 따라옵니다.
+  const box0=document.getElementById('chat');
+  if(box0)box0.style.setProperty('--cz',(p/100).toFixed(3));
   const v=document.getElementById('chatZoomV'); if(v)v.textContent=p+'%';
   const s=document.getElementById('chatZoom'); if(s&&+s.value!==p)s.value=p;
   const box=document.getElementById('chat'); if(box)box.scrollTop=box.scrollHeight;
   try{localStorage.setItem('pzChatZoom',p);}catch(e){}
 }
+/* 채팅 줄이 들어가는 안쪽 상자. 없으면 다시 만들어 줍니다 —
+   이게 사라지면 글자 크기(--cz)와 #chatInner 전용 CSS 가 통째로 먹통이 됩니다. */
+function chatBody(){
+  const box=document.getElementById('chat'); if(!box)return null;
+  let inner=document.getElementById('chatInner');
+  if(!inner){inner=document.createElement('div');inner.id='chatInner';box.appendChild(inner);}
+  return inner;
+}
+/* 채팅 '내용만' 비웁니다. box.innerHTML='' 로 지우면 안쪽 상자까지 날아갑니다. */
+function clearChatBody(){const inner=chatBody(); if(inner)inner.innerHTML='';}
+
 function initChatResize(){
   const el=document.getElementById('chat'); if(!el)return;
   try{const z=localStorage.getItem('pzChatZoom'); applyChatZoom(z||100);}catch(e){applyChatZoom(100);}
@@ -1093,8 +1117,7 @@ async function loadGdoc(){
     gdoc={names:g.names||[],ids:g.ids||[]};
     document.getElementById('gdocInfo').textContent=g.note||'';}catch(e){}
 }
-function clearChat(){recent.length=0;
-  document.getElementById('chat').innerHTML='';}
+function clearChat(){recent.length=0;clearChatBody();}
 function clearStats(){
   if(!confirm('집계·계정·채팅 로그를 모두 초기화할까요? 당첨자 시트는 그대로 둡니다.'))return;
   for(const k in users)delete users[k];
@@ -1107,7 +1130,7 @@ function clearStats(){
   }
   sess.date=sess.on?todayStr():'';
   if(!IS_TEST_CH)api('session_set',{session:sess});
-  document.getElementById('chat').innerHTML='';paint();}
+  clearChatBody();paint();}
 function downloadLedger(){
   if(!ST||!ST.winners.list.length)return alert('당첨 기록이 없습니다');
   const NL=String.fromCharCode(10);
@@ -1170,6 +1193,13 @@ function setChatGrade(g){chatGrade=(chatGrade===g?'':g);paint();}
 function nkClass(e){
   const g=e.sup?'sup':e.sub?'sub':e.fan?'fan':(gradeOf[e.nick]||'');
   return g==='sup'?'nk-yeol':g==='sub'?'nk-sub':g==='fan'?'nk-fan':'';
+}
+/* 활약표(채팅왕·후원왕)용 — 저장해 둔 등급(users[nick].g)을 채팅 줄과 같은 모양으로 폅니다.
+   그래야 fbadges()·nkClass() 를 그대로 재사용해 색·배지가 채팅창과 어긋나지 않습니다.
+   기록이 없으면 그 세션 채팅에서 본 gradeOf 로 nkClass 가 알아서 보완합니다. */
+function gradeOfUser(nick){
+  const u=users[nick], g=(u&&u.g)||0;
+  return {nick:nick, fan:!!(g&1), sup:!!(g&2), sub:!!(g&4)};
 }
 function dupCheck(){
   const n=document.getElementById('pickNick').value.trim();
@@ -1274,7 +1304,7 @@ function paint(){
     +Object.values(users).reduce((a,u)=>a+u.c,0)+' · 별풍선 '
     +Object.values(users).reduce((a,u)=>a+u.b,0)+(macroCount?' · 방송채팅 '+macroCount+' 제외':'');
   const chatEl=document.getElementById('chat');
-  const chatInner=document.getElementById('chatInner')||chatEl;
+  const chatInner=chatBody()||chatEl;
   const _wc={};   // 이 렌더 동안 닉별 당첨 정보 캐시 {n, icons}
   function winInfo(nick){
     if(nick in _wc)return _wc[nick];
@@ -1318,9 +1348,10 @@ function paint(){
   function kingRows(list,valKey,cls,maxv){
     if(!list.length)return '<tr><td colspan="6" style="color:#8a93a6;padding:14px 4px">아직 없습니다</td></tr>';
     return list.slice(0,100).map((u,i)=>{
-      const val=u[valKey], pct=Math.round(val/maxv*100);
+      const val=u[valKey], pct=Math.round(val/maxv*100), g=gradeOfUser(u.nick);
       return '<tr><td class="num" style="color:#8a93a6">'+(medal[i]||(i+1))+'</td>'+
-      '<td><div class="actbar" style="width:'+pct+'%"></div>'+esc(u.nick)+'</td>'+
+      '<td><div class="actbar" style="width:'+pct+'%"></div>'+fbadges(g)
+        +'<b class="kn '+nkClass(g)+'">'+esc(u.nick)+'</b></td>'+
       '<td class="pill acc" style="font-size:11px">'+esc(uid[u.nick]||'-')+'</td>'+
       '<td class="num '+cls+'">'+val+'</td>'+
       '<td class="num">'+(u.wins?'<span class="warn">'+u.wins+'회</span>':'')+'</td>'+
