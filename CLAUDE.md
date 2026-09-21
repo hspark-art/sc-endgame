@@ -42,7 +42,12 @@
 `tools/build.py` 의 `emit_php()` 한 곳에서 합니다. `"html"` 로 바꾸면 예전처럼 나옵니다.
 
 **올리는 길** — `deploy.py`·`gdoc_import.py` 가 FTP 와 SFTP 를 모두 압니다.
-**22번 포트면 SFTP** 로 알아서 붙습니다(`SC_FTP_PROTO=sftp` 로 못박아도 됩니다).
+22번 포트면 SFTP 로 붙고, **적어 준 방식으로 안 되면 다른 방식으로 한 번 더** 해 봅니다.
+폴더를 틀리게 적었을 때도 **사이트 이름과 같은 폴더가 딱 하나면 그리로 갑니다**
+(`/var/www` 까지 찾아봅니다. 여러 개거나 없으면 목록을 보여주고 멈춥니다 — 엉뚱한
+곳에 사이트를 부어 놓지 않으려고요). 그래서 **시크릿은 `SC_FTP_HOST`·`SC_FTP_USER`·
+`SC_FTP_PASS` 세 개만 맞으면** 나머지는 알아서 됩니다. `SC_FTP_DIR`·`SC_FTP_PROTO`·
+`SC_FTP_PORT` 는 정확히 적어 두면 더 빠를 뿐입니다.
 SFTP 는 `paramiko` 가 필요하고, Actions 에는 넣어 뒀습니다.
 
 > ⚠️ **비밀번호는 절대 저장소·문서·대화에 적지 마세요.** GitHub 시크릿에만 넣습니다.
@@ -50,9 +55,12 @@ SFTP 는 `paramiko` 가 필요하고, Actions 에는 넣어 뒀습니다.
 > 적이 있습니다. **① 비밀번호를 바꾸고 ② 배포 전용 계정을 만들어 키 인증으로
 > 돌리는 것**을 권합니다. `/var/www` 에만 쓸 수 있으면 충분합니다.
 
-**서버에 남은 옛 파일** — `deploy.py` 는 올리기만 하고 지우지 않습니다. 형님이
-옮긴 판에 있던 `p/byun-heonje.php`(변헌제 오타로 생겼던 유령 선수 페이지)는
-그대로 남아 있으니 한 번 지워 주세요. 새 빌드는 만들지 않습니다.
+**서버에 남으면 안 되는 것은 배포가 지웁니다** — `deploy.py` 의 `STALE_REMOTE`.
+원래 이 스크립트는 올리기만 했는데, 옮겨 온 판에 **`data/slack.json`(슬랙 웹훅
+주소)** 이 섞여 있었습니다. `data/` 는 시트 연동 때문에 통째로 공개되는 폴더라,
+그대로 두면 누구나 우리 슬랙에 글을 쓸 수 있습니다. 그래서 다음 네 개는 올릴 때마다
+있으면 지웁니다 — `data/slack.json` · `logs/*.log` 둘 · `p/byun-heonje.php`
+(변헌제 오타로 생겼던 유령 선수 페이지). **웹훅은 새로 발급받으시는 편이 안전합니다.**
 
 ## 자주 쓰는 명령
 
@@ -210,8 +218,8 @@ python3 tools/fetch_videos.py --when     # PC 에서 (API 키가 있어야 합�
 > 저장소에 있는 것(사람이 손으로 넣은 주소 포함)이 우선이라 덮이지 않습니다.
 > 캐시가 날아가면 다음 재조회 때 다시 찾습니다.
 
-- 시크릿 8개(`SC_FTP_HOST/USER/PASS/DIR` · **`SC_FTP_PROTO`=sftp · `SC_FTP_PORT`=22** ·
-  `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`) —
+- 시크릿 — `SC_FTP_HOST/USER/PASS` (새 서버 접속, **이 셋만 맞으면 됩니다**) ·
+  `SC_FTP_DIR/PROTO/PORT` (적어 두면 더 빠름) · `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL` —
   값은 `data/deploy.json`·`data/youtube.json`·`data/slack.json` 과 같습니다(도구들이 원래 환경변수를 먼저 읽음).
 - 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json`·`data/.update-state.json` 만
   Actions 캐시로 이어가 바뀐 파일만 올립니다 — 캐시가 없으면 325개 전부(~10분).

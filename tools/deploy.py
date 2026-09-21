@@ -82,6 +82,17 @@ SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
 NEVER_UPLOAD = {'admin/config.php', 'data/deploy.json', 'data/youtube.json',
                 'data/slack.json'}
 
+# 서버에 남아 있으면 안 되는 것 — 올릴 때마다 있으면 지웁니다 (없으면 조용히 넘어감).
+# 이 스크립트는 원래 '올리기만' 했지만, 아래 둘은 그냥 둘 수가 없어 예외로 둡니다.
+STALE_REMOTE = (
+    ('data/slack.json',
+     '슬랙 웹훅 주소 — 웹에서 열리면 누구나 우리 채널에 글을 씁니다'),
+    ('logs/records-update.log', '갱신 로그 — 사이트에 있을 것이 아닙니다'),
+    ('logs/gdoc-import.log', '당첨자 등록 로그 — 사이트에 있을 것이 아닙니다'),
+    ('p/byun-heonje.php',
+     '변헌제 오타로 생겼던 유령 선수 페이지 (2026-09-21 이전 때 딸려 옴)'),
+)
+
 
 def load_settings():
     cfg = {}
@@ -168,7 +179,7 @@ class FtpUploader(object):
                 ctx = ssl.create_default_context()
                 ctx.check_hostname = False
                 ctx.verify_mode = ssl.CERT_NONE   # 공유호스팅은 인증서가 도메인과 다른 일이 흔합니다
-                ftp = ftplib.FTP_TLS(context=ctx, timeout=30)
+                ftp = ftplib.FTP_TLS(context=ctx, timeout=cfg.get('timeout', 30))
                 ftp.connect(cfg['host'], cfg['port'])
                 ftp.login(cfg['user'], cfg['password'])
                 ftp.prot_p()
@@ -181,7 +192,7 @@ class FtpUploader(object):
                     pass
                 ftp = None
         if ftp is None:
-            ftp = ftplib.FTP(timeout=30)
+            ftp = ftplib.FTP(timeout=cfg.get('timeout', 30))
             ftp.connect(cfg['host'], cfg['port'])
             ftp.login(cfg['user'], cfg['password'])
             print('  FTP로 접속했습니다. (암호화 안 됨)')
@@ -207,6 +218,9 @@ class FtpUploader(object):
             self._ensure(d)
         with open(local, 'rb') as f:
             self.ftp.storbinary('STOR ' + rel, f, blocksize=65536)
+
+    def remove(self, rel):
+        self.ftp.delete(rel)
 
     def close(self):
         try:
@@ -246,7 +260,7 @@ class SftpUploader(object):
         self.cli = paramiko.SSHClient()
         self.cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.cli.connect(cfg['host'], port=cfg['port'], username=cfg['user'],
-                         password=cfg['password'], timeout=30,
+                         password=cfg['password'], timeout=cfg.get('timeout', 30),
                          look_for_keys=False, allow_agent=False)
         self.sftp = self.cli.open_sftp()
         self.base = base.rstrip('/')
@@ -254,16 +268,49 @@ class SftpUploader(object):
         try:
             self.sftp.stat(self.base)
         except IOError:
-            # 잘못된 폴더에 사이트를 통째로 부어 놓는 사고를 막습니다.
-            parent = self.base.rsplit('/', 1)[0] or '/'
+            self.base = self._rescue_dir()
+
+    def _rescue_dir(self):
+        """적어 준 폴더가 없을 때 — 사이트 이름과 같은 폴더가 **딱 하나**면 그리로.
+
+        잘못된 곳에 사이트를 통째로 부어 놓는 사고는 막아야 하지만, 폴더 이름
+        하나 때문에 배포가 통째로 멈추는 것도 곤란합니다. 그래서 '도메인 이름과
+        같은 폴더'라는 좁은 조건일 때만 옮겨 붙고, 크게 알립니다.
+        """
+        host = site_host()
+        want = {h for h in (host, host.replace('www.', ''),
+                            host.replace('www.', '').split('.')[0]) if h}
+        # 적어 준 곳의 상위 폴더부터, 그다음은 이 서버의 웹 뿌리(/var/www)를 봅니다.
+        # 주소만 바꾸고 폴더를 예전 값(/www/endgame)으로 두고 오는 일이 흔해서입니다.
+        parent, entries, hit = '', [], []
+        for cand in [self.base.rsplit('/', 1)[0] or '/', '/var/www']:
+            if parent and cand == parent:
+                continue
             try:
-                nearby = ', '.join(sorted(self.sftp.listdir(parent))[:20])
+                got = sorted(self.sftp.listdir(cand))
             except IOError:
-                nearby = '(상위 폴더도 못 읽었습니다)'
-            raise SystemExit(
-                '올릴 폴더가 서버에 없습니다: %s\n'
-                '  %s 안에 있는 것: %s\n'
-                '  SC_FTP_DIR 을 실제 폴더로 맞춰 주세요.' % (self.base, parent, nearby))
+                continue
+            if not parent:
+                parent, entries = cand, got
+            found_here = [e for e in got if e.lower() in want]
+            if found_here:
+                parent, entries, hit = cand, got, found_here
+                break
+        if not parent:
+            raise SystemExit('올릴 폴더가 서버에 없습니다: %s (상위 폴더도 못 읽었습니다)'
+                             % self.base)
+        if len(hit) == 1:
+            found = parent.rstrip('/') + '/' + hit[0]
+            print('  ! 적어 주신 폴더가 없어 사이트 이름과 같은 폴더로 갑니다: %s' % found)
+            print('    (SC_FTP_DIR 을 이 값으로 고쳐 두시면 이 줄이 사라집니다)')
+            return found
+        raise SystemExit(
+            '올릴 폴더가 서버에 없습니다: %s\n'
+            '  %s 안에 있는 것: %s\n'
+            '  사이트 이름(%s)과 같은 폴더도 %s.\n'
+            '  SC_FTP_DIR 을 실제 폴더로 맞춰 주세요.'
+            % (self.base, parent, ', '.join(entries[:25]) or '(비어 있음)',
+               host or '?', '없습니다' if not hit else '여러 개입니다: %s' % ', '.join(hit)))
 
     def _ensure(self, rel):
         if not rel or rel in self.made:
@@ -282,6 +329,9 @@ class SftpUploader(object):
             self._ensure(d)
         self.sftp.put(local, self.base + '/' + rel)
 
+    def remove(self, rel):
+        self.sftp.remove(self.base + '/' + rel)
+
     def close(self):
         for x in (self.sftp, self.cli):
             try:
@@ -290,8 +340,71 @@ class SftpUploader(object):
                 pass
 
 
-def make_uploader(cfg):
-    return SftpUploader(cfg) if cfg['proto'] == 'sftp' else FtpUploader(cfg)
+def site_base_url():
+    try:
+        with io.open(os.path.join(ROOT, 'data', 'site.json'), encoding='utf-8') as f:
+            return (json.load(f).get('baseUrl') or '').rstrip('/')
+    except (IOError, OSError, ValueError):
+        return ''
+
+
+def site_host():
+    u = site_base_url()
+    return u.split('//', 1)[-1].split('/', 1)[0].lower() if u else ''
+
+
+def _one(cfg, proto, timeout):
+    cfg = dict(cfg, proto=proto, timeout=timeout)
+    if str(cfg.get('port')) not in ('22', '21'):
+        pass
+    elif (proto == 'sftp') != (str(cfg['port']) == '22'):
+        cfg['port'] = 22 if proto == 'sftp' else 21     # 방식을 바꾸면 포트도 따라갑니다
+    return (SftpUploader if proto == 'sftp' else FtpUploader)(cfg)
+
+
+def connect_any(cfg, base):
+    """적어 준 방식으로 붙어 보고, 안 되면 다른 방식으로 한 번 더.
+
+    2026-09-21 서버 이전 뒤 FTP(21)와 SFTP(22)가 섞여 있습니다. 어느 쪽인지
+    시크릿에 안 적었다고 배포가 통째로 멈추면 곤란해서, 한 번은 더 해 봅니다.
+    '폴더가 없다' 같은 확실한 문제(SystemExit)는 그대로 알립니다.
+    """
+    first = cfg['proto']
+    second = 'ftp' if first == 'sftp' else 'sftp'
+    try:
+        up = _one(cfg, first, 12)
+        up.open(base)
+        return up
+    except SystemExit:
+        raise
+    except Exception as e:
+        print('  %s 로 붙지 못했습니다 (%s) — %s 로 다시 해 봅니다.'
+              % (first.upper(), type(e).__name__, second.upper()))
+    up = _one(cfg, second, 30)
+    up.open(base)
+    print('  (%s 가 맞았습니다 — SC_FTP_PROTO 를 %s 로 적어 두시면 더 빠릅니다)'
+          % (second.upper(), second))
+    return up
+
+
+def purge_stale(up):
+    """서버에 남아 있으면 안 되는 것들을 지웁니다 (STALE_REMOTE, 없으면 조용히).
+
+    올리기만 하던 스크립트에 예외를 둔 이유는 하나입니다 — 그중에 슬랙 웹훅이
+    있습니다. 2026-09-21 서버 이전 때 data/slack.json 이 딸려 올라갔고,
+    data/ 는 시트 연동 때문에 통째로 공개되는 폴더입니다.
+    """
+    gone = []
+    for rel, why in STALE_REMOTE:
+        try:
+            up.remove(rel)
+            gone.append((rel, why))
+        except Exception:
+            pass                                   # 없으면 그만입니다
+    if gone:
+        print('  서버에서 지운 것 %d개:' % len(gone))
+        for rel, why in gone:
+            print('    %s — %s' % (rel, why))
 
 
 def main():
@@ -328,8 +441,7 @@ def main():
         return
 
     base = cfg['remoteDir'].rstrip('/')
-    up = make_uploader(cfg)
-    up.open(base)
+    up = connect_any(cfg, base)
     done, failed = 0, []
     try:
         for rel in changed:
@@ -341,6 +453,7 @@ def main():
                     print('  %d/%d 올리는 중...' % (done, len(changed)))
             except Exception as e:
                 failed.append((rel, '%s: %s' % (type(e).__name__, e)))
+        purge_stale(up)
     finally:
         up.close()
 
@@ -363,13 +476,8 @@ def main():
         except Exception as e:
             print('   (문제 알림 건너뜀 — %s)' % e)
         sys.exit(1)
-    site = ''
-    try:
-        with io.open(os.path.join(ROOT, 'data', 'site.json'), encoding='utf-8') as f:
-            site = (json.load(f).get('baseUrl') or '').rstrip('/')
-    except (IOError, OSError, ValueError):
-        pass
-    print('완료 — %s/ 에서 확인하세요.' % (site or 'https://%s%s' % (cfg['host'], base)))
+    print('완료 — %s/ 에서 확인하세요.'
+          % (site_base_url() or 'https://%s%s' % (cfg['host'], base)))
     # 정상 배포에는 슬랙 알림을 보내지 않습니다 (사장님 요청 — 문제 있을 때만).
 
 
