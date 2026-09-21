@@ -26,7 +26,9 @@ import csv
 import io
 import json
 import os
+import re
 import sys
+import unicodedata
 import urllib.parse
 import urllib.request
 
@@ -84,7 +86,9 @@ def fetch_sets(sheet_id, sheet_name):
         out.append((dt, w, wr, lo, lr, mp))
         pz = _won(r[6]) if len(r) > 6 else 0
         bn = _won(r[7]) if len(r) > 7 else 0
-        e = prize.setdefault(w, {'prize': 0, 'bonus': 0, 'sets': 0, 'byYear': {}})
+        # 상금은 선수 이름으로 찾아 쓰므로 세트 쪽과 같은 규칙으로 다듬어야
+        # 합니다. 안 그러면 글자만 다른 같은 사람의 상금이 따로 쌓입니다.
+        e = prize.setdefault(_clean(w), {'prize': 0, 'bonus': 0, 'sets': 0, 'byYear': {}})
         e['prize'] += pz
         e['bonus'] += bn
         e['sets'] += 1
@@ -95,6 +99,43 @@ def fetch_sets(sheet_id, sheet_name):
             ye['bonus'] += bn
             ye['sets'] += 1
     return out, prize
+
+
+# ── 겉보기가 같은데 글자 코드만 다른 것을 맞춥니다 ─────────────────
+#
+# .strip() 은 보통 공백만 지웁니다. 그런데 구글시트에 손으로 넣거나 붙여넣은
+# 이름에는 이런 것이 섞입니다.
+#   · 한글 자모 분리(NFD) — '김'이 'ㄱ+ㅣ+ㅁ' 으로 들어간 것. 맥에서 붙여넣으면 흔합니다.
+#   · 줄바꿈 없는 공백(U+00A0), 제로폭 공백(U+200B) 같은 안 보이는 글자
+#
+# 화면에서는 똑같아 보이는데 문자열 비교만 어긋나므로, 같은 날 같은 두 선수의
+# 9세트가 8세트 + 1세트처럼 둘로 갈라져 보입니다.
+# (2026-09-18 김정우 vs 변현제가 5-3 과 0-1 로 쪼개졌던 것이 이 경우입니다.)
+# 그래서 이름·날짜·맵을 쓰기 전에 여기서 한 번에 정리합니다.
+_INVISIBLE = re.compile(r'[\u200b-\u200f\u2028\u2029\ufeff\u00ad]')
+_SPACES = re.compile(r'[\s\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]+')
+
+
+def _clean(s):
+    """겉보기가 같은 글자는 같아지도록 다듬습니다. 보이는 내용은 바뀌지 않습니다."""
+    s = unicodedata.normalize('NFC', s or '')   # 분리된 한글 자모를 한 글자로
+    s = _INVISIBLE.sub('', s)                   # 안 보이는 글자는 지웁니다
+    return _SPACES.sub(' ', s).strip()          # 어떤 공백이든 보통 공백 하나로
+
+
+def _oddchars(raw):
+    """무엇 때문에 어긋났는지 사람이 알아볼 수 있게 적어 줍니다."""
+    why = []
+    if unicodedata.normalize('NFC', raw) != raw:
+        why.append('한글 자모 분리')
+    codes = sorted({'U+%04X' % ord(ch) for ch in raw
+                    if ch != ' ' and (unicodedata.category(ch) in ('Cf', 'Zs', 'Cc')
+                                      or ch in '\u00a0\u200b')})
+    if codes:
+        why.append('안 보이는 글자 ' + ', '.join(codes))
+    if raw != raw.strip():
+        why.append('앞뒤 공백')
+    return ' · '.join(why) or '보이지 않는 차이'
 
 
 # 시트에 잘못 적힌 맵 이름을 바로잡습니다 (왼쪽 → 오른쪽).
@@ -117,10 +158,25 @@ def normalize_sets(sets):
     원본 시트는 건드리지 않습니다. 무엇을 고쳤는지 함께 돌려주므로
     실행할 때마다 화면에 나옵니다.
 
+      0. 겉보기가 같은데 글자 코드만 다른 이름·날짜 → 같게 맞춤 (자모 분리·안 보이는 공백)
       1. 선수 종족이 줄마다 다르게 적힌 경우 → 가장 많이 적힌 종족으로
       2. 맵 이름이 대소문자·띄어쓰기만 다른 경우 → 가장 많이 쓰인 표기로
       3. MAP_ALIASES 에 적어 둔 맵 이름 → 정해 둔 표기로
     """
+    # 0. 겉보기가 같은데 글자 코드만 다른 이름·날짜·맵을 먼저 맞춥니다.
+    #    이걸 먼저 해야 아래 종족·맵 집계와 경기 묶기가 같은 사람을 같게 봅니다.
+    fixes = []
+    cleaned = []
+    for dt, w, wr, lo, lr, mp in sets:
+        cdt, cw, clo, cmp = _clean(dt), _clean(w), _clean(lo), _clean(mp)
+        for raw, fixed, what in ((w, cw, '선수 이름'), (lo, clo, '선수 이름'),
+                                 (dt, cdt, '날짜'), (mp, cmp, '맵 이름')):
+            if fixed != raw:
+                fixes.append('%-10s  %s %s 을(를) 맞췄습니다 — %s'
+                             % (cdt, what, fixed or '(빈칸)', _oddchars(raw)))
+        cleaned.append((cdt, cw, _clean(wr), clo, _clean(lr), cmp))
+    sets = cleaned
+
     race_count = {}
     map_count = {}
     for _dt, w, wr, lo, lr, mp in sets:
@@ -142,7 +198,6 @@ def normalize_sets(sets):
     for k, c in map_count.items():
         best_map[k] = max(c.items(), key=lambda kv: kv[1])[0]
 
-    fixes = []
     out = []
     for dt, w, wr, lo, lr, mp in sets:
         nwr = best_race.get(w, wr)
