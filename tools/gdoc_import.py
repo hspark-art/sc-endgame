@@ -288,10 +288,11 @@ def ftp_config():
     except Exception:
         cfg = {}
     out = {
-        'host': os.environ.get('SC_FTP_HOST') or cfg.get('host'),
-        'user': os.environ.get('SC_FTP_USER') or cfg.get('user'),
-        'password': os.environ.get('SC_FTP_PASS') or cfg.get('password'),
-        'remoteDir': os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir') or '/www/endgame',
+        'host': (os.environ.get('SC_FTP_HOST') or cfg.get('host') or '').strip(),
+        'user': (os.environ.get('SC_FTP_USER') or cfg.get('user') or '').strip(),
+        'password': (os.environ.get('SC_FTP_PASS') or cfg.get('password') or '').strip(),
+        'remoteDir': (os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir')
+                      or '/www/endgame').strip(),
         'port': 0,       # 아래에서 프로토콜과 함께 정합니다
         'proto': '',
     }

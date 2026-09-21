@@ -94,6 +94,23 @@ STALE_REMOTE = (
 )
 
 
+def _tidy(what, v):
+    """접속 정보 앞뒤의 공백·줄바꿈을 떼어냅니다.
+
+    시크릿 칸에 붙여넣을 때 줄바꿈이나 공백이 딸려 오는 일이 흔하고, 그러면
+    비밀번호가 맞는데도 인증에서 거절당합니다(AuthenticationException).
+    화면에 안 보이는 차이라 찾기가 고약해서, 여기서 떼고 떼어냈다고 알립니다.
+    값 자체는 절대 찍지 않습니다.
+    """
+    if not isinstance(v, str):
+        return v
+    t = v.strip()
+    if t != v:
+        print('  ! %s 앞뒤에 공백·줄바꿈이 있어 떼어냈습니다 (글자 %d → %d)'
+              % (what, len(v), len(t)))
+    return t
+
+
 def load_settings():
     cfg = {}
     path = os.path.join(ROOT, 'data', 'deploy.json')
@@ -109,10 +126,13 @@ def load_settings():
     if not port:
         port = 22 if proto == 'sftp' else 21
     out = {
-        'host': os.environ.get('SC_FTP_HOST') or cfg.get('host'),
-        'user': os.environ.get('SC_FTP_USER') or cfg.get('user'),
-        'password': os.environ.get('SC_FTP_PASS') or cfg.get('password'),
-        'remoteDir': os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir') or '/www/endgame',
+        'host': _tidy('host', os.environ.get('SC_FTP_HOST') or cfg.get('host')),
+        'user': _tidy('user', os.environ.get('SC_FTP_USER') or cfg.get('user')),
+        'password': _tidy('password',
+                          os.environ.get('SC_FTP_PASS') or cfg.get('password')),
+        'remoteDir': _tidy('remoteDir',
+                           os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir')
+                           or '/www/endgame'),
         'port': int(port),
         'proto': proto,
         'tls': cfg.get('tls', True),
@@ -407,6 +427,16 @@ def connect_any(cfg, base):
         # 두 방식 다 안 되면 십중팔구 접속 정보가 옛것입니다. 무슨 일인지 한눈에
         # 보이게 적어 둡니다 — 2026-09-21 서버 이전 때 실행이 줄줄이 실패하면서
         # 파이썬 역추적만 찍혀 원인을 찾는 데 시간이 걸렸습니다.
+        if 'Authentication' in type(e).__name__:
+            raise SystemExit(
+                '서버까지는 갔는데 계정/비밀번호를 거절당했습니다 (%s).\n'
+                '  주소·포트는 맞습니다 — 열린 것은 SSH(22번)이고, 막힌 건 인증입니다.\n'
+                '  ① 시크릿 SC_FTP_PASS 에 비밀번호만 다시 붙여넣어 주세요\n'
+                '     (따옴표·설명·앞뒤 공백이 섞이면 안 됩니다. 이미 앞뒤 공백은 떼고 씁니다)\n'
+                '  ② SC_FTP_USER 가 서버 계정 이름과 같은지 확인해 주세요\n'
+                '  ③ 그래도 안 되면 서버가 비밀번호 로그인을 막아 둔 것입니다\n'
+                '     (sshd_config 의 PermitRootLogin·PasswordAuthentication)'
+                % type(e).__name__)
         raise SystemExit(
             '서버에 붙지 못했습니다 — %s 도, %s 도 안 됩니다. (%s: %s)\n'
             '  지금 보고 있는 곳: %s %s\n'
