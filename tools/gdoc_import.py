@@ -259,7 +259,21 @@ class _SftpRemote(object):
 
 
 def remote_open(cfg):
-    return _SftpRemote(cfg) if cfg.get('proto') == 'sftp' else _FtpRemote(cfg)
+    """적어 준 방식으로 붙고, 안 되면 다른 방식으로 한 번 더 (deploy.py 와 같습니다)."""
+    first = cfg.get('proto') or 'ftp'
+    second = 'ftp' if first == 'sftp' else 'sftp'
+    for proto, port in ((first, cfg['port']),
+                        (second, 22 if second == 'sftp' else 21)):
+        try:
+            c = dict(cfg, proto=proto, port=port)
+            return _SftpRemote(c) if proto == 'sftp' else _FtpRemote(c)
+        except Exception as e:
+            last = e
+            print('  %s 로 붙지 못했습니다 (%s)' % (proto.upper(), type(e).__name__))
+    raise SystemExit(
+        '서버에 붙지 못해 당첨자 명단을 못 올렸습니다 (%s: %s)\n'
+        '  서버를 옮기셨다면 GitHub 시크릿 SC_FTP_HOST · SC_FTP_USER · SC_FTP_PASS 를\n'
+        '  새 서버 값으로 바꿔 주세요. 구글 문서 쪽은 정상입니다.' % (type(last).__name__, last))
 
 
 def ftp_config():

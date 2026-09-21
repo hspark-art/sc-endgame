@@ -399,7 +399,22 @@ def connect_any(cfg, base):
         print('  %s 로 붙지 못했습니다 (%s) — %s 로 다시 해 봅니다.'
               % (first.upper(), type(e).__name__, second.upper()))
     up = _one(cfg, second, 30)
-    up.open(base)
+    try:
+        up.open(base)
+    except SystemExit:
+        raise
+    except Exception as e:
+        # 두 방식 다 안 되면 십중팔구 접속 정보가 옛것입니다. 무슨 일인지 한눈에
+        # 보이게 적어 둡니다 — 2026-09-21 서버 이전 때 실행이 줄줄이 실패하면서
+        # 파이썬 역추적만 찍혀 원인을 찾는 데 시간이 걸렸습니다.
+        raise SystemExit(
+            '서버에 붙지 못했습니다 — %s 도, %s 도 안 됩니다. (%s: %s)\n'
+            '  지금 보고 있는 곳: %s %s\n'
+            '  서버를 옮기셨다면 GitHub 시크릿 세 개를 새 서버 값으로 바꿔 주세요 —\n'
+            '  SC_FTP_HOST · SC_FTP_USER · SC_FTP_PASS\n'
+            '  (폴더·접속 방식은 알아서 찾습니다. Settings → Secrets and variables → Actions)'
+            % (first.upper(), second.upper(), type(e).__name__, e,
+               cfg['host'], cfg['remoteDir']))
     print('  (%s 가 맞았습니다 — SC_FTP_PROTO 를 %s 로 적어 두시면 더 빠릅니다)'
           % (second.upper(), second))
     return up
