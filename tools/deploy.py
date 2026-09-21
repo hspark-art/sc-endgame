@@ -106,8 +106,7 @@ def _tidy(what, v):
         return v
     t = v.strip()
     if t != v:
-        print('  ! %s 앞뒤에 공백·줄바꿈이 있어 떼어냈습니다 (글자 %d → %d)'
-              % (what, len(v), len(t)))
+        print('  ! %s 앞뒤에 공백·줄바꿈이 있어 떼어냈습니다' % what)
     return t
 
 
@@ -400,6 +399,33 @@ def _one(cfg, proto, timeout):
     return (SftpUploader if proto == 'sftp' else FtpUploader)(cfg)
 
 
+def ssh_auth_methods(cfg):
+    """서버가 받아 주는 인증 방식을 물어봅니다 — 비번이 틀린 건지, 비번 로그인이
+    막힌 건지 가르기 위해서입니다.
+
+    둘은 같은 AuthenticationException 으로 보이는데 고칠 사람이 다릅니다.
+    (비번이 틀리면 사장님이 시크릿을, 막혀 있으면 서버 주인이 sshd_config 를)
+    """
+    try:
+        import socket
+        import paramiko
+        # 소켓을 직접 만들어 시간 제한을 겁니다 — 그냥 (host, port) 로 넘기면
+        # 서버가 조용할 때 하염없이 기다립니다.
+        t = paramiko.Transport(socket.create_connection(
+            (cfg['host'], cfg['port']), timeout=15))
+        t.banner_timeout = 15
+        t.connect()
+        try:
+            t.auth_none(cfg['user'])
+            return ['none']                      # 인증 없이 들어가지는 서버
+        except paramiko.BadAuthenticationType as e:
+            return list(e.allowed_types)
+        finally:
+            t.close()
+    except Exception as e:
+        return ['(물어보지 못했습니다 — %s)' % type(e).__name__]
+
+
 def connect_any(cfg, base):
     """적어 준 방식으로 붙어 보고, 안 되면 다른 방식으로 한 번 더.
 
@@ -428,15 +454,24 @@ def connect_any(cfg, base):
         # 보이게 적어 둡니다 — 2026-09-21 서버 이전 때 실행이 줄줄이 실패하면서
         # 파이썬 역추적만 찍혀 원인을 찾는 데 시간이 걸렸습니다.
         if 'Authentication' in type(e).__name__:
+            ways = ssh_auth_methods(dict(cfg, proto='sftp', port=22))
+            can_pw = 'password' in ways or 'keyboard-interactive' in ways
             raise SystemExit(
                 '서버까지는 갔는데 계정/비밀번호를 거절당했습니다 (%s).\n'
-                '  주소·포트는 맞습니다 — 열린 것은 SSH(22번)이고, 막힌 건 인증입니다.\n'
-                '  ① 시크릿 SC_FTP_PASS 에 비밀번호만 다시 붙여넣어 주세요\n'
-                '     (따옴표·설명·앞뒤 공백이 섞이면 안 됩니다. 이미 앞뒤 공백은 떼고 씁니다)\n'
-                '  ② SC_FTP_USER 가 서버 계정 이름과 같은지 확인해 주세요\n'
-                '  ③ 그래도 안 되면 서버가 비밀번호 로그인을 막아 둔 것입니다\n'
-                '     (sshd_config 의 PermitRootLogin·PasswordAuthentication)'
-                % type(e).__name__)
+                '  주소·포트는 맞습니다 — SSH(22번)는 열렸고, 막힌 건 인증입니다.\n'
+                '  서버가 받아 주는 인증 방식: %s\n'
+                '  계정 이름은 %s 입니다.\n'
+                '  %s'
+                % (type(e).__name__, ', '.join(ways) or '(없음)',
+                   'root' if cfg['user'] == 'root' else 'root 가 아닙니다',
+                   '→ 비밀번호 로그인은 받는 서버입니다. 비밀번호가 다릅니다 —\n'
+                   '     시크릿 SC_FTP_PASS 에 비밀번호만 다시 붙여넣어 주세요\n'
+                   '     (따옴표·설명·앞뒤 공백이 섞이면 안 됩니다).'
+                   if can_pw else
+                   '→ 이 서버는 비밀번호 로그인을 받지 않습니다. 비밀번호를 아무리\n'
+                   '     고쳐도 안 됩니다. 형님께 sshd_config 의 PasswordAuthentication·\n'
+                   '     PermitRootLogin 을 확인해 달라고 하시거나, 배포용 SSH 키를\n'
+                   '     받아 주세요 (키 방식도 붙일 수 있게 하겠습니다).'))
         raise SystemExit(
             '서버에 붙지 못했습니다 — %s 도, %s 도 안 됩니다. (%s: %s)\n'
             '  지금 보고 있는 곳: %s %s\n'
