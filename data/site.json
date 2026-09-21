@@ -2,11 +2,13 @@
  "_note": [
   "사이트를 어느 주소에 올릴지 정하는 파일입니다.",
   "baseUrl 은 canonical·og:url·구글시트 IMPORTDATA 수식에 들어갑니다.",
-  "실제 공개 주소는 pubgin.com/endgame 이고, GitHub Pages 는 백업·기록용입니다.",
+  "메인 주소는 starendgame.com 입니다 (2026-09-21 변경). 예전 주소 pubgin.com/endgame 은",
+  "지금도 같은 내용이 올라가는 서버이지만, 대표 주소로는 쓰지 않습니다.",
+  "www 를 대표로 쓰시려면 이 값만 https://www.starendgame.com 으로 바꾸고 빌드하면 됩니다.",
   "주소를 옮기면 이 값만 고치고 python3 tools/build.py 를 다시 돌리면 됩니다.",
   "끝에 슬래시는 붙이지 마세요.",
-  "cname 은 GitHub Pages 커스텀 도메인을 쓸 때만 채웁니다. pubgin.com 은 GitHub 이 아니므로 null 입니다."
+  "cname 은 GitHub Pages 커스텀 도메인을 쓸 때만 채웁니다. 카페24는 GitHub 이 아니므로 null 입니다."
  ],
- "baseUrl": "https://pubgin.com/endgame",
+ "baseUrl": "https://starendgame.com",
  "cname": null
 }

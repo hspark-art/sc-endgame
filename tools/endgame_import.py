@@ -86,9 +86,11 @@ def fetch_sets(sheet_id, sheet_name):
         out.append((dt, w, wr, lo, lr, mp))
         pz = _won(r[6]) if len(r) > 6 else 0
         bn = _won(r[7]) if len(r) > 7 else 0
-        # 상금은 선수 이름으로 찾아 쓰므로 세트 쪽과 같은 규칙으로 다듬어야
-        # 합니다. 안 그러면 글자만 다른 같은 사람의 상금이 따로 쌓입니다.
-        e = prize.setdefault(_clean(w), {'prize': 0, 'bonus': 0, 'sets': 0, 'byYear': {}})
+        # 상금은 선수 이름으로 찾아 쓰므로 세트 쪽과 **똑같은 규칙**으로 다듬어야
+        # 합니다(_player). 안 그러면 이름이 바로잡힌 선수의 상금만 옛 이름에
+        # 남아 주인을 못 찾고 통째로 사라집니다 — 실제로 변헌제 → 변현제 건에서
+        # 10만원이 증발했습니다.
+        e = prize.setdefault(_player(w), {'prize': 0, 'bonus': 0, 'sets': 0, 'byYear': {}})
         e['prize'] += pz
         e['bonus'] += bn
         e['sets'] += 1
@@ -149,6 +151,16 @@ def _oddchars(raw):
 PLAYER_ALIASES = {
     '변헌제': '변현제',
 }
+
+
+def _player(name):
+    """선수 이름을 어디서나 같은 규칙으로 다듬습니다 — 세트도 상금도 이것만 씁니다.
+
+    겉보기를 맞추고(_clean), 알려진 오타는 바로잡습니다(PLAYER_ALIASES).
+    두 곳이 다른 규칙을 쓰면 상금이 선수를 못 찾고 사라집니다.
+    """
+    n = _clean(name)
+    return PLAYER_ALIASES.get(n, n)
 
 
 def _edit1(a, b):

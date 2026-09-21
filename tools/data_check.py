@@ -144,6 +144,21 @@ def check_matches(d, tag):
            '%d ≠ %d' % (len(d['matches']), g['totalMatches']))
 
 
+def check_prize_sets(d, tag):
+    """선수별 '상금 세트' == 세트 승 (끝장전만).
+
+    상금은 시트의 승자 이름으로 모으고 전적은 다듬은 이름으로 모읍니다.
+    두 규칙이 어긋나면 이름이 바로잡힌 선수의 상금만 옛 이름에 남아 통째로
+    사라집니다 — 2026-09-21 에 변헌제 → 변현제 건으로 10만원이 증발했고,
+    기존 점검 17개는 앞뒤가 맞는 채로 틀려 있어 아무도 못 잡았습니다.
+    """
+    bad = ['%s(상금 %d ≠ 승 %d)' % (p['name'], p['prizeSets'], p['setWin'])
+           for p in d.get('players', [])
+           if 'prizeSets' in p and 'setWin' in p and p['prizeSets'] != p['setWin']]
+    ck(not bad, '[%s] 선수별 상금 세트 == 세트 승' % tag,
+       '%d명: %s' % (len(bad), ', '.join(bad[:5])))
+
+
 def sheet_cross():
     """구글시트 원본을 다시 읽어 끝장전 세트 수·선수 승패를 빌드본과 대조."""
     print('\n── 구글시트 원본 대조 (네트워크) ──')
@@ -181,6 +196,7 @@ def main():
     check_vsplayers(eg, '끝장전')
     check_h2h_symmetry(eg, '끝장전')
     check_matches(eg, '끝장전')
+    check_prize_sets(eg, '끝장전')
     if '--sheet' in sys.argv:
         sheet_cross()
     print('\n════ 결과: %d개 통과, %d개 실패 ════' % (len(OKS), len(FAILS)))
