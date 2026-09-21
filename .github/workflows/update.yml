@@ -65,9 +65,12 @@ jobs:
       - name: openpyxl (엑셀 산출물용 — 없으면 xlsx 만 건너뜀)
         run: pip install --quiet openpyxl
 
-      # 지난 실행이 올린 파일 목록(해시)·마지막 유튜브 조회 시각·'마지막 갱신' 시각을
-      # 이어받습니다. 특히 .build-state.json 이 없으면 푸터 시각이 새로 찍혀
-      # 기록이 안 바뀌었는데도 HTML 153개가 통째로 다시 올라갑니다.
+      # 실행 사이에 이어가야 하는 것들입니다. 저장소에 커밋하지 않으므로 캐시로 잇습니다.
+      #   .deploy-state  마지막으로 올린 파일의 해시 — 없으면 전부 다시 올립니다
+      #   .update-state  마지막 유튜브 조회 시각
+      #   .build-state   '마지막 갱신' 시각 — 없으면 HTML 153개가 통째로 다시 올라갑니다
+      #   .videos-cache  찾아 둔 다시보기 링크 — 없으면 재조회를 건너뛴 실행이
+      #                  앞서 붙인 '바로재생' 을 '채널에서 찾기' 로 되돌립니다
       - name: 실행 상태 이어받기
         uses: actions/cache@v4
         with:
@@ -75,6 +78,7 @@ jobs:
             data/.deploy-state.json
             data/.update-state.json
             data/.build-state.json
+            data/.videos-cache.json
           key: sc-deploy-state-${{ github.run_id }}
           restore-keys: |
             sc-deploy-state-

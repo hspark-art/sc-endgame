@@ -157,6 +157,16 @@ python3 tools/fetch_videos.py --when     # PC 에서 (API 키가 있어야 합�
 마지막 조회 시각은 `data/.update-state.json` 에 남고 Actions 캐시로 이어집니다. **조회에
 실패하면 상태를 안 남기므로 다음 실행에서 다시 시도합니다.**
 
+> ⚠️ **찾은 링크는 `data/.videos-cache.json` 에 쌓아 실행 사이에 이어갑니다 (2026-09-21).**
+> 자동 갱신은 저장소에 커밋하지 않으므로, 실행이 끝나면 `data/videos.json` 이 저장소에
+> 들어 있는 판으로 되돌아갑니다. 그래서 **재조회를 건너뛴 실행이 앞 실행에서 찾은 링크를
+> 지운 채로 올려** '바로재생' 이 '채널에서 찾기' 로 되돌아가는 일이 있었습니다
+> (2026-09-21 실측: 295/298 로 붙였던 것이 다음 실행에 294/297). 시간대 제한을 넣기
+> 전에는 매 실행 재조회라 드러나지 않던 문제입니다.
+> 이제 `update.py` 가 매 실행 처음에 캐시를 `videos.json` 의 **빈 자리에만** 채웁니다 —
+> 저장소에 있는 것(사람이 손으로 넣은 주소 포함)이 우선이라 덮이지 않습니다.
+> 캐시가 날아가면 다음 재조회 때 다시 찾습니다.
+
 - 시크릿 6개(`SC_FTP_HOST/USER/PASS/DIR` · `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`)를 API 로 등록했습니다 —
   값은 `data/deploy.json`·`data/youtube.json`·`data/slack.json` 과 같습니다(도구들이 원래 환경변수를 먼저 읽음).
 - 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json`·`data/.update-state.json` 만

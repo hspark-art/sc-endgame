@@ -70,6 +70,17 @@ AUTO_DELETE_MAX_EG_MATCHES = 2     # 끝장전: 사라진 경기 수
 VIDEO_WINDOW_KST = (11, 12, 13, 14, 15, 16, 17, 18)
 STATE_PATH = os.path.join(ROOT, 'data', '.update-state.json')
 
+# 찾아 둔 다시보기 링크를 실행 사이에 이어가는 곳.
+#
+# ⚠ 왜 필요한가 — 자동 갱신은 저장소에 커밋하지 않습니다(원본은 시트). 그래서 실행이
+#   끝나면 data/videos.json 이 저장소에 들어 있는 판으로 되돌아갑니다. 유튜브 재조회를
+#   '영상이 올라오는 시간대에만' 으로 바꾼 뒤(2026-09-16)부터, 재조회를 건너뛴 실행이
+#   앞 실행에서 찾은 링크를 잃은 채로 사이트에 올려 '바로재생' 을 '채널에서 찾기' 로
+#   되돌려 놓았습니다. 2026-09-21 실측: 295/298 로 붙였던 것이 다음 실행에 294/297.
+#   그래서 찾은 것을 여기 쌓아 두고 매 실행 처음에 채워 넣습니다.
+VIDEO_CACHE = os.path.join(ROOT, 'data', '.videos-cache.json')
+VIDEOS_PATH = os.path.join(ROOT, 'data', 'videos.json')
+
 # 윈도우 콘솔에서 한글·기호가 깨지거나 터지지 않게 합니다.
 try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -207,6 +218,8 @@ def main():
     # 유튜브 다시보기(보너스) — API 로 새 영상까지 다시 받아 경기에 붙임(캐시 무시 --refresh).
     # 비싼 작업이라 필요할 때만 돕니다(위 VIDEO_REFRESH_HOURS 설명 참고).
     # 키·할당량 문제로 실패해도 기존 videos.json 으로 계속 진행합니다.
+    # 재조회를 하든 건너뛰든, 지난 실행에서 찾아 둔 링크부터 이어받습니다.
+    _videos_merge_cache()
     state = _load_state()
     why = _video_refresh_reason(args.videos, state)
     if why is None:
@@ -237,6 +250,7 @@ def main():
                       % r.returncode)
         except Exception as e:
             print('  유튜브 영상 갱신 건너뜀:', e)
+    _videos_save_cache()
     run('build.py')
     # 데이터 정합성 상시 점검(17종 교차검증) — 어긋나면 콘솔·로그에 남깁니다.
     # 배포는 막지 않습니다(이미 빌드된 것). 자동 갱신마다 돌아 '데이터 감시' 역할.
@@ -252,6 +266,50 @@ def main():
         return
     run('deploy.py')
     print('\n끝났습니다.')
+
+
+def _read_json(path, default=None):
+    try:
+        return json.load(io.open(path, encoding='utf-8'))
+    except (IOError, OSError, ValueError):
+        return default
+
+
+def _videos_merge_cache():
+    """지난 실행에서 찾아 둔 다시보기 링크를 videos.json 의 빈 자리에 채웁니다.
+
+    저장소에 있는 것이 우선입니다 — 사람이 손으로 넣은 주소를 캐시가 덮지
+    않도록, 아직 없는 경기만 메웁니다. (VIDEO_CACHE 설명 참고)
+    """
+    cache = _read_json(VIDEO_CACHE, {}) or {}
+    doc = _read_json(VIDEOS_PATH)
+    if not isinstance(doc, dict) or not isinstance(cache.get('matches'), dict):
+        return
+    have = doc.setdefault('matches', {})
+    added = [k for k in cache['matches'] if k not in have]
+    if not added:
+        return
+    for k in added:
+        have[k] = cache['matches'][k]
+    doc['matches'] = dict(sorted(have.items(), reverse=True))   # fetch_videos 와 같은 차례로
+    try:
+        io.open(VIDEOS_PATH, 'w', encoding='utf-8').write(
+            json.dumps(doc, ensure_ascii=False, indent=1) + '\n')
+        print('  지난 실행에서 찾아 둔 다시보기 %d개를 이어받았습니다.' % len(added))
+    except (IOError, OSError) as e:
+        print('  (다시보기 이어받기 건너뜀 — %s)' % e)
+
+
+def _videos_save_cache():
+    """지금 붙어 있는 다시보기 목록을 다음 실행이 쓰도록 남깁니다."""
+    doc = _read_json(VIDEOS_PATH)
+    if not isinstance(doc, dict):
+        return
+    try:
+        json.dump({'matches': doc.get('matches') or {}},
+                  io.open(VIDEO_CACHE, 'w', encoding='utf-8'), ensure_ascii=False)
+    except (IOError, OSError) as e:
+        print('  (다시보기 캐시 저장 건너뜀 — %s)' % e)
 
 
 def _load_state():
