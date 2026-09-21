@@ -37,6 +37,10 @@ import urllib.request
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
+# 어디서 실행해도 같은 곳을 보도록 (작업 스케줄러는 C:\\ 에서 부릅니다)
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+
 DOC_ID = '1UL9NulvqK1C7x7-w9WT40xLvTsJUpXskd1CYxY_PTI0'
 TAB = 't.wacvhvtlbw9a'                       # 당첨자 탭
 YEAR = 2026                                   # 문서의 날짜(0209…)가 속한 해
@@ -282,16 +286,20 @@ def ftp_config():
     클라우드(GitHub Actions)에는 data/deploy.json 이 없으므로 시크릿을
     환경변수로 넣습니다. deploy.py 와 같은 규칙입니다.
     """
+    # deploy.py 와 같은 규칙 — 올릴 곳은 저장소(data/deploy-target.json),
+    # 비밀번호만 시크릿. 자세한 사정은 그 파일 주석에 적어 뒀습니다.
     cfg = {}
-    try:
-        cfg = json.load(io.open('data/deploy.json', encoding='utf-8'))
-    except Exception:
-        cfg = {}
+    for name in ('deploy.json', 'deploy-target.json'):
+        try:
+            cfg = json.load(io.open(os.path.join(ROOT, 'data', name), encoding='utf-8'))
+            break
+        except Exception:
+            continue
     out = {
-        'host': (os.environ.get('SC_FTP_HOST') or cfg.get('host') or '').strip(),
-        'user': (os.environ.get('SC_FTP_USER') or cfg.get('user') or '').strip(),
+        'host': (cfg.get('host') or os.environ.get('SC_FTP_HOST') or '').strip(),
+        'user': (cfg.get('user') or os.environ.get('SC_FTP_USER') or '').strip(),
         'password': (os.environ.get('SC_FTP_PASS') or cfg.get('password') or '').strip(),
-        'remoteDir': (os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir')
+        'remoteDir': (cfg.get('remoteDir') or os.environ.get('SC_FTP_DIR')
                       or '/www/endgame').strip(),
         'port': 0,       # 아래에서 프로토콜과 함께 정합니다
         'proto': '',
@@ -299,8 +307,8 @@ def ftp_config():
 
     # deploy.py 와 같은 규칙 — 22번이면 SFTP, SFTP 라고 적었으면 22번.
     # 2026-09-21 서버 이전으로 새 서버는 SSH(SFTP)만 열려 있습니다.
-    port = os.environ.get('SC_FTP_PORT') or cfg.get('port')
-    proto = (os.environ.get('SC_FTP_PROTO') or cfg.get('proto') or '').strip().lower()
+    port = cfg.get('port') or os.environ.get('SC_FTP_PORT')
+    proto = (cfg.get('proto') or os.environ.get('SC_FTP_PROTO') or '').strip().lower()
     if not proto:
         proto = 'sftp' if str(port) == '22' else 'ftp'
     out['proto'] = proto

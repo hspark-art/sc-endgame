@@ -80,7 +80,7 @@ SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
 # 그 안에 비밀이 들어오면 반드시 여기에 적어야 합니다. slack.json 은 2026-09-21
 # 까지 빠져 있어서, 그 파일이 있는 PC 에서 올리면 웹훅이 그대로 공개됐습니다.
 NEVER_UPLOAD = {'admin/config.php', 'data/deploy.json', 'data/youtube.json',
-                'data/slack.json'}
+                'data/slack.json', 'data/deploy-target.json'}
 
 # 서버에 남아 있으면 안 되는 것 — 올릴 때마다 있으면 지웁니다 (없으면 조용히 넘어감).
 # 이 스크립트는 원래 '올리기만' 했지만, 아래 둘은 그냥 둘 수가 없어 예외로 둡니다.
@@ -110,14 +110,21 @@ def _tidy(what, v):
     return t
 
 
+def _read_cfg(name):
+    try:
+        with io.open(os.path.join(ROOT, 'data', name), encoding='utf-8') as f:
+            return json.load(f)
+    except (IOError, OSError, ValueError):
+        return {}
+
+
 def load_settings():
-    cfg = {}
-    path = os.path.join(ROOT, 'data', 'deploy.json')
-    if os.path.exists(path):
-        with io.open(path, encoding='utf-8') as f:
-            cfg = json.load(f)
-    port = os.environ.get('SC_FTP_PORT') or cfg.get('port')
-    proto = (os.environ.get('SC_FTP_PROTO') or cfg.get('proto') or '').strip().lower()
+    # 어디에 올릴지(주소·계정·폴더)는 비밀이 아니라 저장소에 적어 둡니다.
+    # 비밀은 비밀번호 하나뿐입니다. 자세한 사정은 data/deploy-target.json 주석에.
+    cfg = _read_cfg('deploy.json') or _read_cfg('deploy-target.json')
+    where = lambda key, env: cfg.get(key) or os.environ.get(env)
+    port = cfg.get('port') or os.environ.get('SC_FTP_PORT')
+    proto = (cfg.get('proto') or os.environ.get('SC_FTP_PROTO') or '').strip().lower()
     # 둘 중 하나만 적어도 나머지를 알아서 맞춥니다.
     #   22번 포트면 SFTP, SFTP 라고 적었으면 22번 — 흔히 하는 실수 하나를 없앱니다.
     if not proto:
@@ -125,17 +132,19 @@ def load_settings():
     if not port:
         port = 22 if proto == 'sftp' else 21
     out = {
-        'host': _tidy('host', os.environ.get('SC_FTP_HOST') or cfg.get('host')),
-        'user': _tidy('user', os.environ.get('SC_FTP_USER') or cfg.get('user')),
+        'host': _tidy('host', where('host', 'SC_FTP_HOST')),
+        'user': _tidy('user', where('user', 'SC_FTP_USER')),
+        # 비밀번호만 반대입니다 — 시크릿이 먼저입니다.
         'password': _tidy('password',
                           os.environ.get('SC_FTP_PASS') or cfg.get('password')),
         'remoteDir': _tidy('remoteDir',
-                           os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir')
-                           or '/www/endgame'),
+                           where('remoteDir', 'SC_FTP_DIR') or '/www/endgame'),
         'port': int(port),
         'proto': proto,
         'tls': cfg.get('tls', True),
     }
+    print('  올릴 곳 %s@%s%s (%s)'
+          % (out['user'], out['host'], out['remoteDir'], out['proto'].upper()))
     missing = [k for k in ('host', 'user', 'password') if not out[k]]
     if missing:
         raise SystemExit(
