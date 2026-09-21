@@ -138,6 +138,77 @@ def _oddchars(raw):
     return ' · '.join(why) or '보이지 않는 차이'
 
 
+# 시트에 잘못 적힌 선수 이름을 바로잡습니다 (왼쪽 → 오른쪽).
+#
+# 한 글자만 틀려도 다른 사람이 됩니다. 경기가 둘로 갈라지고 선수 목록에 유령이
+# 하나 생깁니다. 2026-09-18 에 '변헌제'(헌)로 한 줄이 들어가, 김정우와의 9세트가
+# 8세트 + 1세트로 쪼개지고 선수가 31명 → 32명이 됐습니다.
+#
+# ⚠ 원본 시트를 고치는 것이 먼저입니다. 여기는 시트가 고쳐지기 전까지의 임시
+#   처치입니다. 시트를 고친 뒤에는 줄을 지워도 되고, 남겨 둬도 해롭지 않습니다.
+PLAYER_ALIASES = {
+    '변헌제': '변현제',
+}
+
+
+def _edit1(a, b):
+    """두 이름이 딱 한 글자만 다른가 (오타 의심)."""
+    if a == b:
+        return False
+    if len(a) == len(b):
+        return sum(1 for x, y in zip(a, b) if x != y) == 1
+    if len(a) > len(b):
+        a, b = b, a
+    if len(b) - len(a) != 1:
+        return False
+    return any(a == b[:i] + b[i + 1:] for i in range(len(b)))
+
+
+def show_name_warnings(sets):
+    """오타로 한 선수가 둘로 갈라진 흔적을 찾아 알려 줍니다.
+
+    '한 글자만 다르다'만으로는 못 거릅니다 — 이영호·이영웅·이영한·이재호처럼
+    진짜로 비슷한 이름이 수두룩해서 매번 헛경고가 납니다. 그래서 오타일 때만
+    나타나는 세 가지가 동시에 맞을 때만 말합니다.
+
+      · 같은 날짜에 둘 다 나온다        (오타는 그날 입력하다 납니다)
+      · 그날 같은 상대와 붙었다          (같은 경기를 치던 중이라는 뜻)
+      · 한쪽은 3세트 이하로 거의 없다     (한두 줄만 잘못 적힌 모양)
+
+    자동으로 합치지는 않습니다. 진짜 다른 선수일 수도 있으니 사람이 보고
+    PLAYER_ALIASES 에 넣거나 시트를 고치게 알리기만 합니다.
+    """
+    byday = {}
+    for dt, w, _wr, lo, _lr, _mp in sets:
+        d = byday.setdefault(dt, {})
+        d.setdefault(w, {})[lo] = d.setdefault(w, {}).get(lo, 0) + 1
+        d.setdefault(lo, {})[w] = d.setdefault(lo, {}).get(w, 0) + 1
+
+    said = False
+    for dt in sorted(byday):
+        names = sorted(byday[dt])
+        for i, a in enumerate(names):
+            for b in names[i + 1:]:
+                if not _edit1(a, b):
+                    continue
+                fa, fb = byday[dt][a], byday[dt][b]
+                if not (set(fa) & set(fb)):
+                    continue                      # 그날 같은 상대와 안 붙었으면 넘어갑니다
+                na, nb = sum(fa.values()), sum(fb.values())
+                few, many = (a, b) if na <= nb else (b, a)
+                if min(na, nb) > 3:
+                    continue                      # 둘 다 넉넉히 뛰었으면 진짜 다른 선수
+                if not said:
+                    print('  ⚠ 오타로 한 선수가 둘로 갈라진 것 같습니다 — 시트를 확인해 주세요:')
+                    said = True
+                print('      %s  %s (%d세트)  ↔  %s (%d세트)  · 같은 상대: %s'
+                      % (dt, few, min(na, nb), many, max(na, nb),
+                         ', '.join(sorted(set(fa) & set(fb)))))
+    if said:
+        print('      시트를 고치시거나, tools/endgame_import.py 의 PLAYER_ALIASES 에 넣으면 됩니다.')
+    return said
+
+
 # 시트에 잘못 적힌 맵 이름을 바로잡습니다 (왼쪽 → 오른쪽).
 # 대소문자·띄어쓰기만 다른 것은 아래 normalize_sets 가 알아서 합치므로
 # 여기에는 '사람이 판단해야 했던 것'만 적습니다.
@@ -174,6 +245,16 @@ def normalize_sets(sets):
             if fixed != raw:
                 fixes.append('%-10s  %s %s 을(를) 맞췄습니다 — %s'
                              % (cdt, what, fixed or '(빈칸)', _oddchars(raw)))
+        # 위에 적어 둔 이름 오타를 바로잡습니다 (PLAYER_ALIASES 설명 참고).
+        for who in ('w', 'lo'):
+            cur = cw if who == 'w' else clo
+            alias = PLAYER_ALIASES.get(cur)
+            if alias:
+                fixes.append('%-10s  선수 이름 %s → %s' % (cdt, cur, alias))
+                if who == 'w':
+                    cw = alias
+                else:
+                    clo = alias
         cleaned.append((cdt, cw, _clean(wr), clo, _clean(lr), cmp))
     sets = cleaned
 
@@ -435,6 +516,7 @@ def main():
     sets, fixes = normalize_sets(raw_sets)
     print('  세트 %d줄을 읽었습니다.' % len(sets))
     show_fixes(fixes)
+    show_name_warnings(sets)
 
     old = None
     if os.path.exists(TARGET):

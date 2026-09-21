@@ -127,6 +127,7 @@ def main():
     eg_sets, eg_fixes = endgame_import.load_sets()
     print('  세트 %d줄을 읽었습니다.' % len(eg_sets))
     endgame_import.show_fixes(eg_fixes)
+    endgame_import.show_name_warnings(eg_sets)
     eg_path = os.path.join(ROOT, 'data', 'endgame.json')
     eg_old = None
     if os.path.exists(eg_path):
