@@ -100,6 +100,16 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python3 tools/update.py --auto-apply-deletes --videos "${{ inputs.videos || 'auto' }}"
 
+      # 올린 뒤에 사이트를 직접 열어 방금 만든 것과 같은지 봅니다.
+      # 배포가 초록이어도 사이트가 최신이라는 보장은 없습니다 — 엉뚱한 폴더나
+      # 옛 서버에 올리면 파일은 잘 올라가고 사이트는 그대로입니다(2026-09-21).
+      # 위 단계가 실패했으면 사이트가 옛것인 게 당연하므로 돌리지 않습니다.
+      - name: 사이트가 정말 최신인지 확인
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PYTHONIOENCODING: utf-8
+        run: python3 tools/verify_live.py
+
       # 당첨자 명단(구글 문서 → 서버 winners.json) — 새 당첨자만 추가(중복 안전).
       # 위 update 가 멈춰도(대량 삭제 감지 등) 당첨자 등록은 따로 돌게 always().
       # 방송 시간대에만 봅니다 — 낮에는 문서가 바뀔 일이 없어 그냥 낭비입니다.
