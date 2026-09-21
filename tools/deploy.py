@@ -147,20 +147,38 @@ def local_files():
     return out
 
 
-def load_state():
+def target_key(cfg):
+    """'어느 서버의 어느 폴더에 올렸는가'. 상태 파일이 이것과 함께 저장됩니다."""
+    return '%s%s' % (cfg['host'], cfg['remoteDir'].rstrip('/'))
+
+
+def load_state(cfg):
+    """지난번에 올린 파일 목록 — **같은 곳에 올렸을 때만** 씁니다.
+
+    이게 없으면 서버를 옮겼을 때 사고가 납니다. 파일 해시만 보고 '안 바뀌었다'고
+    판단하므로, 옛 서버에 다 올린 직후 새 서버로 주소를 바꾸면 '올릴 것 없음'이
+    되어 **새 서버에는 아무것도 안 올라갑니다.** 겉으로는 성공한 것처럼 보이고요.
+    (2026-09-21 서버 이전 때 실제로 밟을 뻔한 지뢰입니다.)
+    """
     if not os.path.exists(STATE):
         return {}
     try:
         with io.open(STATE, encoding='utf-8') as f:
-            return json.load(f).get('files', {})
+            doc = json.load(f)
     except (ValueError, OSError):
         return {}
+    if doc.get('target') and doc['target'] != target_key(cfg):
+        print('  올리는 곳이 지난번과 다릅니다 (%s → %s) — 전부 다시 올립니다.'
+              % (doc['target'], target_key(cfg)))
+        return {}
+    return doc.get('files', {})
 
 
-def save_state(files):
+def save_state(cfg, files):
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     with io.open(STATE, 'w', encoding='utf-8') as f:
-        f.write(json.dumps({'files': files}, ensure_ascii=False, indent=0))
+        f.write(json.dumps({'target': target_key(cfg), 'files': files},
+                           ensure_ascii=False, indent=0))
 
 
 class FtpUploader(object):
@@ -419,7 +437,7 @@ def main():
         cfg['tls'] = False
 
     files = local_files()
-    old = {} if args.all else load_state()
+    old = {} if args.all else load_state(cfg)
     changed = sorted(k for k, v in files.items() if old.get(k) != v)
     total_bytes = sum(os.path.getsize(os.path.join(ROOT, k)) for k in changed)
 
@@ -458,7 +476,7 @@ def main():
         up.close()
 
     # 성공한 것만 기록해 둡니다 — 실패한 파일은 다음에 다시 올라갑니다.
-    save_state({k: v for k, v in old.items() if k in files})
+    save_state(cfg, {k: v for k, v in old.items() if k in files})
 
     print('  올린 파일 %d개' % done)
     if failed:
