@@ -550,7 +550,7 @@ tbody tr.grouphead:first-child td{border-top:none}
   </form>
 
   <div class="helptxt" style="margin-top:18px">
-    <a href="../index.html" style="color:var(--accent)">← 기록실로 돌아가기</a>
+    <a href="../index.php" style="color:var(--accent)">← 기록실로 돌아가기</a>
   </div>
 </div>
 </body>

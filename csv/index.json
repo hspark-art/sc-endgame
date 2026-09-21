@@ -1,11 +1,11 @@
 {
-  "updatedAt": "2026-09-11T16:54:14.471Z",
-  "updatedAtKo": "2026년 09월 12일 01:54 (KST)",
-  "base": "https://pubgin.com/endgame",
-  "xlsx": "https://pubgin.com/endgame/xlsx/sc-endgame.xlsx",
-  "aslXlsx": "https://pubgin.com/endgame/xlsx/asl.xlsx",
-  "json": "https://pubgin.com/endgame/data/endgame.json",
-  "aslJson": "https://pubgin.com/endgame/data/asl.json",
+  "updatedAt": "2026-09-21T16:19:17.163Z",
+  "updatedAtKo": "2026년 09월 22일 01:19 (KST)",
+  "base": "https://starendgame.com",
+  "xlsx": "https://starendgame.com/xlsx/sc-endgame.xlsx",
+  "aslXlsx": "https://starendgame.com/xlsx/asl.xlsx",
+  "json": "https://starendgame.com/data/endgame.json",
+  "aslJson": "https://starendgame.com/data/asl.json",
   "files": [
     {
       "label": "선수",
@@ -13,7 +13,7 @@
       "file": "players.csv",
       "group": "끝장전",
       "rows": 31,
-      "url": "https://pubgin.com/endgame/csv/players.csv"
+      "url": "https://starendgame.com/csv/players.csv"
     },
     {
       "label": "경기",
@@ -21,7 +21,7 @@
       "file": "matches.csv",
       "group": "끝장전",
       "rows": 296,
-      "url": "https://pubgin.com/endgame/csv/matches.csv"
+      "url": "https://starendgame.com/csv/matches.csv"
     },
     {
       "label": "세트별 맵",
@@ -29,7 +29,7 @@
       "file": "sets.csv",
       "group": "끝장전",
       "rows": 2656,
-      "url": "https://pubgin.com/endgame/csv/sets.csv"
+      "url": "https://starendgame.com/csv/sets.csv"
     },
     {
       "label": "맵",
@@ -37,7 +37,7 @@
       "file": "maps.csv",
       "group": "끝장전",
       "rows": 78,
-      "url": "https://pubgin.com/endgame/csv/maps.csv"
+      "url": "https://starendgame.com/csv/maps.csv"
     },
     {
       "label": "상대전적",
@@ -45,7 +45,7 @@
       "file": "headtohead.csv",
       "group": "끝장전",
       "rows": 112,
-      "url": "https://pubgin.com/endgame/csv/headtohead.csv"
+      "url": "https://starendgame.com/csv/headtohead.csv"
     },
     {
       "label": "연도별",
@@ -53,7 +53,7 @@
       "file": "yearly.csv",
       "group": "끝장전",
       "rows": 8,
-      "url": "https://pubgin.com/endgame/csv/yearly.csv"
+      "url": "https://starendgame.com/csv/yearly.csv"
     },
     {
       "label": "ASL 선수",
@@ -61,7 +61,7 @@
       "file": "asl-players.csv",
       "group": "ASL",
       "rows": 95,
-      "url": "https://pubgin.com/endgame/csv/asl-players.csv"
+      "url": "https://starendgame.com/csv/asl-players.csv"
     },
     {
       "label": "ASL 대회",
@@ -69,7 +69,7 @@
       "file": "asl-tournaments.csv",
       "group": "ASL",
       "rows": 23,
-      "url": "https://pubgin.com/endgame/csv/asl-tournaments.csv"
+      "url": "https://starendgame.com/csv/asl-tournaments.csv"
     },
     {
       "label": "ASL 매치",
@@ -77,7 +77,7 @@
       "file": "asl-matches.csv",
       "group": "ASL",
       "rows": 1334,
-      "url": "https://pubgin.com/endgame/csv/asl-matches.csv"
+      "url": "https://starendgame.com/csv/asl-matches.csv"
     },
     {
       "label": "ASL 세트",
@@ -85,7 +85,7 @@
       "file": "asl-sets.csv",
       "group": "ASL",
       "rows": 2221,
-      "url": "https://pubgin.com/endgame/csv/asl-sets.csv"
+      "url": "https://starendgame.com/csv/asl-sets.csv"
     },
     {
       "label": "ASL 맵",
@@ -93,7 +93,7 @@
       "file": "asl-maps.csv",
       "group": "ASL",
       "rows": 97,
-      "url": "https://pubgin.com/endgame/csv/asl-maps.csv"
+      "url": "https://starendgame.com/csv/asl-maps.csv"
     },
     {
       "label": "ASL 상대전적",
@@ -101,7 +101,7 @@
       "file": "asl-headtohead.csv",
       "group": "ASL",
       "rows": 731,
-      "url": "https://pubgin.com/endgame/csv/asl-headtohead.csv"
+      "url": "https://starendgame.com/csv/asl-headtohead.csv"
     }
   ]
 }

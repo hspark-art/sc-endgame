@@ -10,8 +10,8 @@
 | | 주소 | 내용 |
 | --- | --- | --- |
 | 끝장전 | **`starendgame.com`** | 297매치 · 2,665세트 · 선수 31명 |
-| ASL | `pubgin.com/endgame/asl/` | 23개 대회 · 1,299매치 · 2,177세트 · 선수 95명 |
-| CG 제작 툴 | `pubgin.com/endgame/admin/` | 대진표 이미지 만들기 (관리자 로그인) |
+| ASL | `starendgame.com/asl/` | 23개 대회 · 1,299매치 · 2,177세트 · 선수 95명 |
+| CG 제작 툴 | `starendgame.com/admin/` | 대진표 이미지 만들기 (관리자 로그인) |
 
 **CG 제작 툴은 메뉴에 없습니다.** 페이지 맨 아래 톱니바퀴로만 들어갑니다.
 일부러 눈에 안 띄게 둔 것이니 메뉴로 되돌리지 마세요.
@@ -19,11 +19,40 @@
 **메인 주소는 `starendgame.com` 입니다 (2026-09-21 사장님 지시).** GitHub 은 백업일 뿐이고,
 거기 올린다고 사이트가 바뀌지 않습니다.
 
-> ⚠️ **주소와 올리는 곳이 아직 다릅니다.** `starendgame.com` 은 pubgin 과 **다른 서버**
-> (175.118.124.225 · pubgin 은 112.175.85.163)라, 지금의 자동 갱신은 여전히
-> pubgin 쪽 `/www/endgame` 에만 올라갑니다. 새 서버 FTP 정보를 시크릿에 넣기 전까지는
-> starendgame.com 의 내용이 저절로 최신이 되지 않습니다. `data/site.json` 의 baseUrl 만
-> 먼저 새 주소로 돌려 둔 상태입니다(canonical·og·시트 수식이 새 주소를 가리킴).
+**예전 주소 `pubgin.com/endgame` 은 이제 쓰지 않습니다** (2026-09-21). 아래 「서버 이전」 참고.
+
+## 서버 이전 — 전용 서버로 옮겼습니다 (2026-09-21)
+
+박상현 형님이 **서버를 사서 단독 호스팅으로 옮겼습니다.** 카페24 공유호스팅
+(pubgin.com)에서 전용 서버 한 대로 바뀌었고, `pubgin.com` 과 `starendgame.com`
+둘 다 그 서버를 봅니다. **이제 메인은 `starendgame.com` 하나입니다.**
+
+| | 예전 (~2026-09-20) | 지금 |
+| --- | --- | --- |
+| 주소 | pubgin.com/endgame | **starendgame.com** |
+| 서버 | 카페24 공유호스팅 | 전용 서버 `175.118.124.225` |
+| 올리는 길 | FTP (21번) | **SFTP = SSH (22번)** |
+| 올리는 곳 | `/www/endgame` | `/var/www/<사이트 폴더>` |
+| 페이지 | `index.html` · `p/*.html` | **`index.php` · `p/*.php`** |
+
+**페이지가 .php 인 이유** — 형님이 옮기면서 전부 .php 로 바꿔 올려 뒀습니다
+(`index.php` 가 기본 문서, `.htaccess` 가 옛 .html 주소를 .php 로 301). 내용은
+여전히 정적 HTML 이고 확장자와 서로 가리키는 링크만 다릅니다. 우리 빌드도
+거기에 맞춰 냅니다 — `data/site.json` 의 **`"pageExt": "php"`**, 실제 변환은
+`tools/build.py` 의 `emit_php()` 한 곳에서 합니다. `"html"` 로 바꾸면 예전처럼 나옵니다.
+
+**올리는 길** — `deploy.py`·`gdoc_import.py` 가 FTP 와 SFTP 를 모두 압니다.
+**22번 포트면 SFTP** 로 알아서 붙습니다(`SC_FTP_PROTO=sftp` 로 못박아도 됩니다).
+SFTP 는 `paramiko` 가 필요하고, Actions 에는 넣어 뒀습니다.
+
+> ⚠️ **비밀번호는 절대 저장소·문서·대화에 적지 마세요.** GitHub 시크릿에만 넣습니다.
+> 지금은 **root 계정 + 비밀번호**로 붙게 되어 있는데, 이 비밀번호는 카톡으로 오간
+> 적이 있습니다. **① 비밀번호를 바꾸고 ② 배포 전용 계정을 만들어 키 인증으로
+> 돌리는 것**을 권합니다. `/var/www` 에만 쓸 수 있으면 충분합니다.
+
+**서버에 남은 옛 파일** — `deploy.py` 는 올리기만 하고 지우지 않습니다. 형님이
+옮긴 판에 있던 `p/byun-heonje.php`(변헌제 오타로 생겼던 유령 선수 페이지)는
+그대로 남아 있으니 한 번 지워 주세요. 새 빌드는 만들지 않습니다.
 
 ## 자주 쓰는 명령
 
@@ -181,7 +210,8 @@ python3 tools/fetch_videos.py --when     # PC 에서 (API 키가 있어야 합�
 > 저장소에 있는 것(사람이 손으로 넣은 주소 포함)이 우선이라 덮이지 않습니다.
 > 캐시가 날아가면 다음 재조회 때 다시 찾습니다.
 
-- 시크릿 6개(`SC_FTP_HOST/USER/PASS/DIR` · `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`)를 API 로 등록했습니다 —
+- 시크릿 8개(`SC_FTP_HOST/USER/PASS/DIR` · **`SC_FTP_PROTO`=sftp · `SC_FTP_PORT`=22** ·
+  `YOUTUBE_API_KEY` · `SLACK_WEBHOOK_URL`) —
   값은 `data/deploy.json`·`data/youtube.json`·`data/slack.json` 과 같습니다(도구들이 원래 환경변수를 먼저 읽음).
 - 저장소에 커밋하지 않습니다(원본은 시트). `data/.deploy-state.json`·`data/.update-state.json` 만
   Actions 캐시로 이어가 바뀐 파일만 올립니다 — 캐시가 없으면 325개 전부(~10분).
@@ -234,7 +264,8 @@ git push -u origin claude/starcraft-endgame-site-049jip
 `python3 tools/setup.py` 를 안내하고 넘어가세요.
 
 `deploy.py` 가 **붙지 못하면** 지금 작업방이 클라우드일 수 있습니다.
-클라우드에서는 pubgin.com 이 막혀 있어 무엇을 해도 안 됩니다. 그때는
+클라우드 작업방에서는 서버로 나가는 21·22번 포트가 막혀 있어 무엇을 해도 안 됩니다
+(2026-09-21 확인). 그때는 GitHub Actions 에 맡기면 됩니다 — 거기서는 열립니다. 그때는
 "이 작업방에서는 서버에 못 닿습니다. 회사 PC 에서 `START.bat` 을 돌리시거나
 PC 에서 `/remote-control` 로 이어 주세요" 라고 알려 주고 넘어가세요.
 **억지로 우회하지 마세요.**
@@ -262,7 +293,7 @@ tools/notify.py     보내는 쪽. python3 tools/notify.py --test 로 시험 발
 
 ## 꼭 지킬 것
 
-- **`index.html`, `p/`, `asl/`, `admin/`, `csv/`, `xlsx/`, `sheets.html` 은 빌드 결과물입니다.**
+- **`index.php`, `p/`, `asl/`, `admin/`, `csv/`, `xlsx/`, `sheets.php`, `predict.php` 는 빌드 결과물입니다.**
   직접 고치지 마세요. 고칠 곳은 `tools/` 와 `data/` 입니다.
 - 화면을 바꾸려면 `tools/site.css`, `tools/app.js`, `tools/asl_app.js`,
   `tools/cg_app.js`, `tools/render.py` 를 고치고 `build.py` 를 돌립니다.

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이경민 (프로토스) — ASL 기록실</title>
+<meta name="description" content="이경민 프로토스 · ASL 우승 0회 · 매치 11승 15패(42.3%) · 세트 13승 19패(40.6%) · 7개 대회 출전">
+<link rel="canonical" href="https://starendgame.com/asl/p/lee-gyeongmin.php">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="스타크래프트 끝장전 기록실">
+<meta property="og:title" content="이경민 (프로토스) — ASL 기록실">
+<meta property="og:description" content="이경민 프로토스 · ASL 우승 0회 · 매치 11승 15패(42.3%) · 세트 13승 19패(40.6%) · 7개 대회 출전">
+<meta property="og:url" content="https://starendgame.com/asl/p/lee-gyeongmin.php">
+<meta property="og:image" content="https://stimg.sooplive.com/LOGO/ta/talent/m/talent.webp">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="https://stimg.sooplive.com/LOGO/ta/talent/m/talent.webp">
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --bg:#0a0d13; --panel:#141821; --panel2:#1b202b; --line:#232a38; --line2:#171c25;
+  --txt:#e8ecf3; --dim:#8a93a6; --accent:#1c8cff; --gold:#ffb020;
+  --win:#4ade80; --lose:#f87171;
+  --t:#4a9eff; --p:#f5c518; --z:#ff6b6b;
+}
+*{box-sizing:border-box}
+/* hidden 속성이 항상 이기도록. display 를 지정한 요소에 hidden 을 걸면
+   작성자 규칙이 브라우저 기본값을 눌러 버려서 계속 보입니다. */
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,sans-serif;
+  font-size:14px;-webkit-text-size-adjust:100%}
+a{color:inherit;text-decoration:none}
+/* 누르라고 만든 것들은 눌러도 글자가 잡히거나 커서가 깜빡이지 않게 합니다. */
+.tab,.chip,th,.rowlink,.score-cell,.spoiler,.dlbtn,.backlink,.linkbtn,
+.yt-mini,.vmodal-close,.navlink,.srow,.caret,.race,.rk{
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.rowlink,.score-cell,.tab,.chip,th[data-key]{cursor:pointer}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.brandbar{height:4px;background:linear-gradient(90deg,var(--t) 0%,var(--accent) 35%,var(--gold) 70%,var(--z) 100%)}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 20px 80px}
+
+/* ── 헤더 ─────────────────────────────────────────── */
+header{padding-bottom:18px;border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+header::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.06;
+  background-image:repeating-linear-gradient(115deg,var(--accent) 0 2px,transparent 2px 26px);
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)}
+.headrow{display:flex;align-items:center;gap:14px;position:relative}
+.brandlogo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none;
+  border:2px solid var(--accent);box-shadow:0 0 0 4px rgba(28,140,255,.15)}
+h1{margin:0;font-size:26px;letter-spacing:-.02em;
+  background:linear-gradient(90deg,var(--accent),var(--gold));-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+h1 a{color:transparent}
+.sub{color:var(--dim);font-size:13px;margin-top:6px}
+.stats-strip{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
+.stats-strip .item{color:var(--dim);font-size:12.5px}
+.stats-strip b{color:var(--txt);font-size:15px;display:block;font-variant-numeric:tabular-nums}
+
+/* ── 바로가기 배너 ────────────────────────────────── */
+.linkbanner{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.linkbtn{display:flex;flex-direction:column;gap:2px;padding:9px 14px;border-radius:9px;
+  background:var(--panel);border:1px solid var(--line);font-weight:700;font-size:13px}
+.linkbtn:hover{border-color:var(--accent)}
+.linkbtn .sub2{color:var(--dim);font-weight:500;font-size:11px}
+.linkbtn.yt:hover{border-color:#ff3d3d}
+.yt-ico{color:#ff3d3d}
+
+/* ── 라이브 배너 ──────────────────────────────────── */
+.livecard{margin-top:14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--panel);overflow:hidden}
+.livecard.live{border-color:#ff3d3d;box-shadow:0 0 0 3px rgba(255,61,61,.10)}
+.live-head{display:flex;align-items:center;gap:9px;padding:11px 14px;flex-wrap:wrap}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#ff3d3d;flex:none;
+  box-shadow:0 0 0 0 rgba(255,61,61,.7);animation:pulse 1.6s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(255,61,61,0)}100%{box-shadow:0 0 0 0 rgba(255,61,61,0)}}
+.live-badge{color:#ff3d3d;font-weight:900;font-size:12px;letter-spacing:.08em}
+.live-title{font-weight:700;font-size:13.5px;flex:1;min-width:150px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-viewer{color:var(--dim);font-size:12px}
+.live-off{padding:0 14px 12px;color:var(--dim);font-size:12.5px}
+.live-off a{color:var(--accent);text-decoration:underline}
+.live-thumb-link{display:block;position:relative}
+.live-thumb{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#000}
+.live-play{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;font-weight:800;
+  font-size:13px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.82))}
+
+/* ── 탭 / 칩 ──────────────────────────────────────── */
+.tabs{display:flex;gap:6px;margin:20px 0 12px;flex-wrap:wrap}
+.tab{padding:8px 15px;border-radius:8px;background:var(--panel);color:var(--dim);
+  cursor:pointer;font-weight:600;font-size:13px;border:1px solid transparent}
+.tab:hover{color:var(--txt)}
+.tab.on{color:#fff;background:linear-gradient(135deg,var(--accent),#0d5fc4);
+  box-shadow:0 2px 10px rgba(28,140,255,.35)}
+.tab .n{opacity:.6;margin-left:6px;font-size:11px}
+
+.chips{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.chip{padding:5px 12px;border-radius:999px;background:var(--panel);color:var(--dim);
+  cursor:pointer;font-weight:700;font-size:12px;border:1px solid var(--line)}
+.chip:hover{color:var(--txt)}
+.chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.yrrange{align-items:center}
+.yrsel{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.yrsel:hover{border-color:var(--accent)}
+.yrtilde{color:var(--dim);font-weight:700;margin:0 1px}
+.chiplabel{color:var(--dim);font-size:11.5px;letter-spacing:.05em;margin-right:2px}
+
+input.search{width:100%;max-width:280px;padding:8px 12px;border-radius:8px;
+  background:var(--panel);border:1px solid var(--line);color:var(--txt);
+  font-size:13px;margin-bottom:12px}
+input.search::placeholder{color:var(--dim)}
+input.search:focus{outline:none;border-color:var(--accent)}
+
+/* ── 표 ───────────────────────────────────────────── */
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;white-space:nowrap}
+th{color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.06em;
+  border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+th.static{cursor:default}
+td{border-bottom:1px solid var(--line2)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#161b25}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.rowlink{cursor:pointer}
+.rk{display:inline-block;min-width:22px;color:var(--dim);font-size:12px;
+  font-variant-numeric:tabular-nums}
+.nm{font-weight:700}
+.nm-link{font-weight:700;cursor:pointer;border-bottom:1px dotted transparent}
+.nm-link:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.pct{color:var(--dim);font-size:12px;margin-left:4px}
+.muted,.dim{color:var(--dim)}
+.win{color:var(--win)}
+.lose{color:var(--lose)}
+.race{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;
+  border-radius:5px;font-size:10.5px;font-weight:900;color:#0b0d11;margin-right:6px;flex:none}
+.race.T{background:var(--t)} .race.P{background:var(--p)} .race.Z{background:var(--z)}
+
+/* ── 카드 ─────────────────────────────────────────── */
+.card{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:14px;margin-bottom:14px}
+.card > .tblwrap{border:none;border-radius:0;background:transparent}
+.cardtitle{font-weight:800;font-size:14.5px;margin-bottom:10px;display:flex;
+  align-items:center;gap:8px;flex-wrap:wrap}
+.cardtitle .note{color:var(--dim);font-weight:500;font-size:11.5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+
+/* ── 상성 막대 ────────────────────────────────────── */
+.mubar{display:flex;height:24px;border-radius:6px;overflow:hidden;margin:6px 0 4px;
+  background:var(--panel2)}
+.mubar span{display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-weight:800;color:#0b0d11;min-width:0;overflow:hidden;white-space:nowrap}
+.murow{margin-bottom:12px}
+.murow:last-child{margin-bottom:0}
+.mulabel{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
+.mulabel b{color:var(--txt)}
+
+/* ── 스파크라인(연도별 사용) ──────────────────────── */
+.spark{display:inline-flex;align-items:flex-end;gap:2px;height:20px}
+.spark i{display:block;width:5px;background:var(--accent);opacity:.55;border-radius:1px}
+.spark i.on{opacity:1}
+
+/* ── 내려받기 상자 (보조 기능이라 눈에 덜 띄게) ───── */
+.dlbox{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:16px;
+  padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--panel);font-size:12px;opacity:.78}
+.dlbox:hover{opacity:1}
+.dlbox .t{color:var(--dim);font-size:11.5px;letter-spacing:.02em;margin-right:2px}
+.dlbtn{padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);
+  border:1px solid var(--line);font-weight:600;font-size:11.5px}
+.dlbtn:hover{color:var(--txt);border-color:var(--accent)}
+.dlbtn.on{color:var(--txt);border-color:var(--accent)}
+
+/* ── 영상 ─────────────────────────────────────────── */
+.yt-mini{color:#ff6b6b;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.yt-mini:hover{text-decoration:underline}
+.yt-fallback{color:var(--dim);font-weight:600}
+.vmodal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:60;
+  align-items:center;justify-content:center;padding:20px}
+.vmodal.on{display:flex}
+.vmodal-box{width:100%;max-width:960px}
+.vmodal-close{display:block;margin:0 0 10px auto;background:transparent;color:var(--txt);
+  border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;
+  font-size:13px;font-family:inherit}
+.vmodal-frame{position:relative;padding-top:56.25%;background:#000;border-radius:10px;overflow:hidden}
+.vmodal-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* ── 스포일러 ─────────────────────────────────────── */
+.score-cell{cursor:pointer}
+.spoiler{display:inline-block;padding:3px 9px;border-radius:6px;background:var(--panel2);
+  color:var(--dim);font-size:11.5px;font-weight:600;border:1px solid var(--line)}
+.score-cell:hover .spoiler{color:var(--txt);border-color:var(--accent)}
+
+/* ── 선수 페이지 ──────────────────────────────────── */
+.backlink{color:var(--dim);font-size:13px;margin:16px 0 12px;display:inline-block;cursor:pointer}
+.backlink:hover{color:var(--accent)}
+.phead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.phead .race{width:26px;height:26px;line-height:26px;font-size:13px;border-radius:7px}
+.pname{font-size:22px;font-weight:900;letter-spacing:-.01em}
+.ptag{padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+  color:var(--dim);font-size:11.5px;font-weight:700}
+.streak-w{color:var(--win)} .streak-l{color:var(--lose)}
+
+/* ── 푸터 ─────────────────────────────────────────── */
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--dim);font-size:12px;line-height:1.8}
+footer a{color:var(--accent);text-decoration:underline}
+
+/* ── 안내 문단 ────────────────────────────────────── */
+.hint{color:var(--dim);font-size:12px;margin-top:8px;line-height:1.7}
+.emptybox{padding:26px 14px;text-align:center;color:var(--dim);font-size:13px}
+/* 재밌는 기록 · 중계진 예측 */
+.stw{color:var(--win)}
+.stl{color:var(--lose)}
+.prow{display:flex;align-items:center;gap:10px;margin:7px 0}
+.prow .plab{width:54px;font-weight:700;font-size:12.5px;color:var(--dim);flex:none}
+.prow .pbar{flex:1;height:22px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.prow .pbar>span{display:block;height:100%;background:var(--accent);color:#fff;font-size:11px;line-height:22px;text-align:right;padding-right:7px;min-width:30px;box-sizing:border-box;white-space:nowrap;font-variant-numeric:tabular-nums}
+.prow .pbar>span.hard{background:var(--lose)}
+.prow .pbar>span.easy{background:var(--win);color:#0a0d13}
+.prow .pnum{width:52px;text-align:right;font-size:11.5px;color:var(--dim);flex:none;font-variant-numeric:tabular-nums}
+
+/* ── 코드 (시트 연동 안내) ────────────────────────── */
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre{background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  padding:11px 13px;overflow-x:auto;font-size:12.5px;margin:8px 0;color:#cfe6ff}
+code.inline{background:var(--panel2);border:1px solid var(--line);border-radius:5px;
+  padding:1px 5px;font-size:12px;color:#cfe6ff}
+ol.steps{padding-left:20px;line-height:2}
+ol.steps li{margin-bottom:4px}
+
+@media (max-width:640px){
+  .wrap{padding:20px 13px 60px}
+  h1{font-size:21px}
+  .hide-mobile{display:none}
+  th,td{padding:9px 9px}
+  .stats-strip{gap:14px}
+}
+
+/* ── 사이트 전환 바 ───────────────────────────────── */
+.sitenav{display:flex;gap:4px;margin:0 0 18px;flex-wrap:wrap}
+.navlink{padding:7px 16px;border-radius:8px;background:var(--panel);color:var(--dim);
+  font-weight:700;font-size:13px;border:1px solid var(--line)}
+.navlink:hover{color:var(--txt);border-color:var(--accent)}
+.navlink.on{color:#0b0d11;background:var(--gold);border-color:var(--gold)}
+
+/* ── 펼쳐지는 대회 목록 (ASL) ─────────────────────── */
+.tourlist{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.srow{display:grid;grid-template-columns:1fr 78px 78px 62px 224px 22px;
+  align-items:center;gap:10px;padding:13px 14px;cursor:pointer;
+  border-top:1px solid var(--line2)}
+.srow:first-child{border-top:none}
+.srow:hover{background:#161b25}
+.srow.thead{background:transparent;border:none;cursor:default;padding:0 14px 8px;
+  color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.06em}
+.srow.thead:hover{background:none}
+.srow .ch{font-size:12.5px;color:var(--dim);overflow:hidden;padding-left:14px;
+  text-overflow:ellipsis;white-space:nowrap}
+.caret{color:var(--dim);font-size:11px;text-align:center;transition:transform .15s}
+.srow.open .caret{transform:rotate(90deg)}
+.stages{display:none;background:#0f1319;border-top:1px solid var(--line2)}
+.stages.open{display:block}
+.stlabel{padding:13px 20px 2px;color:var(--dim);font-size:11.5px;letter-spacing:.06em}
+.offbox{padding:12px 20px;border-bottom:1px solid var(--line2);font-size:12.5px}
+.stages .tblwrap{border:none;background:transparent;border-radius:0}
+.stages td{border-bottom:1px solid var(--line2)}
+
+@media (max-width:760px){
+  .srow{grid-template-columns:1fr 60px 60px 20px}
+  .srow > :nth-child(4),.srow.thead > :nth-child(4){display:none}
+  .srow .ch{display:none}
+}
+
+/* ── CG 제작 툴 ───────────────────────────────────── */
+.cgwrap{max-width:none;padding:22px 22px 60px}
+.cglayout{display:grid;grid-template-columns:380px minmax(0,1fr);gap:20px;align-items:start}
+.cgpanel{position:sticky;top:16px;max-height:calc(100vh - 40px);overflow-y:auto;
+  padding-right:6px}
+.cgpanel::-webkit-scrollbar{width:8px}
+.cgpanel::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.cgstage{border:1px solid var(--line);border-radius:12px;background:#0e1015;padding:12px}
+#cv{width:100%;height:auto;display:block;border-radius:6px;background:#15171c;
+  cursor:grab;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#cv:active{cursor:grabbing}
+
+.fld{margin-bottom:11px}
+.fld > label{display:block;color:var(--dim);font-size:11.5px;font-weight:600;
+  letter-spacing:.04em;margin-bottom:5px}
+.fld input[type=text],.fld select,.fld textarea{width:100%;padding:8px 10px;border-radius:8px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  font-size:13px;font-family:inherit}
+.fld textarea{min-height:96px;resize:vertical;line-height:1.6}
+.fld input[type=text]:focus,.fld select:focus,.fld textarea:focus{
+  outline:none;border-color:var(--accent)}
+.fld input[type=range]{width:100%;accent-color:var(--accent)}
+.fld input[type=color]{width:46px;height:32px;padding:2px;border-radius:7px;
+  background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:9px}
+/* CG 종류 고르기 */
+.cgtypes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}
+.cgtype{display:flex;flex-direction:column;gap:2px;padding:9px 10px;border-radius:9px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+  cursor:pointer;text-align:left;font-family:inherit}
+.cgtype b{color:var(--txt);font-size:13px}
+.cgtype span{font-size:10.5px;line-height:1.35}
+.cgtype:hover{border-color:var(--accent)}
+.cgtype.on{background:linear-gradient(135deg,var(--accent),#0d5fc4);border-color:var(--accent)}
+.cgtype.on b,.cgtype.on span{color:#fff}
+/* 글자 모양 한 줄 — 이름 / 크기 / 색 / 폰트 */
+.strow{display:grid;grid-template-columns:1fr 66px 44px 104px;gap:6px;align-items:center;
+  margin-bottom:6px}
+.stname{color:var(--dim);font-size:11.5px;font-weight:600;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.strow input[type=number],.strow select{width:100%;padding:6px 7px;border-radius:7px;
+  background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+  font-family:inherit;font-size:12px}
+.strow input[type=color]{width:100%;height:30px;padding:2px;border-radius:7px;
+  background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+.strow select:focus,.strow input:focus{border-color:var(--accent);outline:none}
+.row-inline{display:flex;gap:9px;align-items:center}
+.ovrow{display:flex;align-items:center;gap:6px;margin:6px 0}
+.ovrow img{width:34px;height:34px;object-fit:contain;background:#20242e;border-radius:6px}
+.ovrow input[type=range]{flex:1;min-width:60px}
+.ovname{font-size:12px;color:#9aa3b5;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filebtn{display:inline-block;padding:7px 11px;border-radius:7px;background:var(--panel2);
+  border:1px solid var(--line);color:var(--dim);font-size:12px;font-weight:600;cursor:pointer}
+.filebtn:hover{color:var(--txt);border-color:var(--accent)}
+.filebtn input{display:none}
+.btn{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger:hover{border-color:var(--lose);color:var(--lose)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.note{color:var(--dim);font-size:11.5px;margin-top:8px;min-height:16px;line-height:1.6}
+.note.bad{color:var(--gold)}
+.helptxt{color:var(--dim);font-size:11.5px;line-height:1.75;margin-top:6px}
+.helptxt code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+  padding:1px 5px;font-size:11px;color:#cfe6ff}
+
+@media (max-width:1000px){
+  .cglayout{grid-template-columns:1fr}
+  .cgpanel{position:static;max-height:none}
+}
+
+/* ── 상대 전적 ─────────────────────────────────────────────── */
+.h2hpanel{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;
+  border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  padding:12px;margin-bottom:12px}
+.h2hside{display:flex;flex-direction:column;gap:6px;flex:1 1 150px;min-width:0}
+.h2hside.wide{flex:1 1 220px}
+.h2hcap{font-size:11px;color:var(--dim)}
+.h2hsel{width:100%;padding:8px 10px;border-radius:8px;font-size:13px;
+  background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+  font-family:inherit;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238a93a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:10px;
+  padding-right:26px}
+.h2hsel:focus{border-color:var(--accent)}
+/* 경기 기록을 대회·라운드로 묶을 때 그 사이에 끼우는 제목줄 */
+.grouphead td{background:var(--panel2);border-top:2px solid var(--line);
+  padding:9px 10px !important}
+.grouphead .gtour{font-weight:700;color:var(--txt);font-size:13px}
+.grouphead .ground{margin-left:8px;padding:2px 8px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);
+  color:var(--accent);font-size:11px;font-weight:700}
+.grouphead .note{margin-left:8px;color:var(--dim);font-size:11px;font-weight:500}
+tbody tr.grouphead:first-child td{border-top:none}
+/* 선수 칸 — 직접 치면 아래로 목록이 펼쳐집니다 (목록을 직접 그립니다). */
+.h2hpick{position:relative}
+.h2hinput{padding-right:30px;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%238a93a6' stroke-width='1.6'%3E%3Ccircle cx='7' cy='7' r='4.2'/%3E%3Cpath d='M10.2 10.2L14 14' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:13px}
+.h2hclear{position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;line-height:1;border:0;border-radius:6px;cursor:pointer;
+  background:transparent;color:var(--dim);font-size:16px;font-family:inherit}
+.h2hclear:hover{background:var(--panel);color:var(--txt)}
+.h2hdrop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;
+  max-height:264px;overflow-y:auto;border-radius:10px;
+  background:var(--panel2);border:1px solid var(--line);
+  box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.h2hopt{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;
+  font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+.h2hopt:last-child{border-bottom:0}
+.h2hopt:hover,.h2hopt.on{background:var(--panel)}
+.h2hoptname{font-weight:600;color:var(--txt)}
+.h2hoptrace{flex:0 0 auto;width:17px;height:17px;line-height:17px;text-align:center;
+  border-radius:5px;font-size:10px;font-weight:800;color:#0b0d11}
+.h2hoptrace.r-T{background:#7cc0ff}
+.h2hoptrace.r-P{background:#ffd166}
+.h2hoptrace.r-Z{background:#ff8fa3}
+.h2hoptnum{margin-left:auto;color:var(--dim);font-size:11px}
+.h2hempty{padding:12px 10px;color:var(--dim);font-size:12px;text-align:center}
+.h2hvs{flex:0 0 auto;color:var(--dim);font-size:12px;font-weight:700;
+  padding:0 2px 10px;align-self:flex-end}
+.h2hreset{margin-bottom:0}
+.h2hhead{text-align:center}
+.h2hnames{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:8px;font-size:16px;font-weight:700}
+.h2hvs2{color:var(--dim);font-size:12px;font-weight:400}
+.h2hscore{display:flex;align-items:baseline;justify-content:center;gap:4px;
+  margin-top:8px;font-size:26px;font-weight:800}
+.h2hscore .dim{font-size:13px;font-weight:400}
+.h2hdash{color:var(--dim);font-size:16px;margin:0 4px}
+.h2hrate{margin-left:10px;font-size:15px;font-weight:700;color:var(--accent)}
+.h2hbar{max-width:420px;margin:10px auto 4px}
+.h2hbar span:first-child{background:var(--win)}
+.h2hbar span:last-child{background:var(--lose)}
+.h2hquick{justify-content:center;margin-top:8px}
+@media (max-width:520px){
+  .h2hvs{display:none}
+  .h2hside{flex:1 1 100%}
+  .h2hscore{font-size:22px}
+}
+
+/* 관리자(CG 제작) 입구 — 눈에 띄지 않게 맨 아래 구석에 둡니다. */
+.gear{display:block;width:15px;height:15px;margin:14px auto 0;color:var(--line);
+  opacity:.5;transition:opacity .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.gear:hover,.gear:focus-visible{opacity:1;color:var(--dim)}
+
+/* 선수 사진 — img/players/<슬러그>.jpg 를 넣으면 자동으로 붙습니다. */
+.pphoto{width:104px;height:104px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:3px solid var(--line);background:var(--panel2);flex:0 0 auto;
+  box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.rphoto{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:center top;
+  border:1px solid var(--line);background:var(--panel2);vertical-align:middle;margin-right:8px}
+
+/* ── 모바일 터치 크기 ─────────────────────────────────
+   손가락으로 누르는 화면입니다. 글자만 한 크기로 두면 잘 안 눌립니다.
+   누르는 것들이 40px 안팎이 되도록 위아래 여백을 넉넉히 줍니다.
+
+   이 블록은 **반드시 파일 맨 끝**에 있어야 합니다. 위쪽 @media 안에 두면
+   그 뒤에 나오는 .navlink · .h2hsel 같은 규칙이 같은 우선순위로 다시
+   덮어써서 효과가 사라집니다 (실제로 그렇게 겪었습니다).
+   톱니바퀴(.gear)는 일부러 눈에 안 띄게 둔 것이라 건드리지 않습니다. */
+@media (max-width:640px){
+  .navlink{padding:11px 16px}
+  .tab{padding:10px 14px}
+  .chip{padding:9px 13px}
+  .dlbtn{padding:9px 13px}
+  .yt-mini{display:inline-block;padding:9px 4px}
+  .backlink{padding:8px 2px}
+  .nm-link{display:inline-block;padding:5px 0}
+  .h2hsel{padding-top:11px;padding-bottom:11px}
+  .h2hopt{padding:12px 10px}
+  .h2hclear{width:34px;height:34px;font-size:19px}
+  .h2hdrop{max-height:min(300px,46vh)}
+}
+
+/* 선수 사진은 얼굴이 보여야 하므로 큼직하게. 좁은 화면에서만 조금 줄입니다. */
+@media (max-width:640px){
+  .pphoto{width:78px;height:78px;border-width:2px}
+  .rphoto{width:32px;height:32px}
+}
+
+/* CG 툴 — 넣고 빼기 체크칸 */
+.checkrow{display:flex;flex-wrap:wrap;gap:10px 16px;margin:4px 0 8px}
+.checkrow label{display:flex;align-items:center;gap:6px;color:var(--txt);
+  font-size:12.5px;cursor:pointer;user-select:none}
+.checkrow input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="brandbar"></div>
+<div class="wrap">
+<nav class="sitenav"><a class="navlink" href="../../index.php">끝장전</a><a class="navlink on" href="../../asl/index.php">ASL</a></nav>
+<a class="backlink" href="../index.php">← ASL 기록실로</a>
+<header style="border-bottom:none;padding-bottom:0"><div class="phead"><img class="pphoto" src="../../img/players/lee-gyeongmin.webp" alt="이경민" loading="lazy" width="56" height="56"><span class="race P">P</span><span class="pname">이경민</span><span class="ptag">프로토스</span></div><div class="stats-strip"><div class="item">매치 전적<b>11승 15패 · 42.3%</b></div><div class="item">세트 전적<b>13승 19패 · 40.6%</b></div><div class="item">출전 대회<b>7개</b></div><div class="item">최고 성적<b>8강</b></div></div></header>
+<div class="card" style="margin-top:16px"><div class="cardtitle">종족별 세트 전적</div><div class="murow"><div class="mulabel"><span><span class="race P">P</span>프로토스 <b>8</b></span><span><b>3</b> 테란<span class="race T">T</span></span></div><div class="mubar"><span style="width:72.7273%;background:var(--p)">72.7%</span><span style="width:27.2727%;background:var(--t)">27.3%</span></div></div><div class="murow"><div class="mulabel"><span><span class="race P">P</span>프로토스 <b>2</b></span><span><b>6</b> 프로토스<span class="race P">P</span></span></div><div class="mubar"><span style="width:25.0000%;background:var(--p)">25.0%</span><span style="width:75.0000%;background:var(--p)">75.0%</span></div></div><div class="murow"><div class="mulabel"><span><span class="race P">P</span>프로토스 <b>3</b></span><span><b>10</b> 저그<span class="race Z">Z</span></span></div><div class="mubar"><span style="width:23.0769%;background:var(--p)">23.1%</span><span style="width:76.9231%;background:var(--z)">76.9%</span></div></div></div>
+<div class="card"><div class="cardtitle">대회별 성적<span class="note">7개 대회</span></div><div class="tblwrap"><table><thead><tr><th class="static">대회</th><th class="static num">매치</th><th class="static num">매치 승률</th><th class="static num">세트</th><th class="static num">세트 승률</th><th class="static hide-mobile">최고 라운드</th></tr></thead><tbody><tr><td class="nm"><a href="../t/asl14.php"><span class="nm-link">ASL Season 14</span></a></td><td class="num">1-2</td><td class="num">33.3%</td><td class="num">1-2</td><td class="num">33.3%</td><td class="hide-mobile dim">24강</td></tr><tr><td class="nm"><a href="../t/asl13.php"><span class="nm-link">ASL Season 13</span></a></td><td class="num">1-2</td><td class="num">33.3%</td><td class="num">1-2</td><td class="num">33.3%</td><td class="hide-mobile dim">24강</td></tr><tr><td class="nm"><a href="../t/asl09.php"><span class="nm-link">ASL Season 9</span></a></td><td class="num">2-2</td><td class="num">50.0%</td><td class="num">2-3</td><td class="num">40.0%</td><td class="hide-mobile dim">16강</td></tr><tr><td class="nm"><a href="../t/asl08.php"><span class="nm-link">ASL Season 8</span></a></td><td class="num">2-2</td><td class="num">50.0%</td><td class="num">4-3</td><td class="num">57.1%</td><td class="hide-mobile dim">16강</td></tr><tr><td class="nm"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="num">4-3</td><td class="num">57.1%</td><td class="num">4-5</td><td class="num">44.4%</td><td class="hide-mobile dim">8강</td></tr><tr><td class="nm"><a href="../t/asl06.php"><span class="nm-link">ASL Season 6</span></a></td><td class="num">0-2</td><td class="num">0.0%</td><td class="num">0-2</td><td class="num">0.0%</td><td class="hide-mobile dim">24강</td></tr><tr><td class="nm"><a href="../t/asl05.php"><span class="nm-link">ASL Season 5</span></a></td><td class="num">1-2</td><td class="num">33.3%</td><td class="num">1-2</td><td class="num">33.3%</td><td class="hide-mobile dim">24강</td></tr></tbody></table></div></div>
+<div class="card"><div class="cardtitle">상대 전적<span class="note">20명</span></div><div class="tblwrap"><table><thead><tr><th class="static">상대</th><th class="static num">매치</th><th class="static num">세트</th><th class="static num">세트 승률</th></tr></thead><tbody><tr><td><a href="kim-jeongu.php"><span class="race Z">Z</span><span class="nm-link">김정우</span></a></td><td class="num">1-2</td><td class="num">1-2</td><td class="num">33.3%</td></tr><tr><td><a href="jung-yunjong.php"><span class="race P">P</span><span class="nm-link">정윤종</span></a></td><td class="num">0-1</td><td class="num">0-3</td><td class="num">0.0%</td></tr><tr><td><a href="kim-mincheol.php"><span class="race Z">Z</span><span class="nm-link">김민철</span></a></td><td class="num">0-1</td><td class="num">0-2</td><td class="num">0.0%</td></tr><tr><td><a href="kim-seongdae.php"><span class="race Z">Z</span><span class="nm-link">김성대</span></a></td><td class="num">0-2</td><td class="num">0-2</td><td class="num">0.0%</td></tr><tr><td><a href="kim-yunhwan.php"><span class="race Z">Z</span><span class="nm-link">김윤환</span></a></td><td class="num">1-0</td><td class="num">2-0</td><td class="num">100.0%</td></tr><tr><td><a href="yoo-yeongjin.php"><span class="race T">T</span><span class="nm-link">유영진</span></a></td><td class="num">1-1</td><td class="num">1-1</td><td class="num">50.0%</td></tr><tr><td><a href="yoon-chanhui.php"><span class="race T">T</span><span class="nm-link">윤찬희</span></a></td><td class="num">1-1</td><td class="num">1-1</td><td class="num">50.0%</td></tr><tr><td><a href="lim-honggyu.php"><span class="race Z">Z</span><span class="nm-link">임홍규</span></a></td><td class="num">0-2</td><td class="num">0-2</td><td class="num">0.0%</td></tr><tr><td><a href="jang-yuncheol.php"><span class="race P">P</span><span class="nm-link">장윤철</span></a></td><td class="num">0-1</td><td class="num">0-2</td><td class="num">0.0%</td></tr><tr><td><a href="cho-giseok.php"><span class="race T">T</span><span class="nm-link">조기석</span></a></td><td class="num">1-0</td><td class="num">2-0</td><td class="num">100.0%</td></tr><tr><td><a href="kim-seunghyeon.php"><span class="race P">P</span><span class="nm-link">김승현</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr><tr><td><a href="kim-taeyeong.php"><span class="race T">T</span><span class="nm-link">김태영</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr><tr><td><a href="kim-taekyong.php"><span class="race P">P</span><span class="nm-link">김택용</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr><tr><td><a href="park-juno.php"><span class="race Z">Z</span><span class="nm-link">박준오</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr><tr><td><a href="song-byeonggu.php"><span class="race P">P</span><span class="nm-link">송병구</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr><tr><td><a href="yeom-boseong.php"><span class="race T">T</span><span class="nm-link">염보성</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr><tr><td><a href="lee-yehun.php"><span class="race Z">Z</span><span class="nm-link">이예훈</span></a></td><td class="num">0-1</td><td class="num">0-1</td><td class="num">0.0%</td></tr><tr><td><a href="lee-yunyeol.php"><span class="race T">T</span><span class="nm-link">이윤열</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr><tr><td><a href="lim-jinmuk.php"><span class="race T">T</span><span class="nm-link">임진묵</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr><tr><td><a href="jung-mingi.php"><span class="race T">T</span><span class="nm-link">정민기</span></a></td><td class="num">1-0</td><td class="num">1-0</td><td class="num">100.0%</td></tr></tbody></table></div></div>
+<div class="card"><div class="cardtitle">전체 경기<span class="note">26매치 · 최신 대회순</span></div><div class="tblwrap"><table><thead><tr><th class="static hide-mobile">대회</th><th class="static">라운드</th><th class="static">상대</th><th class="static num">스코어</th><th class="static hide-mobile">맵</th></tr></thead><tbody><tr><td class="muted hide-mobile"><a href="../t/asl05.php"><span class="nm-link">ASL Season 5</span></a></td><td class="muted">24강</td><td><a href="kim-jeongu.php"><span class="race Z">Z</span><span class="nm-link">김정우</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">스파클</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl05.php"><span class="nm-link">ASL Season 5</span></a></td><td class="muted">24강</td><td><a href="song-byeonggu.php"><span class="race P">P</span><span class="nm-link">송병구</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">트랜지스터</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl05.php"><span class="nm-link">ASL Season 5</span></a></td><td class="muted">24강</td><td><a href="kim-jeongu.php"><span class="race Z">Z</span><span class="nm-link">김정우</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">글래디에이터</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl06.php"><span class="nm-link">ASL Season 6</span></a></td><td class="muted">24강</td><td><a href="yeom-boseong.php"><span class="race T">T</span><span class="nm-link">염보성</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">실피드</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl06.php"><span class="nm-link">ASL Season 6</span></a></td><td class="muted">24강</td><td><a href="park-juno.php"><span class="race Z">Z</span><span class="nm-link">박준오</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">아우토반</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">24강</td><td><a href="yoo-yeongjin.php"><span class="race T">T</span><span class="nm-link">유영진</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">블록체인</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">24강</td><td><a href="lim-honggyu.php"><span class="race Z">Z</span><span class="nm-link">임홍규</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">화이트아웃</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">24강</td><td><a href="lee-yunyeol.php"><span class="race T">T</span><span class="nm-link">이윤열</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">매치포인트</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">16강</td><td><a href="lim-jinmuk.php"><span class="race T">T</span><span class="nm-link">임진묵</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">화이트아웃</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">16강</td><td><a href="kim-jeongu.php"><span class="race Z">Z</span><span class="nm-link">김정우</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">네오 실피드</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">16강</td><td><a href="kim-seunghyeon.php"><span class="race P">P</span><span class="nm-link">김승현</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">블록체인</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl07.php"><span class="nm-link">ASL Season 7</span></a></td><td class="muted">8강</td><td><a href="jung-yunjong.php"><span class="race P">P</span><span class="nm-link">정윤종</span></a></td><td class="num lose">0-3</td><td class="muted hide-mobile" style="white-space:normal">화이트아웃, 매치포인트, 블록체인</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl08.php"><span class="nm-link">ASL Season 8</span></a></td><td class="muted">와일드카드</td><td><a href="cho-giseok.php"><span class="race T">T</span><span class="nm-link">조기석</span></a></td><td class="num win">2-0</td><td class="muted hide-mobile" style="white-space:normal">네오 실피드, 오버워치(2)</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl08.php"><span class="nm-link">ASL Season 8</span></a></td><td class="muted">와일드카드</td><td><a href="kim-yunhwan.php"><span class="race Z">Z</span><span class="nm-link">김윤환</span></a></td><td class="num win">2-0</td><td class="muted hide-mobile" style="white-space:normal">오버워치(2), 네오 그라운드제로</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl08.php"><span class="nm-link">ASL Season 8</span></a></td><td class="muted">16강</td><td><a href="lee-yehun.php"><span class="race Z">Z</span><span class="nm-link">이예훈</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">트라이포드</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl08.php"><span class="nm-link">ASL Season 8</span></a></td><td class="muted">16강</td><td><a href="kim-mincheol.php"><span class="race Z">Z</span><span class="nm-link">김민철</span></a></td><td class="num lose">0-2</td><td class="muted hide-mobile" style="white-space:normal">오버워치(2), 네오 그라운드제로</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl09.php"><span class="nm-link">ASL Season 9</span></a></td><td class="muted">24강</td><td><a href="kim-taeyeong.php"><span class="race T">T</span><span class="nm-link">김태영</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">이너코븐</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl09.php"><span class="nm-link">ASL Season 9</span></a></td><td class="muted">24강</td><td><a href="kim-taekyong.php"><span class="race P">P</span><span class="nm-link">김택용</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">에스컬레이드</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl09.php"><span class="nm-link">ASL Season 9</span></a></td><td class="muted">16강</td><td><a href="lim-honggyu.php"><span class="race Z">Z</span><span class="nm-link">임홍규</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">호라이즌 달 기지</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl09.php"><span class="nm-link">ASL Season 9</span></a></td><td class="muted">16강</td><td><a href="jang-yuncheol.php"><span class="race P">P</span><span class="nm-link">장윤철</span></a></td><td class="num lose">0-2</td><td class="muted hide-mobile" style="white-space:normal">히치하이커, 에스컬레이드</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl13.php"><span class="nm-link">ASL Season 13</span></a></td><td class="muted">24강</td><td><a href="kim-seongdae.php"><span class="race Z">Z</span><span class="nm-link">김성대</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">이클립스</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl13.php"><span class="nm-link">ASL Season 13</span></a></td><td class="muted">24강</td><td><a href="jung-mingi.php"><span class="race T">T</span><span class="nm-link">정민기</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">모노폴리</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl13.php"><span class="nm-link">ASL Season 13</span></a></td><td class="muted">24강</td><td><a href="kim-seongdae.php"><span class="race Z">Z</span><span class="nm-link">김성대</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">버미어</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl14.php"><span class="nm-link">ASL Season 14</span></a></td><td class="muted">24강</td><td><a href="yoon-chanhui.php"><span class="race T">T</span><span class="nm-link">윤찬희</span></a></td><td class="num win">1-0</td><td class="muted hide-mobile" style="white-space:normal">버터 2</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl14.php"><span class="nm-link">ASL Season 14</span></a></td><td class="muted">24강</td><td><a href="yoo-yeongjin.php"><span class="race T">T</span><span class="nm-link">유영진</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">알레그로</td></tr><tr><td class="muted hide-mobile"><a href="../t/asl14.php"><span class="nm-link">ASL Season 14</span></a></td><td class="muted">24강</td><td><a href="yoon-chanhui.php"><span class="race T">T</span><span class="nm-link">윤찬희</span></a></td><td class="num lose">0-1</td><td class="muted hide-mobile" style="white-space:normal">버미어 SE</td></tr></tbody></table></div></div>
+<div class="dlbox">
+<span class="t">ASL 데이터 내려받기</span>
+<a class="dlbtn on" href="../../xlsx/asl.xlsx" download>엑셀 (.xlsx)</a>
+<a class="dlbtn" href="../../csv/asl-players.csv" download>선수 CSV</a><a class="dlbtn" href="../../csv/asl-matches.csv" download>매치 CSV</a><a class="dlbtn" href="../../csv/asl-sets.csv" download>세트 CSV</a><a class="dlbtn" href="../../csv/asl-maps.csv" download>맵 CSV</a><a class="dlbtn" href="../../csv/asl-headtohead.csv" download>상대전적 CSV</a><a class="dlbtn" href="../../csv/asl-tournaments.csv" download>대회 CSV</a>
+<a class="dlbtn" href="../../sheets.php">구글 시트 연동 →</a>
+</div>
+<footer>
+ASL(스타크래프트 리그) 대회 기록입니다. 방송팀이 정리한 세트 단위 원본을 그대로 다시 계산했습니다.<br>
+이 기록에는 경기 날짜가 없어 대회와 라운드 순서로만 정리했습니다. 매치(시리즈)는 같은 라운드에서 같은 두 선수가 연달아 치른 세트를 하나로 묶은 것입니다.<br>
+<a href="../../index.php">끝장전 기록실</a>은 별개 대회라 따로 있습니다.<br>
+마지막 갱신: 2026년 09월 22일 01:19 (KST)
+<a class="gear" href="../../admin/" title="관리자" aria-label="관리자"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.6 7.6 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.22.08 .47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/></svg></a>
+</footer>
+</div>
+</body>
+</html>

@@ -5,10 +5,13 @@
   "메인 주소는 starendgame.com 입니다 (2026-09-21 변경). 예전 주소 pubgin.com/endgame 은",
   "지금도 같은 내용이 올라가는 서버이지만, 대표 주소로는 쓰지 않습니다.",
   "www 를 대표로 쓰시려면 이 값만 https://www.starendgame.com 으로 바꾸고 빌드하면 됩니다.",
+  "pageExt 는 공개 페이지 확장자입니다. 새 서버는 기본 문서가 index.php 이고",
+  "이미 올라간 주소가 전부 .php 라 php 로 둡니다 (build.py 의 emit_php).",
   "주소를 옮기면 이 값만 고치고 python3 tools/build.py 를 다시 돌리면 됩니다.",
   "끝에 슬래시는 붙이지 마세요.",
   "cname 은 GitHub Pages 커스텀 도메인을 쓸 때만 채웁니다. 카페24는 GitHub 이 아니므로 null 입니다."
  ],
  "baseUrl": "https://starendgame.com",
- "cname": null
+ "cname": null,
+ "pageExt": "php"
 }

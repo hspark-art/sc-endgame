@@ -13,6 +13,7 @@
 """
 
 import csv
+import glob
 import hashlib
 import io
 import json
@@ -410,6 +411,12 @@ def apply_site_config():
             base = a.split('=', 1)[1]
     render.BASE_URL = base.rstrip('/')
 
+    # 공개 페이지를 .html 로 낼지 .php 로 낼지 (data/site.json 의 pageExt).
+    # starendgame.com 서버는 index.php 가 기본 문서이고 이미 올라간 주소가
+    # 전부 .php 라, 확장자를 맞춰야 주소가 안 깨집니다. 자세한 건 emit_php().
+    global PAGE_EXT
+    PAGE_EXT = (cfg.get('pageExt') or 'html').strip().lstrip('.').lower()
+
     cname = cfg.get('cname')
     path = os.path.join(ROOT, 'CNAME')
     if cname:
@@ -474,7 +481,7 @@ def main():
     pdir = os.path.join(ROOT, 'p')
     if os.path.isdir(pdir):
         for f in os.listdir(pdir):
-            if f.endswith('.html'):
+            if f.endswith(('.html', '.php')):
                 os.remove(os.path.join(pdir, f))
     total = 0
     for p in data['players']:
@@ -538,7 +545,7 @@ def main():
         adir = os.path.join(ROOT, 'asl', 'p')
         if os.path.isdir(adir):
             for f in os.listdir(adir):
-                if f.endswith('.html'):
+                if f.endswith(('.html', '.php')):
                     os.remove(os.path.join(adir, f))
         total = 0
         for p in asl['players']:
@@ -550,7 +557,7 @@ def main():
         tdir = os.path.join(ROOT, 'asl', 't')
         if os.path.isdir(tdir):
             for f in os.listdir(tdir):
-                if f.endswith('.html'):
+                if f.endswith(('.html', '.php')):
                     os.remove(os.path.join(tdir, f))
         tot = 0
         for t in asl['tournaments']:
@@ -569,6 +576,10 @@ def main():
 
     ok, msg = audit.report(ROOT, base_url)
     print('  ' + msg.replace('\n', '\n  '))
+
+    if PAGE_EXT == 'php':
+        print('  .php 로 바꿔 냈습니다   페이지 %d개 (기본 문서 index.php)'
+              % emit_php())
 
     if video_matched:
         print('  다시보기 영상 %d/%d 경기 연결' % (video_matched, len(data['matches'])))
@@ -905,6 +916,39 @@ def asl_tournament_detail(data, tour):
 
 
 # ── '마지막 갱신' 시각 ────────────────────────────────────────
+PAGE_EXT = 'html'
+
+
+def emit_php():
+    """만들어 둔 .html 페이지를 그대로 .php 로 바꿔 냅니다.
+
+    2026-09-21 서버 이전. starendgame.com 이 전용 서버(175.118.124.225)로 옮겨졌고,
+    그때 올라간 판이 이미 index.php · p/*.php 입니다. 내용은 여전히 정적 HTML 이고
+    바뀌는 것은 **확장자와 서로 가리키는 링크뿐**입니다. 굳이 맞추는 이유는 하나 —
+    이미 밖에 나가 있는 주소를 깨뜨리지 않기 위해서입니다.
+
+    한 군데서 한 번에 바꾸는 것은 일부러입니다. render.py·app.js 곳곳에 박힌
+    '.html' 쉰 몇 군데를 각각 고치면 한 곳만 빠져도 링크가 죽습니다.
+    """
+    pages = []
+    for pat in ('index.html', 'sheets.html', 'p/*.html',
+                'asl/index.html', 'asl/p/*.html', 'asl/t/*.html'):
+        pages += sorted(glob.glob(os.path.join(ROOT, pat)))
+    for src in pages:
+        txt = io.open(src, encoding='utf-8').read().replace('.html', '.php')
+        io.open(src[:-5] + '.php', 'w', encoding='utf-8').write(txt)
+        os.remove(src)
+    # 관제·리더보드에서 기록실을 가리키는 링크도 같이 맞춥니다.
+    for extra in sorted(glob.glob(os.path.join(ROOT, 'admin', '*.php'))) + \
+            [os.path.join(ROOT, 'predict.php')]:
+        if not os.path.exists(extra):
+            continue
+        txt = io.open(extra, encoding='utf-8').read()
+        if '.html' in txt:
+            io.open(extra, 'w', encoding='utf-8').write(txt.replace('.html', '.php'))
+    return len(pages)
+
+
 # 푸터의 '마지막 갱신'과 index.html 안의 builtAt 에 빌드를 돌린 시각을
 # 분 단위로 찍고 있었습니다. 그러면 기록이 하나도 안 바뀐 날에도 모든 HTML 이
 # '달라진 파일'로 보여 통째로 다시 올라갑니다 — 2026-09-18 실측 157개·9.1MB,

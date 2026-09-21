@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CG 제작 툴 — 스타크래프트 끝장전 기록실</title>
 <meta name="description" content="끝장전 대진표 CG(1920×1080)를 만들어 PNG 로 내려받는 방송용 도구.">
-<link rel="canonical" href="https://pubgin.com/endgame/admin/">
+<link rel="canonical" href="https://starendgame.com/admin/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="스타크래프트 끝장전 기록실">
 <meta property="og:title" content="CG 제작 툴 — 스타크래프트 끝장전 기록실">
 <meta property="og:description" content="끝장전 대진표 CG(1920×1080)를 만들어 PNG 로 내려받는 방송용 도구.">
-<meta property="og:url" content="https://pubgin.com/endgame/admin/">
+<meta property="og:url" content="https://starendgame.com/admin/">
 <meta property="og:image" content="https://stimg.sooplive.com/LOGO/ta/talent/m/talent.webp">
 <meta name="twitter:card" content="summary">
 <meta name="robots" content="noindex, nofollow">
@@ -468,7 +468,7 @@ tbody tr.grouphead:first-child td{border-top:none}
 <body>
 <div class="brandbar"></div>
 <div class="wrap cgwrap">
-<nav class="sitenav"><a class="navlink" href="../index.html">← 사이트로 돌아가기</a><a class="navlink" href="prize.php">🎁 상품 추첨</a><a class="navlink" href="prize_sheet.php">📒 당첨자 시트</a></nav>
+<nav class="sitenav"><a class="navlink" href="../index.php">← 사이트로 돌아가기</a><a class="navlink" href="prize.php">🎁 상품 추첨</a><a class="navlink" href="prize_sheet.php">📒 당첨자 시트</a></nav>
 <header style="border-bottom:none;padding-bottom:6px"><div class="headrow"><div><h1>CG 제작 툴</h1><div class="sub">대진표 이미지를 만들어 PNG(1920×1080)로 내려받습니다. 입력한 내용은 이 브라우저에 자동 저장됩니다.</div></div><div style="margin-left:auto;text-align:right"><div class="helptxt" style="margin:0"><?= htmlspecialchars(admin_user(), ENT_QUOTES) ?> 님</div><a class="dlbtn" href="logout.php" style="margin-top:6px;display:inline-block">로그아웃</a></div></div></header>
 <link rel="stylesheet" href="https://webfontworld.github.io/goodchoice/Jalnan.css"><link rel="stylesheet" href="https://webfontworld.github.io/gmarket/GmarketSans.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap"><div class="cglayout">
 <div class="cgpanel">

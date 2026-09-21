@@ -185,21 +185,81 @@ def parse(text):
 
 # ── 서버 winners.json 내려받기 / 올리기 (deploy.py 와 같은 FTP 정보) ──
 
-def ftp_connect(cfg):
-    try:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        f = ftplib.FTP_TLS(context=ctx, timeout=30)
-        f.connect(cfg['host'], cfg.get('port', 21))
-        f.login(cfg['user'], cfg['password'])
-        f.prot_p()
-        return f
-    except Exception:
-        f = ftplib.FTP(timeout=30)
-        f.connect(cfg['host'], cfg.get('port', 21))
-        f.login(cfg['user'], cfg['password'])
-        return f
+class _FtpRemote(object):
+    """카페24 공유호스팅 시절 길 — FTPS, 안 되면 평문 FTP."""
+
+    def __init__(self, cfg):
+        try:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            f = ftplib.FTP_TLS(context=ctx, timeout=30)
+            f.connect(cfg['host'], cfg['port'])
+            f.login(cfg['user'], cfg['password'])
+            f.prot_p()
+        except Exception:
+            f = ftplib.FTP(timeout=30)
+            f.connect(cfg['host'], cfg['port'])
+            f.login(cfg['user'], cfg['password'])
+        self.f = f
+
+    def read(self, path):
+        buf = io.BytesIO()
+        try:
+            self.f.retrbinary('RETR ' + path, buf.write)
+        except Exception:
+            return None
+        return buf.getvalue()
+
+    def write(self, path, payload):
+        self.f.storbinary('STOR ' + path, io.BytesIO(payload))
+
+    def close(self):
+        try:
+            self.f.quit()
+        except Exception:
+            try:
+                self.f.close()
+            except Exception:
+                pass
+
+
+class _SftpRemote(object):
+    """전용 서버 길 — SSH 위의 SFTP (deploy.py 와 같습니다)."""
+
+    def __init__(self, cfg):
+        try:
+            import paramiko
+        except ImportError:
+            raise SystemExit('SFTP 로 붙으려면 paramiko 가 필요합니다 — pip install paramiko')
+        self.cli = paramiko.SSHClient()
+        self.cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.cli.connect(cfg['host'], port=cfg['port'], username=cfg['user'],
+                         password=cfg['password'], timeout=30,
+                         look_for_keys=False, allow_agent=False)
+        self.sftp = self.cli.open_sftp()
+
+    def read(self, path):
+        try:
+            with self.sftp.open(path, 'rb') as fh:
+                return fh.read()
+        except IOError:
+            return None
+
+    def write(self, path, payload):
+        with self.sftp.open(path, 'wb') as fh:
+            fh.write(payload)
+
+    def close(self):
+        for x in (self.sftp, self.cli):
+            try:
+                x.close()
+            except Exception:
+                pass
+
+
+def remote_open(cfg):
+    return _SftpRemote(cfg) if cfg.get('proto') == 'sftp' else _FtpRemote(cfg)
 
 
 def ftp_config():
@@ -218,8 +278,18 @@ def ftp_config():
         'user': os.environ.get('SC_FTP_USER') or cfg.get('user'),
         'password': os.environ.get('SC_FTP_PASS') or cfg.get('password'),
         'remoteDir': os.environ.get('SC_FTP_DIR') or cfg.get('remoteDir') or '/www/endgame',
-        'port': int(os.environ.get('SC_FTP_PORT') or cfg.get('port') or 21),
+        'port': 0,       # 아래에서 프로토콜과 함께 정합니다
+        'proto': '',
     }
+
+    # deploy.py 와 같은 규칙 — 22번이면 SFTP, SFTP 라고 적었으면 22번.
+    # 2026-09-21 서버 이전으로 새 서버는 SSH(SFTP)만 열려 있습니다.
+    port = os.environ.get('SC_FTP_PORT') or cfg.get('port')
+    proto = (os.environ.get('SC_FTP_PROTO') or cfg.get('proto') or '').strip().lower()
+    if not proto:
+        proto = 'sftp' if str(port) == '22' else 'ftp'
+    out['proto'] = proto
+    out['port'] = int(port or (22 if proto == 'sftp' else 21))
     missing = [name for name, key in (('SC_FTP_HOST', 'host'),
                                       ('SC_FTP_USER', 'user'),
                                       ('SC_FTP_PASS', 'password')) if not out[key]]
@@ -266,12 +336,13 @@ def main():
     cfg = ftp_config()
     base = cfg.get('remoteDir', '/www/endgame')
     path = base + '/admin/pz/winners.json'
-    f = ftp_connect(cfg)
-    buf = io.BytesIO()
+    f = remote_open(cfg)
+    raw = f.read(path)
     try:
-        f.retrbinary('RETR ' + path, buf.write)
-        doc = json.loads(buf.getvalue().decode('utf-8'))
-    except Exception:
+        doc = json.loads(raw.decode('utf-8')) if raw else {'list': []}
+    except ValueError:
+        doc = {'list': []}
+    if not isinstance(doc.get('list'), list):
         doc = {'list': []}
     have_ids = {x.get('id') for x in doc['list']}
     have_keys = {(x.get('date', ''), x.get('sid', ''), x.get('prize', ''), x.get('nick', ''))
@@ -283,18 +354,16 @@ def main():
     print('서버 시트: 기존 %d건 · 새로 넣을 것 %d건 (이미 있는 %d건은 건너뜀)'
           % (len(doc['list']), len(fresh), len(recs) - len(fresh)))
     if args.dry_run or not fresh:
-        f.quit()
+        f.close()
         print('(올리지 않았습니다)' if args.dry_run else '(바꿀 것이 없습니다)')
         return
     doc['list'].extend(fresh)
     payload = json.dumps(doc, ensure_ascii=False, indent=4).encode('utf-8')
-    f.storbinary('STOR ' + path, io.BytesIO(payload))
+    f.write(path, payload)
     # 확인 삼아 다시 내려받아 개수를 셉니다
-    buf2 = io.BytesIO()
-    f.retrbinary('RETR ' + path, buf2.write)
-    finaldoc = json.loads(buf2.getvalue().decode('utf-8'))
-    n = len(finaldoc['list'])
-    f.quit()
+    back = f.read(path)
+    n = len(json.loads(back.decode('utf-8'))['list']) if back else 0
+    f.close()
     print('업로드 완료 — 서버 시트가 %d건이 되었습니다.' % n)
     # 같은 사람이 같은 상품을 2번 이상 받았는지 확인 → 있으면 슬랙 알림
     seen = {}

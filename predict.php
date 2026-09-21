@@ -39,7 +39,7 @@ font-size:13px;color:#8a93a6;cursor:pointer;font-weight:700}
 </style></head><body><div class="wrap">
 <h1>🔮 끝장전 시청자 승부예측</h1>
 <div class="sub">채팅으로 참여하는 가상 포인트 승부예측 · <span id="upd" class="pill">불러오는 중…</span>
- · <a href="index.html">← 끝장전 기록실</a></div>
+ · <a href="index.php">← 끝장전 기록실</a></div>
 
 <div class="card live" id="liveCard" style="display:none">
   <div class="lt" id="liveState"></div>
@@ -105,7 +105,7 @@ font-size:13px;color:#8a93a6;cursor:pointer;font-weight:700}
 </div>
 </div>
 <div class="small" style="text-align:center;margin-top:16px">
-가상 포인트입니다 (현금 아님) · <a href="index.html">끝장전 기록실</a></div>
+가상 포인트입니다 (현금 아님) · <a href="index.php">끝장전 기록실</a></div>
 
 <script>
 let data=null;
