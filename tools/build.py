@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import zipfile
 from collections import Counter, OrderedDict
 from datetime import datetime, timezone, timedelta
 
@@ -298,8 +299,12 @@ def build_manifest(counts, built_at, built_ko):
 
 
 # ── XLSX ───────────────────────────────────────────────────────
-def build_xlsx(spec=None, out_name='sc-endgame.xlsx'):
-    """CSV 여러 개를 시트 여러 장짜리 엑셀 한 파일로 묶습니다."""
+def build_xlsx(spec=None, out_name='sc-endgame.xlsx', stamp=None):
+    """CSV 여러 개를 시트 여러 장짜리 엑셀 한 파일로 묶습니다.
+
+    stamp 을 주면 파일 안에 박히는 시각을 그 값으로 고정합니다 —
+    같은 기록이면 파일도 바이트까지 같아야 하기 때문입니다(_freeze_xlsx_time).
+    """
     spec = spec or CSV_SPEC
     try:
         from openpyxl import Workbook
@@ -311,6 +316,10 @@ def build_xlsx(spec=None, out_name='sc-endgame.xlsx'):
 
     wb = Workbook()
     wb.remove(wb.active)
+    if stamp is not None:
+        made = stamp.astimezone(timezone.utc).replace(tzinfo=None)
+        wb.properties.created = made
+        wb.properties.modified = made
     head_font = Font(bold=True, color='FFFFFF', size=10)
     head_fill = PatternFill('solid', fgColor='1C8CFF')
 
@@ -337,7 +346,37 @@ def build_xlsx(spec=None, out_name='sc-endgame.xlsx'):
     out = os.path.join(ROOT, 'xlsx', out_name)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     wb.save(out)
+    if stamp is not None:
+        _freeze_xlsx_time(out, stamp)
     return os.path.getsize(out)
+
+
+def _freeze_xlsx_time(path, stamp):
+    """엑셀 파일에 '지금 시각'이 박히는 것을 지웁니다.
+
+    xlsx 는 사실 zip 이고, 그 안 항목 하나하나에 저장한 시각이 적힙니다.
+    그래서 기록이 하나도 안 바뀐 날에도 xlsx 두 개(약 0.3MB)가 매번 '달라진
+    파일'로 보여, 배포가 0개로 떨어지지 않고 그때마다 슬랙 알림까지 갔습니다.
+    항목 시각을 '내용이 바뀐 시각'으로 통일하면 같은 기록일 때 바이트도 같습니다.
+    """
+    t = stamp.astimezone(timezone.utc)
+    when = (max(t.year, 1980), t.month, t.day, t.hour, t.minute, t.second & ~1)
+    # 저장한 시각(dcterms:modified)은 openpyxl 이 save() 때 다시 덮어쓰므로
+    # 속성으로는 못 막습니다. 여기서 만든 시각과 같게 맞춥니다.
+    made = t.strftime('%Y-%m-%dT%H:%M:%SZ').encode('utf-8')
+    with zipfile.ZipFile(path) as src:
+        items = [(i.filename, src.read(i.filename)) for i in src.infolist()]
+    tmp = path + '.tmp'
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as out:
+        for name, blob in items:
+            if name == 'docProps/core.xml':
+                blob = re.sub(br'(<dcterms:(?:created|modified)[^>]*>)[^<]*'
+                              br'(</dcterms:)', br'\g<1>' + made + br'\g<2>', blob)
+            info = zipfile.ZipInfo(name, date_time=when)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o600 << 16
+            out.writestr(info, blob)
+    os.replace(tmp, path)
 
 
 def _num(s):
@@ -414,7 +453,7 @@ def main():
     for name, _l, _d in CSV_SPEC:
         print('  csv/%-16s %5d행' % (name, counts[name]))
 
-    size = build_xlsx()
+    size = build_xlsx(stamp=now)
     if size:
         print('  xlsx/sc-endgame.xlsx  %.0fKB' % (size / 1024))
 
@@ -422,7 +461,7 @@ def main():
         counts.update(asl_build_csv(asl, asl_ctx))
         for name, _l, _d in ASL_CSV_SPEC:
             print('  csv/%-16s %5d행' % (name, counts[name]))
-        size = build_xlsx(ASL_CSV_SPEC, 'asl.xlsx')
+        size = build_xlsx(ASL_CSV_SPEC, 'asl.xlsx', stamp=now)
         if size:
             print('  xlsx/asl.xlsx         %.0fKB' % (size / 1024))
 
