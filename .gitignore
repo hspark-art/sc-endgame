@@ -26,3 +26,6 @@ data/chat/
 data/prizes/
 balloon-catch.log
 logs/gdoc-import.log
+
+# 서버 설정 (유튜브 키·슬랙 웹훅) — /opt/starendgame/.env. 저장소에 올리지 않습니다.
+.env

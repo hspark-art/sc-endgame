@@ -1,0 +1,35 @@
+# starendgame.com 기록 자동 갱신 — 한 번 돌고 끝나는 작업입니다 (2026-09-24)
+#
+# 구글시트가 원본이라 계속 켜 둘 프로그램이 필요 없습니다(pubgin 과 다른 점 —
+# 저쪽은 PUBG API 를 실시간으로 따라가야 해서 상시 서비스). 그래서 타이머가 5분마다
+# 이 작업을 한 번씩 부르고, 끝나면 조용히 내려갑니다.
+#
+# 설치 — deploy/README.md 5단계
+#   sudo cp /opt/starendgame/deploy/starendgame.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now starendgame.timer
+
+[Unit]
+Description=starendgame.com 기록 자동 갱신 (구글시트 → 사이트)
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# 웹서버·PHP 와 같은 계정으로 돕니다 — 관제 화면(PHP)이 쓰는 파일과 주인이 같아야 합니다.
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/starendgame
+Environment=HOME=/opt/starendgame
+Environment=PYTHONIOENCODING=utf-8
+EnvironmentFile=/opt/starendgame/.env
+ExecStart=/bin/sh /opt/starendgame/deploy/server-run.sh
+TimeoutStartSec=900
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=starendgame
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/starendgame /var/www/starendgame

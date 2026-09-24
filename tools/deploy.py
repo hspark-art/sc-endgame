@@ -47,6 +47,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import ssl
 import sys
 
@@ -67,7 +68,8 @@ STATE = os.path.join(ROOT, 'data', '.deploy-state.json')
 # 점으로 시작하는 폴더(.git, .claude 등)는 전부 건너뜁니다.
 # 점으로 시작하는 '파일' 중 .nojekyll 과 admin/.htaccess 는 사이트에 필요해서 올립니다.
 # 설명 문서(.md)는 사이트 내용이 아니라서 통째로 뺍니다 — 새로 만들어도 안 올라갑니다.
-SKIP_DIRS = {'tools', 'node_modules', '__pycache__', 'logs'}
+SKIP_DIRS = {'tools', 'node_modules', '__pycache__', 'logs',
+             'deploy'}      # 서버 설치 꾸러미(systemd 설정 등) — 사이트 내용이 아닙니다
 SKIP_FILES = {'.gitignore', '.deploy-state.json', 'deploy.json',
               '_사진목록.txt'}          # 사진 넣는 법 안내 — 우리끼리 보는 것
 SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
@@ -119,6 +121,16 @@ def _read_cfg(name):
 
 
 def load_settings():
+    # 사이트가 도는 서버 안에서 돌릴 때(2026-09-24~) — 폴더 경로 하나면 끝입니다.
+    # 네트워크도 계정도 비밀번호도 없습니다. 서버의 /opt/starendgame/.env 에
+    # DEPLOY_LOCAL_DIR=/var/www/starendgame 한 줄이 이 길을 켭니다.
+    local = (os.environ.get('DEPLOY_LOCAL_DIR')
+             or _read_cfg('deploy.json').get('localDir') or '').strip()
+    if local:
+        print('  올릴 곳 이 서버 안 %s (폴더 복사)' % local)
+        return {'host': 'local', 'user': '', 'password': '', 'remoteDir': local,
+                'port': 0, 'proto': 'local', 'tls': False}
+
     # 어디에 올릴지(주소·계정·폴더)는 비밀이 아니라 저장소에 적어 둡니다.
     # 비밀은 비밀번호 하나뿐입니다. 자세한 사정은 data/deploy-target.json 주석에.
     cfg = _read_cfg('deploy.json') or _read_cfg('deploy-target.json')
@@ -207,6 +219,63 @@ def save_state(cfg, files):
     with io.open(STATE, 'w', encoding='utf-8') as f:
         f.write(json.dumps({'target': target_key(cfg), 'files': files},
                            ensure_ascii=False, indent=0))
+
+
+class LocalUploader(object):
+    """같은 기계 안의 사이트 폴더로 바로 복사합니다 (2026-09-24, 서버에서 직접 운영).
+
+    사이트가 도는 서버 안에서 돌리면 네트워크를 탈 이유가 없습니다 — 만든 파일을
+    웹루트로 복사하면 끝입니다. pubgin 의 src/local-deploy.js 와 같은 약속입니다.
+      · 바뀐 파일만 복사합니다 (상태 파일은 FTP·SFTP 와 같은 data/.deploy-state.json)
+      · 임시 이름으로 쓰고 바꿔 끼웁니다 — 방문자가 반쯤 쓴 파일을 보지 않게
+      · 지우는 것은 STALE_REMOTE 뿐입니다. 웹루트에 사람이 둔 것(admin/pz 의 당첨자
+        명단·채팅 기록, admin/config.php …)은 목록에 없으니 절대 건드리지 않습니다.
+    """
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.base = ''
+        self.made = set()
+
+    def open(self, base):
+        self.base = base.rstrip('/') or '/'
+        hint = '\n  서버에서 한 번 붙여넣어 주세요:\n    sudo chown -R www-data:www-data %s' % self.base
+        try:
+            ok = os.path.isdir(self.base) and os.listdir(self.base) is not None
+        except PermissionError:
+            raise SystemExit('사이트 폴더를 열 권한이 없습니다: %s%s' % (self.base, hint))
+        if not ok:
+            raise SystemExit('사이트 폴더가 없습니다: %s\n'
+                             '  서버의 .env 에서 DEPLOY_LOCAL_DIR 를 확인해 주세요.' % self.base)
+        probe = os.path.join(self.base, '.deploy-write-test')
+        try:
+            with open(probe, 'w') as f:
+                f.write('ok')
+            os.remove(probe)
+        except OSError as e:
+            raise SystemExit('사이트 폴더에 쓸 권한이 없습니다: %s (%s)%s'
+                             % (self.base, type(e).__name__, hint))
+        print('  이 서버 안 폴더로 바로 복사합니다 (네트워크 없음).')
+
+    def put(self, local, rel):
+        dest = os.path.join(self.base, rel)
+        folder = os.path.dirname(dest)
+        if folder not in self.made:
+            os.makedirs(folder, exist_ok=True)
+            self.made.add(folder)
+        tmp = os.path.join(folder, '.%s.deploytmp' % os.path.basename(dest))
+        try:
+            shutil.copyfile(local, tmp)
+            os.replace(tmp, dest)
+        finally:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+
+    def remove(self, rel):
+        os.remove(os.path.join(self.base, rel))
+
+    def close(self):
+        pass
 
 
 class FtpUploader(object):
@@ -442,6 +511,10 @@ def connect_any(cfg, base):
     시크릿에 안 적었다고 배포가 통째로 멈추면 곤란해서, 한 번은 더 해 봅니다.
     '폴더가 없다' 같은 확실한 문제(SystemExit)는 그대로 알립니다.
     """
+    if cfg['proto'] == 'local':
+        up = LocalUploader(cfg)
+        up.open(base)
+        return up
     first = cfg['proto']
     second = 'ftp' if first == 'sftp' else 'sftp'
     try:

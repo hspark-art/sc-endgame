@@ -1,0 +1,19 @@
+# starendgame.com 기록 자동 갱신 — 5분마다 (2026-09-24)
+#
+# GitHub Actions 의 '15분마다'는 실제로 3~5시간에 한 번 돌았습니다(GitHub 이 잦은 예약을
+# 흘립니다, 2026-09-16~18 실측). 서버의 타이머는 적힌 대로 돕니다.
+# 기록이 그대로면 한 번에 20초쯤 걸리고 아무것도 복사하지 않으니 5분이어도 부담이 없습니다.
+# 앞 회차가 아직 돌고 있으면 겹쳐 띄우지 않습니다(systemd 가 알아서 막습니다).
+
+[Unit]
+Description=starendgame.com 기록 자동 갱신 — 5분마다
+
+[Timer]
+OnCalendar=*:0/5
+# 서버가 꺼져 있어 놓친 회차는 켜지고 나서 한 번 돌립니다.
+Persistent=true
+AccuracySec=30s
+Unit=starendgame.service
+
+[Install]
+WantedBy=timers.target

@@ -262,8 +262,38 @@ class _SftpRemote(object):
                 pass
 
 
+class _LocalRemote(object):
+    """서버 안에서 돌 때 — 당첨자 명단을 파일로 바로 읽고 씁니다.
+
+    관제 화면(prize_api.php)도 같은 파일을 쓰므로, 반쯤 쓴 파일을 읽지 않게
+    임시 이름으로 쓰고 바꿔 끼웁니다. 파일 주인은 서비스 계정(www-data)이라
+    PHP 가 계속 고쳐 쓸 수 있습니다.
+    """
+
+    def __init__(self, cfg):
+        pass
+
+    def read(self, path):
+        try:
+            with open(path, 'rb') as fh:
+                return fh.read()
+        except (IOError, OSError):
+            return None
+
+    def write(self, path, payload):
+        tmp = os.path.join(os.path.dirname(path), '.%s.tmp' % os.path.basename(path))
+        with open(tmp, 'wb') as fh:
+            fh.write(payload)
+        os.replace(tmp, path)
+
+    def close(self):
+        pass
+
+
 def remote_open(cfg):
     """적어 준 방식으로 붙고, 안 되면 다른 방식으로 한 번 더 (deploy.py 와 같습니다)."""
+    if cfg.get('proto') == 'local':
+        return _LocalRemote(cfg)
     first = cfg.get('proto') or 'ftp'
     second = 'ftp' if first == 'sftp' else 'sftp'
     for proto, port in ((first, cfg['port']),
@@ -286,6 +316,13 @@ def ftp_config():
     클라우드(GitHub Actions)에는 data/deploy.json 이 없으므로 시크릿을
     환경변수로 넣습니다. deploy.py 와 같은 규칙입니다.
     """
+    # 사이트가 도는 서버 안에서 돌릴 때 — 당첨자 명단 파일을 직접 읽고 씁니다
+    # (deploy.py 와 같은 DEPLOY_LOCAL_DIR 한 줄. 네트워크·비밀번호 없음).
+    local = (os.environ.get('DEPLOY_LOCAL_DIR') or '').strip()
+    if local:
+        return {'host': 'local', 'user': '', 'password': '', 'remoteDir': local,
+                'port': 0, 'proto': 'local'}
+
     # deploy.py 와 같은 규칙 — 올릴 곳은 저장소(data/deploy-target.json),
     # 비밀번호만 시크릿. 자세한 사정은 그 파일 주석에 적어 뒀습니다.
     cfg = {}
