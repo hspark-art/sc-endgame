@@ -62,7 +62,7 @@ sudo -u www-data env HOME=/opt/starendgame git clone https://github.com/hspark-a
 sudo -u www-data git -C /opt/starendgame branch --show-current
 ```
 
-마지막 줄이 `claude/starcraft-endgame-site-049jip` 이면 맞습니다. (받는 양은 25MB 쯤입니다.)
+마지막 줄이 `claude/starcraft-endgame-site-049jip` 이면 맞습니다. (받는 양은 50MB 쯤입니다. 1분 안쪽입니다.)
 
 ---
 
