@@ -82,7 +82,13 @@ SKIP_EXTS = ('.md', '.bat', '.command', '.sh')
 # 그 안에 비밀이 들어오면 반드시 여기에 적어야 합니다. slack.json 은 2026-09-21
 # 까지 빠져 있어서, 그 파일이 있는 PC 에서 올리면 웹훅이 그대로 공개됐습니다.
 NEVER_UPLOAD = {'admin/config.php', 'data/deploy.json', 'data/youtube.json',
-                'data/slack.json', 'data/deploy-target.json'}
+                'data/slack.json', 'data/deploy-target.json', '.env'}
+
+# 점(.)으로 시작하는 파일은 **원칙적으로 올리지 않습니다** — 사이트에 필요한 것만 여기 적습니다.
+# 예전에는 위 설명처럼 '의도'만 있고 코드는 막지 않았습니다. 그래서 서버 안에서 돌리자
+# 서버 설정 파일 .env(유튜브 키·슬랙 웹훅)가 웹루트로 복사돼 https://…/.env 로 누구나
+# 받을 수 있게 되는 것을 2026-09-24 설치 전 시험에서 잡았습니다. 목록 밖은 전부 막습니다.
+DOTFILE_ALLOW = {'.nojekyll', 'admin/.htaccess'}
 
 # 서버에 남아 있으면 안 되는 것 — 올릴 때마다 있으면 지웁니다 (없으면 조용히 넘어감).
 # 이 스크립트는 원래 '올리기만' 했지만, 아래 둘은 그냥 둘 수가 없어 예외로 둡니다.
@@ -175,7 +181,8 @@ def local_files():
         for name in filenames:
             full = os.path.join(dirpath, name)
             rel = os.path.relpath(full, ROOT).replace(os.sep, '/')
-            if (name in SKIP_FILES or name.endswith(SKIP_EXTS)
+            if (name.startswith('.') and rel not in DOTFILE_ALLOW) or \
+                    (name in SKIP_FILES or name.endswith(SKIP_EXTS)
                     or rel in NEVER_UPLOAD or rel.startswith('data/.')
                     or rel.startswith('data/chat/') or rel.startswith('data/prizes/')):
                 continue
